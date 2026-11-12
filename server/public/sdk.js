@@ -112,7 +112,7 @@
     const inp = el.querySelector('input');
     const go = () => { setPin(inp.value.trim()); boot(); };
     el.querySelector('.go').onclick = go;
-    inp.onkeydown = e => e.key === 'Enter' && go();
+    inp.onkeydown = e => { if (e.key === 'Enter') go(); };
     inp.focus();
   }
 
