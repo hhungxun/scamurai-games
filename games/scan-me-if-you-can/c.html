@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Scan Me If You Can</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Lexend:wght@400;600&family=Permanent+Marker&display=swap">
+<link rel="stylesheet" href="s5.css">
+<style>
+  /* The Verdict bar: translucent so the site stays visible behind it */
+  .vbar{position:fixed;left:0;right:0;bottom:0;z-index:40;padding:8px 10px calc(10px + env(safe-area-inset-bottom));
+    background:rgba(23,22,22,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;gap:10px;align-items:center}
+  .vbar button{flex:1;font:400 24px Anton,Impact,sans-serif;letter-spacing:1px;border:0;border-radius:12px;padding:12px 0;color:#fff;opacity:.92}
+  .vbar .real{background:rgba(31,122,58,.9)}.vbar .fake{background:rgba(240,3,3,.9)}
+  .vbar .t{width:54px;height:54px;flex:none;border-radius:50%;display:grid;place-items:center;font:22px Anton,sans-serif;color:#fff;
+    background:conic-gradient(var(--yellow) calc(var(--p)*1turn),rgba(255,255,255,.18) 0)}
+  .vbar .t b{width:44px;height:44px;border-radius:50%;background:rgba(23,22,22,.85);display:grid;place-items:center;font-weight:400}
+  .vbar .t.low{background:conic-gradient(var(--red) calc(var(--p)*1turn),rgba(255,255,255,.18) 0)}
+  .res{position:fixed;inset:0;z-index:50;background:rgba(23,22,22,.94);overflow:auto}
+</style>
+<script src="cards/manifest.js"></script>
+<script src="sim-browser.js"></script>
+<script src="s5.js"></script>
+</head><body>
+<main class="s5" id="app"></main>
+<div id="sim"></div>
+<script>
+const app = document.getElementById('app'), sim = document.getElementById('sim');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const H = `<div class="head"><img class="logo" src="/assets/logo.jpg" alt=""><div><h1>Scan Me <em>If You Can</em></h1><p class="tag">Station 5 · Scamurai</p></div></div>`;
+const slug = new URLSearchParams(location.search).get('k');
+const m = CARD_MANIFEST.find(c => c.slug === slug);
+const r = S5.get();
+const say = html => { app.innerHTML = H + html; };
+
+if (!m) say(`<div class="box">Unknown QR code.</div>`);
+else if (!r) say(`<div class="box">This is QR <b>#${m.id}</b>. First scan the <b>Join QR</b> on the Station 5 laptop, then come back to this code.</div>`);
+else if (!r.cards.includes(m.id)) say(`<div class="box">QR <b>#${m.id}</b> isn't one of yours this round.<br><br>Find <b style="color:var(--yellow);font-size:26px">#${S5.next(r) || '—'}</b></div>`);
+else if (r.done[m.id]) say(`<div class="box">You already judged QR <b>#${m.id}</b>.<br><br>${S5.next(r) ? `Next: find <b style="color:var(--yellow);font-size:26px">#${S5.next(r)}</b>` : 'All done: head back to the laptop.'}</div>`);
+else {
+  say(`<div class="box" style="text-align:center"><div class="big">#${m.id}</div>
+    <p>Is this site <b>REAL</b> or <b>FAKE</b>?</p>
+    <p class="muted">You get ${S5.SECS} seconds. Check the address bar, the padlock, where links really go (long-press them), and what the site asks for. Nothing you type is ever sent.</p></div>
+    <button class="btn" id="go">Start the timer</button>`);
+  const cardP = SimCards.load(slug);
+  document.getElementById('go').onclick = async () => {
+    let card;
+    try { card = await cardP; } catch (e) { return say(`<div class="box">Could not load this site: ${esc(e.message)}. Tell the Game Master.</div>`); }
+    app.innerHTML = '';
+    const b = SimBrowser(sim, card, { bottomInset: 84 });
+    const bar = document.createElement('div');
+    bar.className = 'vbar';
+    bar.innerHTML = `<button class="real">REAL</button><div class="t"><b>${S5.SECS}</b></div><button class="fake">FAKE</button>`;
+    document.body.appendChild(bar);
+    const t0 = performance.now(), ring = bar.querySelector('.t'), num = ring.querySelector('b');
+    let over = false;
+    const tick = setInterval(() => {
+      const left = Math.max(0, S5.SECS - (performance.now() - t0) / 1000);
+      ring.style.setProperty('--p', left / S5.SECS); num.textContent = Math.ceil(left);
+      ring.classList.toggle('low', left <= 10);
+      if (left <= 0) verdict('timeout');
+    }, 100);
+    ring.style.setProperty('--p', 1);
+    bar.querySelector('.real').onclick = () => verdict('real');
+    bar.querySelector('.fake').onclick = () => verdict('fake');
+
+    async function verdict(v) {
+      if (over) return; over = true; clearInterval(tick);
+      const ms = Math.min(S5.SECS * 1000, Math.round(performance.now() - t0));
+      const correct = v !== 'timeout' && (v === 'real') === card.real;
+      const pts = S5.points(correct, ms);
+      const cur = S5.get() || r;
+      cur.done[m.id] = { v, ms, correct, pts };
+      S5.save(cur);
+      bar.remove(); b.close();
+      const sent = S5.post(cur, { t: 'v', n: m.id, v, ms });
+      const next = S5.next(cur);
+      const missed = !card.real && !correct;
+      const res = document.createElement('div'); res.className = 'res';
+      res.innerHTML = `<main class="s5">${H}
+        <div class="box" style="text-align:center">
+          <div class="big" style="color:${correct ? '#7CFC8A' : 'var(--red)'}">${correct ? '✓ +' + pts : v === 'timeout' ? "Time's up" : '✗ 0'}</div>
+          <p>It was <b style="color:${card.real ? '#7CFC8A' : 'var(--red)'}">${card.real ? 'REAL' : 'FAKE'}</b> · ${esc(card.brand)}</p>
+          <p class="muted" style="word-break:break-all">${esc(card.url)}</p></div>
+        <div class="box"><b>${card.real ? 'Why it is genuine' : missed ? 'What you missed' : 'The tells'}</b>
+          <ul class="tells">${(card.tells || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>
+        <div class="box" style="text-align:center">${next ? `Next: find <span class="big" style="display:block;font-size:64px">#${next}</span>` : 'All done! Head back to the Station 5 laptop for your result.'}</div>
+        <p class="muted" id="sent" style="text-align:center">Saving…</p></main>`;
+      document.body.appendChild(res);
+      document.getElementById('sent').textContent = (await sent) ? 'Saved to the laptop ✓' : 'Could not reach the laptop. Show this screen to the Game Master.';
+    }
+  };
+}
+</script>
+</body></html>

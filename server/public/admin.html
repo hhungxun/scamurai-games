@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Scamurai · Admin</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Lexend:wght@400;600&family=Permanent+Marker&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>.wrap{max-width:900px}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+.stats div{background:var(--surf);border-radius:12px;padding:12px}.stats b{display:block;font:32px Anton,sans-serif;color:var(--yellow)}</style>
+</head><body><div class="wrap">
+<div class="top"><img src="assets/logo.jpg" alt=""><div><h1>Scam<em>urai</em> admin</h1><p class="tag">Overview &amp; exports</p></div></div>
+<div class="card" id="pinCard">
+  <label for="pin">Admin PIN</label><input id="pin" type="password" autocomplete="off">
+  <p class="err" id="err"></p><button class="wide" id="go">Open</button>
+</div>
+<div id="main" hidden>
+  <div class="card"><div class="stats" id="stats"></div></div>
+  <div class="card"><h2>Per station</h2><table><tbody id="per"></tbody></table></div>
+  <div class="card"><h2>Export (for the post-mortem)</h2>
+    <p><a class="btn" id="csvP" href="#">participants.csv</a> <a class="btn" id="csvR" href="#">rounds.csv</a></p>
+    <p class="muted">Delete personal data within 30 days after 26 Nov 2026 (stop the service and remove server/data/scamurai.db).</p></div>
+  <div class="card"><h2>Participants</h2><table><thead><tr><th>ID</th><th>Name</th><th>Status</th><th>Done</th><th>Total</th></tr></thead><tbody id="rows"></tbody></table></div>
+</div>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let PIN = '';
+async function load() {
+  const r = await fetch('/api/admin/overview', { headers: { 'X-Pin': PIN } });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || r.statusText);
+  $('pinCard').hidden = true; $('main').hidden = false;
+  $('stats').innerHTML = [['Registered', d.participants], ['Active', d.active], ['Abandoned', d.abandoned], ['Checked out', d.left], ['All 5 done', d.finishedAll]]
+    .map(([k, v]) => `<div><b>${v}</b>${k}</div>`).join('');
+  $('per').innerHTML = d.perStation.map(s => `<tr><td>${s.n}. ${esc(s.name)}</td><td>${s.players} players</td></tr>`).join('');
+  $('rows').innerHTML = d.rows.map(p => `<tr><td>${esc(p.id)}</td><td>${esc(p.name)}</td><td>${esc(p.status)}</td><td>${p.done}/5</td><td>${p.total}</td></tr>`).join('');
+  $('csvP').href = '/api/export/participants.csv?pin=' + encodeURIComponent(PIN);
+  $('csvR').href = '/api/export/rounds.csv?pin=' + encodeURIComponent(PIN);
+}
+$('go').onclick = async () => { PIN = $('pin').value.trim(); try { await load(); setInterval(() => load().catch(() => {}), 15000); } catch (e) { $('err').textContent = e.message; } };
+$('pin').onkeydown = e => { if (e.key === 'Enter') $('go').click(); };
+</script>
+</body></html>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Scamurai · Leaderboard</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Lexend:wght@400;600&family=Permanent+Marker&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  .wrap{max-width:900px}
+  .lb td{font-size:18px;padding:10px 6px}
+  .lb td.rank{font:28px Anton,sans-serif;color:var(--grey);width:56px}
+  .lb tr.p1 td.rank{color:var(--gold)}.lb tr.p2 td.rank{color:#d8d8d8}.lb tr.p3 td.rank{color:#cd7f32}
+  .lb td.total{font:26px Anton,sans-serif;color:var(--yellow);text-align:right}
+  .badge{font-size:12px;border-radius:99px;padding:2px 8px;margin-left:6px;background:var(--gold);color:#000;white-space:nowrap}
+  .dots span{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--dim);margin-right:3px}
+  .dots span.on{background:var(--red)}
+  @media (min-width:900px){ h1{font-size:56px} .lb td{font-size:22px} }
+</style>
+</head><body><div class="wrap">
+<div class="top"><img src="assets/logo.jpg" alt=""><div><h1>Scam<em>urai</em> leaderboard</h1><p class="tag">Forewarned is forearmed · 26 Nov · A3 G-floor</p></div></div>
+<div class="card">
+  <p class="muted" id="meta">Loading…</p>
+  <table class="lb"><thead><tr><th>#</th><th>Samurai</th><th>Stations</th><th>Time</th><th style="text-align:right">/ 500</th></tr></thead><tbody id="rows"></tbody></table>
+  <p class="muted" style="margin-top:14px">Highest score per station counts; ties go to the faster total time. 🏆 Prizes go to the top 3 who finish all 5 stations and the exit survey.</p>
+</div>
+</div>
+<script>
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+async function load() {
+  try {
+    const d = await fetch('/api/leaderboard').then(r => r.json());
+    document.getElementById('meta').textContent = `${d.registered} samurai on the board · updated ${new Date().toLocaleTimeString()}`;
+    document.getElementById('rows').innerHTML = d.rows.map(r => `<tr class="${r.prize ? 'p' + r.prize : ''}">
+      <td class="rank">${r.rank}</td>
+      <td>${esc(r.who)}${r.prize ? `<span class="badge">🏆 prize #${r.prize}</span>` : ''}</td>
+      <td class="dots">${Array.from({ length: d.stations }, (_, i) => `<span class="${i < r.done ? 'on' : ''}"></span>`).join('')}</td>
+      <td class="muted">${r.mins} min</td>
+      <td class="total">${r.total}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No scores yet. Go play!</td></tr>';
+  } catch { document.getElementById('meta').textContent = 'Reconnecting…'; }
+}
+load(); setInterval(load, 10000);
+</script>
+</body></html>

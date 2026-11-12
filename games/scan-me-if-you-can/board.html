@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Station 5 · QR board (print)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Lexend:wght@400;600&display=swap">
+<style>
+  @page{size:A4;margin:10mm}
+  body{margin:0;font-family:Lexend,sans-serif;background:#fff;color:#171616}
+  .bar{padding:12px 16px;background:#171616;color:#fff;font-size:14px}
+  .bar input{width:min(520px,90vw);font:inherit;padding:6px}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8mm;padding:8mm}
+  .q{border:2px dashed #999;border-radius:6mm;padding:5mm;text-align:center;break-inside:avoid;page-break-inside:avoid;height:84mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between}
+  .q .n{font:400 18mm/1 Anton,Impact,sans-serif;color:#F00303}
+  .q svg{width:56mm;height:56mm}
+  .q small{font-size:3mm;color:#5C5A58}
+  @media print{.bar{display:none}.grid{padding:0}}
+</style>
+<script src="cards/manifest.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+</head><body>
+<div class="bar">Print this page (A4, 6 per page) and cut along the dashes. Codes point to:
+  <input id="base"> <button onclick="draw()">Redraw</button></div>
+<div class="grid" id="grid"></div>
+<script>
+// Each code opens c.html?k=<slug>. The slug says nothing about Real or Fake.
+const base = document.getElementById('base');
+base.value = (location.protocol === 'file:' ? 'https://scamurai.physicsxmum.my/games/scan-me-if-you-can/' : location.href.replace(/[^/]*([?#].*)?$/, '')) + 'c.html?k=';
+function draw() {
+  document.getElementById('grid').innerHTML = CARD_MANIFEST.map(m => {
+    const q = qrcode(0, 'M'); q.addData(base.value + m.slug); q.make();
+    return `<div class="q"><div class="n">#${m.id}</div>${q.createSvgTag({ cellSize: 6, margin: 1, scalable: true })}<small>Scamurai · Scan Me If You Can</small></div>`;
+  }).join('');
+}
+draw();
+</script>
+</body></html>

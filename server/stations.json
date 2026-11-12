@@ -1,0 +1,31 @@
+{
+  "event": "Scamurai · 26 Nov 2026 · A3 G-floor, XMUM",
+  "stations": [
+    { "n": 1, "name": "Station 1", "questions": [
+      { "id": "s1q1", "type": "scale", "text": "Station 1 helped me understand its scam type. (1 = not at all, 5 = a lot)" },
+      { "id": "s1q2", "type": "text", "text": "One thing you learnt at Station 1:" }
+    ]},
+    { "n": 2, "name": "Station 2", "questions": [
+      { "id": "s2q1", "type": "scale", "text": "Station 2 helped me understand its scam type. (1 = not at all, 5 = a lot)" },
+      { "id": "s2q2", "type": "text", "text": "One thing you learnt at Station 2:" }
+    ]},
+    { "n": 3, "name": "Station 3", "questions": [
+      { "id": "s3q1", "type": "scale", "text": "Station 3 helped me understand its scam type. (1 = not at all, 5 = a lot)" },
+      { "id": "s3q2", "type": "text", "text": "One thing you learnt at Station 3:" }
+    ]},
+    { "n": 4, "name": "Station 4", "questions": [
+      { "id": "s4q1", "type": "scale", "text": "Station 4 helped me understand its scam type. (1 = not at all, 5 = a lot)" },
+      { "id": "s4q2", "type": "text", "text": "One thing you learnt at Station 4:" }
+    ]},
+    { "n": 5, "name": "Scan Me If You Can", "questions": [
+      { "id": "s5q1", "type": "choice", "text": "Which clue did you find most useful for spotting fake sites?", "options": ["The web address", "The padlock / certificate", "Where a link really goes", "Urgent or too-good-to-be-true wording", "Requests for OTP, PIN or card details"] },
+      { "id": "s5q2", "type": "scale", "text": "Before today, how often did you check a site's address before logging in? (1 = never, 5 = always)" },
+      { "id": "s5q3", "type": "scale", "text": "How likely are you to check it from now on? (1 = unlikely, 5 = always)" }
+    ]}
+  ],
+  "general": [
+    { "id": "g1", "type": "scale", "text": "How confident are you at spotting a scam now? (1 = not at all, 5 = very)" },
+    { "id": "g2", "type": "text", "text": "What will you do differently after today?" },
+    { "id": "g3", "type": "station", "text": "Which station did you like best?" }
+  ]
+}

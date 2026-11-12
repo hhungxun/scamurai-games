@@ -1,0 +1,246 @@
+/* Scamurai Game SDK
+ *
+ *   <script src="https://scamurai.physicsxmum.my/sdk.js" data-station="3"></script>
+ *   <script>
+ *     Scamurai.onStart(p => { ... start your game for p.name ... });
+ *     // when the round is over:
+ *     Scamurai.finish({ score: 7, maxScore: 10 });
+ *   </script>
+ *
+ * The SDK draws the Game Master start screen (Station PIN, Participant picker,
+ * Leaving button), records the Round, shows the result, opens the Exit Survey
+ * when it is due, then reloads the page for the next Participant.
+ * Add data-test="1" to the script tag to skip the backend while developing.
+ */
+(function () {
+  'use strict';
+  const me = document.currentScript;
+  const API = new URL(me.src).origin;
+  const STATION = +me.dataset.station || 0;
+  const TEST = me.dataset.test === '1';
+  const PIN_KEY = 'scamurai.pin.' + STATION;
+  const C = { bg: '#171616', surf: '#2A2827', red: '#F00303', yellow: '#EEED15', grey: '#BDB9B6', dim: '#5C5A58', gold: '#E8A93A' };
+
+  let startCb = null, round = null, participant = null, config = null, list = [], pollT = null;
+
+  // ---------- helpers ----------
+  const pin = () => { try { return localStorage.getItem(PIN_KEY) || ''; } catch { return ''; } };
+  const setPin = v => { try { v ? localStorage.setItem(PIN_KEY, v) : localStorage.removeItem(PIN_KEY); } catch {} };
+  async function api(path, { method = 'GET', body, headers = {} } = {}) {
+    const r = await fetch(API + path, {
+      method, headers: { 'Content-Type': 'application/json', 'X-Pin': pin(), ...headers },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { const e = new Error(j.error || r.statusText); e.status = r.status; throw e; }
+    return j;
+  }
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const h = (html) => { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; };
+
+  // ---------- look ----------
+  const fonts = document.createElement('link');
+  fonts.rel = 'stylesheet';
+  fonts.href = 'https://fonts.googleapis.com/css2?family=Anton&family=Lexend:wght@400;600&family=Permanent+Marker&display=swap';
+  document.head.appendChild(fonts);
+  const css = document.createElement('style');
+  css.textContent = `
+  .scm{position:fixed;inset:0;z-index:2147483000;background:${C.bg} url(${API}/assets/bg-dark.jpg) center/cover;color:#fff;
+    font:16px/1.45 Lexend,system-ui,sans-serif;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 16px}
+  .scm *{box-sizing:border-box}
+  .scm-card{width:100%;max-width:560px;background:rgba(23,22,22,.88);border:2px solid ${C.surf};border-radius:18px;padding:22px;margin:auto 0}
+  .scm-top{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+  .scm-top img{width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid ${C.red}}
+  .scm h1{font:400 34px/1 Anton,Impact,sans-serif;letter-spacing:.5px;margin:0;text-transform:uppercase}
+  .scm h1 em{color:${C.red};font-style:normal}
+  .scm .tag{font:18px 'Permanent Marker',cursive;color:${C.yellow};margin:2px 0 0}
+  .scm label{display:block;font-weight:600;margin:14px 0 6px}
+  .scm input,.scm textarea,.scm select{width:100%;font:inherit;color:#fff;background:${C.surf};border:2px solid ${C.dim};border-radius:10px;padding:12px}
+  .scm input:focus,.scm textarea:focus{outline:none;border-color:${C.yellow}}
+  .scm button{font:400 20px Anton,Impact,sans-serif;letter-spacing:1px;text-transform:uppercase;border:0;border-radius:10px;padding:12px 18px;cursor:pointer}
+  .scm .go{background:${C.red};color:#fff;width:100%;margin-top:16px}
+  .scm .go:disabled{background:${C.dim};cursor:not-allowed}
+  .scm .ghost{background:transparent;color:${C.grey};border:2px solid ${C.dim};font-size:15px;padding:8px 12px}
+  .scm .row{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:14px}
+  .scm .err{color:#ff6b6b;min-height:1.4em;margin-top:8px}
+  .scm .list{max-height:42vh;overflow:auto;margin-top:8px;border-radius:10px;background:${C.surf}}
+  .scm .it{display:flex;justify-content:space-between;gap:10px;padding:11px 12px;border-bottom:1px solid ${C.bg};cursor:pointer}
+  .scm .it:hover,.scm .it.sel{background:#3a3634}
+  .scm .it.sel{outline:2px solid ${C.yellow};outline-offset:-2px}
+  .scm .it small{color:${C.grey}}
+  .scm .pill{font-size:12px;border-radius:99px;padding:2px 8px;white-space:nowrap;align-self:center}
+  .scm .p-played{background:${C.gold};color:#000}.scm .p-left{background:${C.dim}}.scm .p-new{border:1px solid ${C.dim};color:${C.grey}}
+  .scm .big{font:400 72px/1 Anton,Impact,sans-serif;color:${C.yellow};text-align:center;margin:10px 0}
+  .scm .dots{display:flex;gap:8px;justify-content:center;margin:12px 0}
+  .scm .dots span{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font:20px Anton,sans-serif;background:${C.surf};color:${C.dim}}
+  .scm .dots span.on{background:${C.red};color:#fff}
+  .scm .q{margin-top:16px}
+  .scm .scale{display:flex;gap:6px}.scm .scale button{flex:1;background:${C.surf};color:#fff;font-size:20px;padding:10px 0}
+  .scm .scale button.on{background:${C.yellow};color:#000}
+  .scm .opts button{display:block;width:100%;text-align:left;background:${C.surf};color:#fff;font:15px Lexend,sans-serif;text-transform:none;letter-spacing:0;margin-top:6px}
+  .scm .opts button.on{background:${C.yellow};color:#000}
+  .scm .muted{color:${C.grey};font-size:14px}
+  .scm hr{border:0;border-top:1px solid ${C.dim};margin:18px 0}`;
+  document.head.appendChild(css);
+
+  let root = null;
+  function screen(html) {
+    if (!root) { root = h('<div class="scm"></div>'); document.body.appendChild(root); }
+    root.style.display = 'flex';
+    root.innerHTML = `<div class="scm-card"><div class="scm-top"><img src="${API}/assets/logo.jpg" alt="">
+      <div><h1>Scam<em>urai</em></h1><p class="tag">Forewarned is forearmed</p></div></div>${html}</div>`;
+    return root.firstChild;
+  }
+  const hide = () => { if (root) root.style.display = 'none'; };
+
+  // ---------- 1. Station PIN ----------
+  async function boot() {
+    if (TEST) return showPicker();
+    if (!STATION) return screen(`<p class="err">This game's script tag needs data-station="1…5".</p>`);
+    if (!pin()) return askPin();
+    try {
+      const a = await api('/api/auth', { method: 'POST' });
+      if (a.role === 'station' && a.station !== STATION) throw new Error(`That PIN is for station ${a.station}`);
+      showPicker(a.stationName);
+    } catch (e) { setPin(''); askPin(e.status === 429 ? e.message : e.status === 0 ? '' : e.message); }
+  }
+  function askPin(msg = '') {
+    const el = screen(`<h2 style="font:24px Anton,sans-serif;margin:8px 0">Station ${STATION} setup</h2>
+      <p class="muted">Game Master: enter this station's 4-digit PIN once. This laptop remembers it.</p>
+      <label>Station PIN</label><input type="password" inputmode="numeric" autocomplete="off" maxlength="8">
+      <p class="err">${esc(msg)}</p><button class="go">Unlock</button>`);
+    const inp = el.querySelector('input');
+    const go = () => { setPin(inp.value.trim()); boot(); };
+    el.querySelector('.go').onclick = go;
+    inp.onkeydown = e => e.key === 'Enter' && go();
+    inp.focus();
+  }
+
+  // ---------- 2. Participant picker ----------
+  async function loadList() {
+    if (TEST) return [{ id: 'TEST001', name: 'Test Player', status: 'active', stationsDone: [], playedHere: false }];
+    return api('/api/participants');
+  }
+  function showPicker(stationName) {
+    let sel = null, mode = 'play';
+    const el = screen(`<h2 style="font:26px Anton,sans-serif;margin:6px 0">Station ${STATION}${stationName ? ' · ' + esc(stationName) : ''}</h2>
+      <label>Type a student ID or name</label>
+      <input class="find" autocomplete="off" placeholder="e.g. PHY2209123 or Aisyah">
+      <div class="list"></div>
+      <p class="err"></p>
+      <button class="go" disabled>Start round</button>
+      <div class="row"><span class="muted">Not on the list? Send them to the front desk to register.</span>
+      <button class="ghost leave">Leaving</button></div>`);
+    const find = el.querySelector('.find'), box = el.querySelector('.list'), go = el.querySelector('.go'), err = el.querySelector('.err');
+    const leave = el.querySelector('.leave');
+    function render() {
+      const t = find.value.trim().toUpperCase();
+      const rows = list.filter(p => !t || p.id.includes(t) || p.name.toUpperCase().includes(t))
+        .sort((a, b) => (b.id === t) - (a.id === t) || a.name.localeCompare(b.name)).slice(0, 40);
+      box.innerHTML = rows.map(p => {
+        const pill = p.status === 'left' ? '<span class="pill p-left">checked out</span>'
+          : p.playedHere ? `<span class="pill p-played">played here · best ${p.bestHere}%</span>`
+          : `<span class="pill p-new">${p.stationsDone.length}/5 done</span>`;
+        return `<div class="it${sel && sel.id === p.id ? ' sel' : ''}" data-id="${esc(p.id)}"><div><b>${esc(p.name)}</b><br><small>${esc(p.id)}</small></div>${pill}</div>`;
+      }).join('') || `<div class="it"><small>${list.length ? 'No match. Check the ID, or send them to the front desk.' : 'Nobody registered yet.'}</small></div>`;
+      go.disabled = !sel;
+      go.textContent = mode === 'leave' ? (sel ? `Check out ${sel.name}` : 'Pick who is leaving') : (sel ? `Start round · ${sel.name}` : 'Start round');
+    }
+    box.onclick = e => { const it = e.target.closest('.it[data-id]'); if (!it) return; sel = list.find(p => p.id === it.dataset.id); render(); };
+    find.oninput = () => { sel = null; const t = find.value.trim().toUpperCase(); const exact = list.find(p => p.id === t); if (exact) sel = exact; render(); };
+    find.onkeydown = e => { if (e.key === 'Enter' && sel) go.click(); };
+    leave.onclick = () => { mode = mode === 'play' ? 'leave' : 'play'; leave.textContent = mode === 'leave' ? 'Back to play' : 'Leaving'; go.style.background = mode === 'leave' ? C.dim : ''; render(); };
+    go.onclick = async () => {
+      if (!sel) return;
+      go.disabled = true; err.textContent = '';
+      if (mode === 'leave') { clearInterval(pollT); return survey(sel, sel.stationsDone, false); }
+      try {
+        const r = TEST ? { roundId: 0, token: 'test' } : await api('/api/rounds', { method: 'POST', body: { participantId: sel.id } });
+        clearInterval(pollT);
+        participant = sel;
+        round = { id: r.roundId, token: r.token, startedAt: Date.now() };
+        hide();
+        if (startCb) startCb(Scamurai.player);
+      } catch (e) { err.textContent = e.message; go.disabled = false; }
+    };
+    const refresh = async () => { try { list = await loadList(); render(); } catch (e) { if (e.status === 401) { setPin(''); clearInterval(pollT); askPin('PIN no longer valid'); } else err.textContent = 'Offline? ' + e.message; } };
+    refresh(); clearInterval(pollT); pollT = setInterval(refresh, 8000);
+    find.focus();
+  }
+
+  // ---------- 3. Finish + result ----------
+  async function finish({ score, maxScore } = {}) {
+    if (!round) throw new Error('Scamurai.finish() called before a round started');
+    if (round.done) return round.result;
+    round.done = true;
+    let res;
+    try {
+      res = TEST ? { pct: Math.round(score / maxScore * 1000) / 10, best: 0, stationsDone: [STATION], surveyDue: false }
+        : await api(`/api/rounds/${round.id}/finish`, { method: 'POST', body: { score, maxScore } });
+    } catch (e) {
+      screen(`<p class="err">Could not save the score: ${esc(e.message)}</p><button class="go">Try again</button>`)
+        .querySelector('.go').onclick = () => { round.done = false; finish({ score, maxScore }); };
+      return;
+    }
+    round.result = res;
+    const secs = Math.round((Date.now() - round.startedAt) / 1000);
+    const el = screen(`<p class="tag" style="text-align:center">${esc(participant.name)}</p>
+      <div class="big">${res.pct}%</div>
+      <p style="text-align:center" class="muted">${secs}s · best here ${res.best}%${res.pct >= res.best && res.pct > 0 ? ' · new best!' : ''}</p>
+      <div class="dots">${[1, 2, 3, 4, 5].map(n => `<span class="${res.stationsDone.includes(n) ? 'on' : ''}">${n}</span>`).join('')}</div>
+      <p style="text-align:center">${res.stationsDone.length < 5 ? `${5 - res.stationsDone.length} station${5 - res.stationsDone.length > 1 ? 's' : ''} to go.` : 'All five stations done!'}</p>
+      <button class="go">${res.surveyDue ? 'Exit survey (for the prize)' : 'Next player'}</button>
+      ${res.surveyDue ? '<div class="row"><span></span><button class="ghost more">Play more first</button></div>' : ''}`);
+    el.querySelector('.go').onclick = () => res.surveyDue ? survey(participant, res.stationsDone, true) : location.reload();
+    const more = el.querySelector('.more'); if (more) more.onclick = () => location.reload();
+    if (!res.surveyDue) setTimeout(() => location.reload(), 30000);
+    return res;
+  }
+
+  // ---------- 4. Exit Survey ----------
+  async function survey(p, stationsDone, fromFinish) {
+    try { config = config || await api('/api/config'); } catch (e) { return screen(`<p class="err">${esc(e.message)}</p>`); }
+    const qs = [...config.stations.filter(s => stationsDone.includes(s.n)).flatMap(s => s.questions.map(q => ({ ...q, station: s }))), ...config.general];
+    const ans = {};
+    const field = q => {
+      if (q.type === 'scale') return `<div class="scale" data-q="${q.id}">${[1, 2, 3, 4, 5].map(v => `<button type="button" data-v="${v}">${v}</button>`).join('')}</div>`;
+      if (q.type === 'choice' || q.type === 'station') {
+        const opts = q.type === 'station' ? config.stations.filter(s => stationsDone.includes(s.n)).map(s => `${s.n}. ${s.name}`) : q.options;
+        return `<div class="opts" data-q="${q.id}">${opts.map(o => `<button type="button" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div>`;
+      }
+      return `<textarea rows="2" data-q="${q.id}" maxlength="500"></textarea>`;
+    };
+    let last = null;
+    const el = screen(`<h2 style="font:26px Anton,sans-serif;margin:4px 0">Exit survey · ${esc(p.name)}</h2>
+      <p class="muted">${stationsDone.length} of 5 stations done. Hand the laptop to the participant. One minute, then you're free!</p>
+      ${qs.map(q => { const head = q.station && q.station !== last ? `<hr><p class="tag">${esc(q.station.name)}</p>` : (!q.station && last ? '<hr>' : ''); last = q.station || null; return `${head}<div class="q"><b>${esc(q.text)}</b>${field(q)}</div>`; }).join('')}
+      <p class="err"></p><button class="go">Submit &amp; check out</button>
+      <div class="row"><span></span><button class="ghost back">${fromFinish ? 'Play more first' : 'Cancel'}</button></div>`);
+    el.addEventListener('click', e => {
+      const b = e.target.closest('[data-v]'); if (!b) return;
+      const g = b.parentElement; g.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); ans[g.dataset.q] = b.dataset.v;
+    });
+    el.querySelector('.back').onclick = () => location.reload();
+    el.querySelector('.go').onclick = async ev => {
+      el.querySelectorAll('textarea').forEach(t => { if (t.value.trim()) ans[t.dataset.q] = t.value.trim(); });
+      const missing = qs.filter(q => q.type !== 'text' && !ans[q.id]);
+      if (missing.length) { el.querySelector('.err').textContent = `Please answer all the 1–5 and pick-one questions (${missing.length} left).`; return; }
+      ev.target.disabled = true;
+      try {
+        if (!TEST) await api('/api/checkout', { method: 'POST', body: { participantId: p.id, answers: ans } });
+        screen(`<div class="big">Thank you!</div><p style="text-align:center">${esc(p.name)} is checked out.${stationsDone.length === 5 ? ' Watch the leaderboard for the prize!' : ''}</p>`);
+        setTimeout(() => location.reload(), 6000);
+      } catch (e) { el.querySelector('.err').textContent = e.message; ev.target.disabled = false; }
+    };
+  }
+
+  // ---------- public API ----------
+  window.Scamurai = {
+    onStart(cb) { startCb = cb; if (round && !round.done) cb(this.player); },
+    finish,
+    get player() { return participant && { id: participant.id, name: participant.name, station: STATION, roundId: round.id, token: round.token }; },
+    api, API, STATION,
+    resetPin() { setPin(''); location.reload(); },
+  };
+  if (document.body) boot(); else document.addEventListener('DOMContentLoaded', boot);
+})();

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Station 5 · Scan Me If You Can</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Lexend:wght@400;600&family=Permanent+Marker&display=swap">
+<link rel="stylesheet" href="s5.css">
+<style>
+  .lap{max-width:1100px;margin:0 auto;padding:22px;display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:22px;min-height:100vh}
+  @media (max-width:800px){.lap{grid-template-columns:1fr}}
+  .qr{background:#fff;border-radius:16px;padding:14px;display:grid;place-items:center}
+  .qr svg{width:100%;height:auto;max-width:380px}
+  .slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .slot{background:var(--surf);border-radius:14px;padding:12px;min-height:96px}
+  .slot .n{font:30px Anton,sans-serif;color:var(--grey)}
+  .slot.ok{background:#1f5a32}.slot.no{background:#6a1414}
+  .slot.ok .n,.slot.no .n{color:#fff}
+  .total{font:400 96px/1 Anton,Impact,sans-serif;color:var(--yellow)}
+  .ghost{background:transparent;border:2px solid var(--dim);color:var(--grey);font:15px Lexend,sans-serif;border-radius:10px;padding:8px 12px;cursor:pointer}
+  ol.how{margin:0;padding-left:20px}ol.how li{margin:4px 0}
+</style>
+<script src="/sdk.js" data-station="5"></script>
+<script src="cards/manifest.js"></script>
+<script src="sim-browser.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="s5.js"></script>
+</head><body>
+<main class="lap" id="app"></main>
+<script>
+/* Station 5 laptop. The SDK's start screen picks the Participant; this page then
+ * deals 8 Site Cards (3 Real + 5 Fake), shows the Join QR for the phone, scores the
+ * Verdicts the phone sends, and calls Scamurai.finish() with a score out of 800. */
+const REAL = 3, FAKE = 5, MAX = (REAL + FAKE) * 100;
+const app = document.getElementById('app');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+Scamurai.onStart(async p => {
+  app.innerHTML = '<p>Dealing cards…</p>';
+  const cards = await Promise.all(CARD_MANIFEST.map(m => SimCards.load(m.slug).then(c => ({ n: m.id, card: c }))));
+  const deal = shuffle([...shuffle(cards.filter(x => x.card.real)).slice(0, REAL), ...shuffle(cards.filter(x => !x.card.real)).slice(0, FAKE)]);
+  const byN = Object.fromEntries(deal.map(x => [x.n, x.card]));
+  const dir = location.pathname.replace(/[^/]*$/, '');
+  const joinUrl = `${location.origin}${dir}phone.html#${p.roundId}.${p.token}.${deal.map(x => x.n).join('-')}`;
+  const qr = qrcode(0, 'M'); qr.addData(joinUrl); qr.make();
+  window.S5_JOIN = joinUrl;   // for testing without a camera
+
+  const got = {};        // n -> {v, ms, correct, pts}
+  let joined = false, lastId = 0, ended = false;
+
+  app.innerHTML = `
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <div class="head"><img class="logo" src="/assets/logo.jpg" alt=""><div><h1>Scan Me <em>If You Can</em></h1><p class="tag">${esc(p.name)} · ${esc(p.id)}</p></div></div>
+      <div class="qr" id="qr">${qr.createSvgTag({ cellSize: 8, margin: 2, scalable: true })}</div>
+      <div class="box" id="how"><b>Scan this with your phone camera</b>
+        <ol class="how"><li>Your phone lists 8 QR numbers.</li><li>Find each one on the board and scan it.</li>
+        <li>30 seconds per site: explore it, then tap <b>REAL</b> or <b>FAKE</b>.</li><li>Right and fast = more points.</li></ol></div>
+      <button class="ghost" id="end">End round now</button>
+    </section>
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;justify-content:space-between;align-items:end"><div><p class="muted" style="margin:0">Score</p><div class="total" id="score">0</div></div>
+        <p class="muted" id="state">Waiting for the phone to join…</p></div>
+      <div class="slots" id="slots"></div>
+    </section>`;
+  const $ = id => document.getElementById(id);
+
+  function draw() {
+    const pts = Object.values(got).reduce((s, g) => s + g.pts, 0);
+    $('score').textContent = pts;
+    $('slots').innerHTML = deal.map(({ n }) => {
+      const g = got[n], c = byN[n];
+      if (!g) return `<div class="slot"><div class="n">#${n}</div><span class="muted">…</span></div>`;
+      return `<div class="slot ${g.correct ? 'ok' : 'no'}"><div class="n">#${n} ${g.correct ? '✓' : '✗'}</div>
+        ${esc(c.brand)} · <b>${c.real ? 'REAL' : 'FAKE'}</b><br><small>${g.v === 'timeout' ? 'time ran out' : 'said ' + g.v.toUpperCase()} · ${(g.ms / 1000).toFixed(1)}s · +${g.pts}</small></div>`;
+    }).join('');
+    const done = Object.keys(got).length;
+    $('state').textContent = joined ? `${done} of ${deal.length} sites judged` : 'Waiting for the phone to join…';
+    return pts;
+  }
+  draw();
+
+  async function end() {
+    if (ended) return; ended = true; clearInterval(poll);
+    await Scamurai.finish({ score: draw(), maxScore: MAX });
+  }
+  $('end').onclick = () => { if (confirm('End this round now? Unjudged sites score 0.')) end(); };
+
+  const poll = setInterval(async () => {
+    try {
+      const j = await fetch(`/api/rounds/${p.roundId}/events?after=${lastId}`, { headers: { 'X-Round-Token': p.token } }).then(r => r.json());
+      for (const e of j.events || []) {
+        lastId = Math.max(lastId, e.id);
+        const d = e.data || {};
+        if (d.t === 'join' && !joined) { joined = true; $('qr').style.display = 'none'; $('how').innerHTML = '<b>Phone connected ✓</b><p class="muted">The participant is hunting QR codes on the board.</p>'; }
+        if (d.t === 'v' && byN[d.n] && !got[d.n]) {
+          joined = true;
+          const ms = Math.max(0, Math.min(S5.SECS * 1000, +d.ms || 0));
+          const correct = d.v !== 'timeout' && (d.v === 'real') === byN[d.n].real;
+          got[d.n] = { v: ['real', 'fake'].includes(d.v) ? d.v : 'timeout', ms, correct, pts: S5.points(correct, ms) };
+        }
+      }
+      draw();
+      if (Object.keys(got).length === deal.length) setTimeout(end, 2500);
+    } catch { $('state').textContent = 'Reconnecting…'; }
+  }, 1500);
+});
+</script>
+</body></html>

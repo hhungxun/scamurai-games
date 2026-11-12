@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Site Card preview</title>
+<style>
+  body{margin:0;background:#171616;color:#fff;font-family:system-ui,sans-serif}
+  .gal{display:flex;flex-wrap:wrap;gap:18px;padding:18px}
+  .cell{width:390px}
+  .cell iframe{width:390px;height:780px;border:0;border-radius:18px;background:#fff}
+  .cell p{margin:6px 0 0;font-size:13px}
+  .ans{position:fixed;left:0;right:0;bottom:0;background:rgba(23,22,22,.92);color:#fff;font:13px/1.4 system-ui,sans-serif;padding:8px 12px;z-index:99;max-height:35vh;overflow:auto}
+  .ans b.r{color:#7CFC8A}.ans b.f{color:#ff5a5a}
+</style>
+<script src="cards/manifest.js"></script>
+<script src="sim-browser.js"></script>
+</head><body>
+<div id="root"></div>
+<script>
+// preview.html            -> gallery of all 25 cards (dev only)
+// preview.html?c=<slug>   -> one card, full screen, answer shown at the bottom
+const c = new URLSearchParams(location.search).get('c');
+const root = document.getElementById('root');
+if (!c) {
+  root.className = 'gal';
+  root.innerHTML = CARD_MANIFEST.map(m => `<div class="cell"><iframe loading="lazy" src="?c=${m.slug}"></iframe><p>#${m.id} · ${m.slug}</p></div>`).join('');
+} else {
+  SimCards.load(c).then(card => {
+    SimBrowser(root, card, { bottomInset: 90 });
+    const a = document.createElement('div'); a.className = 'ans';
+    a.innerHTML = `<b class="${card.real ? 'r' : 'f'}">${card.real ? 'REAL' : 'FAKE'}</b> · ${card.brand}<br>` + (card.tells || []).map(t => '• ' + t.replace(/</g, '&lt;')).join('<br>');
+    document.body.appendChild(a);
+  }).catch(e => root.textContent = c + ': ' + e.message);
+}
+</script>
+</body></html>
