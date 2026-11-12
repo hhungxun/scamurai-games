@@ -8,6 +8,7 @@
  */
 (function () {
   const registry = {};
+  const V = (document.currentScript && new URL(document.currentScript.src).search) || '';   // ?v=<build> from the server, so cards are never stale
   window.SimCards = {
     register(card) { registry[card.slug] = card; },
     get(slug) { return registry[slug]; },
@@ -17,7 +18,7 @@
       if (registry[slug]) return Promise.resolve(registry[slug]);
       return new Promise((res, rej) => {
         const s = document.createElement('script');
-        s.src = new URL('cards/' + m.file, document.baseURI).href;
+        s.src = new URL('cards/' + m.file + V, document.baseURI).href;
         s.onload = () => registry[slug] ? res(registry[slug]) : rej(new Error('card did not register'));
         s.onerror = () => rej(new Error('card failed to load'));
         document.head.appendChild(s);

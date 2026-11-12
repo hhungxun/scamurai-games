@@ -363,6 +363,7 @@ route('GET', '/api/export/rounds.csv', async req => {
 });
 
 // ---- static files ----
+const BUILD = Date.now().toString(36);        // new on every deploy (the service restarts)
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css', '.json': 'application/json',
   '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.md': 'text/plain; charset=utf-8' };
 function serveStatic(req, res, pathname) {
@@ -374,7 +375,14 @@ function serveStatic(req, res, pathname) {
   if (!file.startsWith(base + path.sep) || /\/\./.test(rel)) return false;
   let st; try { st = fs.statSync(file); } catch { return false; }
   if (st.isDirectory()) { res.writeHead(301, { Location: pathname + '/' }); res.end(); return true; }
-  res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache', 'X-Robots-Tag': 'noindex' });
+  const head = { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache', 'X-Robots-Tag': 'noindex' };
+  if (path.extname(file) === '.html') {
+    // Cloudflare overrides no-cache with a 4 h browser cache, so a deploy could leave laptops on an old
+    // sdk.js. Pages ask for this site's scripts and styles as ?v=<BUILD>, which changes on every restart.
+    const html = fs.readFileSync(file, 'utf8').replace(/((?:src|href)=")((?:https:\/\/scamurai\.physicsxmum\.my)?[^"?#:]+\.(?:js|css))"/g, `$1$2?v=${BUILD}"`);
+    res.writeHead(200, head); res.end(html); return true;
+  }
+  res.writeHead(200, head);
   fs.createReadStream(file).pipe(res);
   return true;
 }
