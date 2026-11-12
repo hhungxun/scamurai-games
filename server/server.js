@@ -65,6 +65,9 @@ CREATE TABLE IF NOT EXISTS events (
 );
 CREATE INDEX IF NOT EXISTS events_r ON events(round_id);
 `);
+// Migration: a cancelled Round is closed without counting towards anything.
+if (!db.prepare('PRAGMA table_info(rounds)').all().some(c => c.name === 'cancelled')) db.exec('ALTER TABLE rounds ADD COLUMN cancelled INTEGER NOT NULL DEFAULT 0');
+const MAX_EVENTS = 200;                     // per Round; Station 5 needs about 10
 
 const q = {
   getP: db.prepare('SELECT * FROM participants WHERE id = ?'),
@@ -72,8 +75,13 @@ const q = {
   insP: db.prepare(`INSERT INTO participants (id,name,age_group,pbb_account,scam_exposure,consent,registered_at,registered_by)
                     VALUES (@id,@name,@age_group,@pbb_account,@scam_exposure,@consent,@registered_at,@registered_by)`),
   guests: db.prepare(`SELECT id FROM participants WHERE id LIKE 'G%'`),
-  roundsOf: db.prepare('SELECT * FROM rounds WHERE participant_id = ?'),
-  allR: db.prepare('SELECT * FROM rounds ORDER BY id'),
+  roundsOf: db.prepare('SELECT * FROM rounds WHERE participant_id = ? AND cancelled = 0'),
+  allR: db.prepare('SELECT * FROM rounds WHERE cancelled = 0 ORDER BY id'),
+  openAt: db.prepare(`SELECT r.id, r.participant_id, r.started_at, r.token, p.name FROM rounds r JOIN participants p ON p.id = r.participant_id
+                      WHERE r.station = ? AND r.ended_at IS NULL AND r.started_at > ? ORDER BY r.id`),
+  openOf: db.prepare('SELECT id FROM rounds WHERE participant_id = ? AND station = ? AND ended_at IS NULL AND started_at > ?'),
+  cancelR: db.prepare('UPDATE rounds SET ended_at=?, cancelled=1 WHERE id=? AND ended_at IS NULL'),
+  nEvents: db.prepare('SELECT COUNT(*) n FROM events WHERE round_id=?'),
   getR: db.prepare('SELECT * FROM rounds WHERE id = ?'),
   insR: db.prepare('INSERT INTO rounds (participant_id,station,started_at,token) VALUES (?,?,?,?)'),
   endR: db.prepare('UPDATE rounds SET ended_at=?, score=?, max_score=? WHERE id=? AND ended_at IS NULL'),
@@ -212,6 +220,7 @@ route('GET', '/api/participants', async req => {
     id: s.id, name: s.name, status: s.status, stationsDone: s.stationsDone, total: s.total,
     playedHere: who.station ? s.stationsDone.includes(who.station) : undefined,
     bestHere: who.station && s.best[who.station] ? s.best[who.station].pct : undefined,
+    playingHere: who.station ? !!q.openOf.get(s.id, who.station, Date.now() - IDLE_MS) : undefined,
     surveyDone: s.surveyDone,
   }));
 });
@@ -222,10 +231,32 @@ route('POST', '/api/rounds', async req => {
   need(who.station, 403, 'Use a Station PIN');
   const b = await readJson(req);
   const id = cleanId(b.participantId);
-  need(q.getP.get(id), 404, 'Not registered: send them to the front desk');
+  const p = q.getP.get(id);
+  need(p, 404, 'Not registered: send them to the front desk');
   const token = crypto.randomBytes(9).toString('base64url');
-  const r = q.insR.run(id, who.station, Date.now(), token);
-  return { roundId: r.lastInsertRowid, token, station: who.station };
+  let r;
+  db.transaction(() => {   // one open Round per Participant per Station
+    const open = q.openOf.get(id, who.station, Date.now() - IDLE_MS);
+    need(!open, 409, `${p.name} is already playing here (round ${open && open.id}). End or cancel that round first.`);
+    r = q.insR.run(id, who.station, Date.now(), token);
+  })();
+  return { roundId: r.lastInsertRowid, token, station: who.station, participant: { id, name: p.name } };
+});
+
+// Open Rounds at this Station, so a Game Master laptop can rebuild its dashboard after a reload
+route('GET', '/api/rounds/open', async req => {
+  const who = auth(req, ['station']);
+  need(who.station, 403, 'Use a Station PIN');
+  return q.openAt.all(who.station, Date.now() - IDLE_MS).map(r => ({ roundId: r.id, token: r.token, startedAt: r.started_at, participant: { id: r.participant_id, name: r.name } }));
+});
+
+route('POST', '/api/rounds/:id/cancel', async (req, { id }) => {
+  const who = auth(req, ['station']);
+  const r = q.getR.get(+id);
+  need(r, 404, 'No such round');
+  need(who.role === 'admin' || r.station === who.station, 403, 'Not your station\'s round');
+  need(q.cancelR.run(Date.now(), r.id).changes, 409, 'Round already over');
+  return { ok: true };
 });
 
 route('POST', '/api/rounds/:id/finish', async (req, { id }) => {
@@ -236,9 +267,16 @@ route('POST', '/api/rounds/:id/finish', async (req, { id }) => {
   const b = await readJson(req);
   const score = Number(b.score), max = Number(b.maxScore);
   need(Number.isFinite(score) && Number.isFinite(max) && max > 0 && score >= 0, 400, 'score and maxScore must be numbers, maxScore > 0');
+  need(!r.cancelled, 409, 'Round was cancelled');
+  // Idempotent: a second laptop (or a retry) finishing the same Round gets the stored result.
   const changed = q.endR.run(Date.now(), Math.min(score, max), max, r.id).changes;
-  need(changed, 409, 'Round already finished');
   const s = summaryOf(r.participant_id);
+  if (!changed) {
+    const cur = q.getR.get(r.id);
+    need(!cur.cancelled, 409, 'Round was cancelled');   // a cancel can land while the body is read
+    return { already: true, pct: Math.round(Math.min(cur.score / cur.max_score, 1) * 1000) / 10, best: s.best[r.station].pct,
+      stationsDone: s.stationsDone, surveyDue: s.stationsDone.length === STATION_COUNT && !s.surveyDone };
+  }
   return {
     pct: Math.round(Math.min(score / max, 1) * 1000) / 10,
     best: s.best[r.station].pct,
@@ -249,10 +287,11 @@ route('POST', '/api/rounds/:id/finish', async (req, { id }) => {
 
 // Round events: a free channel between a game's devices (Station 5: phone -> laptop)
 route('POST', '/api/rounds/:id/events', async (req, { id }) => {
+  const b = await readJson(req);              // read first, so the checks below see the Round as it is now
   const r = q.getR.get(+id);
   need(r && req.headers['x-round-token'] === r.token, 403, 'Bad round token');
   need(r.ended_at == null, 409, 'Round is over');
-  const b = await readJson(req);
+  need(q.nEvents.get(r.id).n < MAX_EVENTS, 429, 'Too many events for this round');
   const e = q.insE.run(r.id, Date.now(), JSON.stringify(b.data ?? null));
   return { eventId: e.lastInsertRowid };
 });
@@ -261,7 +300,7 @@ route('GET', '/api/rounds/:id/events', async (req, { id }) => {
   need(r, 404, 'No such round');
   if (req.headers['x-round-token'] !== r.token) auth(req, ['station']);
   const after = +new URL(req.url, 'http://x').searchParams.get('after') || 0;
-  return { ended: r.ended_at != null, events: q.evs.all(r.id, after).map(e => ({ id: e.id, at: e.at, data: JSON.parse(e.data) })) };
+  return { ended: r.ended_at != null, cancelled: !!r.cancelled, events: q.evs.all(r.id, after).map(e => ({ id: e.id, at: e.at, data: JSON.parse(e.data) })) };
 });
 
 // Check-out + Exit Survey

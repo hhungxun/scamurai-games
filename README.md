@@ -41,7 +41,23 @@ Every visitor registers once at the front desk and gets a Participant ID (studen
 - `data-station` is your station number (1–5). Ask the group for the station PIN on the day; PINs never go in this repo.
 - Your station's exit-survey questions live in `server/stations.json`. Send a PR to change them.
 
-Station 5, [`games/scan-me-if-you-can/`](games/scan-me-if-you-can/), is a full example (two devices, live events).
+### Several players at once
+
+If your game runs on players' own phones, one laptop can run many Rounds at once. Use `onDashboard` instead of `onStart`:
+
+```js
+Scamurai.onDashboard(() => { /* draw your dashboard with a "+ New player" button */ });
+const p = await Scamurai.pick();                       // picker; { id, name, roundId, token } or null
+const res = await Scamurai.finishRound(p.roundId, { score, maxScore });   // no reload
+await Scamurai.cancelRound(p.roundId);                 // doesn't count
+const open = await Scamurai.openRounds();              // rebuild after a reload / on a 2nd laptop
+if (res.surveyDue) Scamurai.survey(p, res.stationsDone);
+Scamurai.leaving();                                    // check someone out
+```
+
+A Participant can't have two Rounds open at the same Station. Finishing a Round twice (two laptops) is safe: the second call gets the first result back with `already: true`.
+
+Station 5, [`games/scan-me-if-you-can/`](games/scan-me-if-you-can/), is a full example (dashboard, phones, live events).
 
 ## Rules
 
@@ -54,4 +70,4 @@ Station 5, [`games/scan-me-if-you-can/`](games/scan-me-if-you-can/), is a full e
 | Game | Folder | Made by | How to play |
 |---|---|---|---|
 | *(template)* | `games/_template/` | — | Copy this to start |
-| Scan Me If You Can (Station 5) | `games/scan-me-if-you-can/` | Hung Xun | Laptop shows a Join QR; on your phone, scan 8 of the 25 board QRs and judge each site REAL or FAKE in 30 s |
+| Scan Me If You Can (Station 5) | `games/scan-me-if-you-can/` | Hung Xun | Game Master runs many players at once from one laptop; each scans a Join QR, then 8 of the 25 numbered board QRs (a fresh deal every round) and judges each site REAL or FAKE in 30 s |

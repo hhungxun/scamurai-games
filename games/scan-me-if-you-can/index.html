@@ -5,18 +5,30 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Lexend:wght@400;600&family=Permanent+Marker&display=swap">
 <link rel="stylesheet" href="s5.css">
 <style>
-  .lap{max-width:1100px;margin:0 auto;padding:22px;display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:22px;min-height:100vh}
-  @media (max-width:800px){.lap{grid-template-columns:1fr}}
+  .dash{max-width:1300px;margin:0 auto;padding:18px 22px}
+  .top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .acts{display:flex;gap:10px;flex-wrap:wrap}
+  .btn{background:var(--red);color:#fff;border:0;border-radius:12px;padding:12px 18px;font:600 17px Lexend,sans-serif;cursor:pointer}
+  .ghost{background:transparent;border:2px solid var(--dim);color:var(--grey);font:15px Lexend,sans-serif;border-radius:10px;padding:8px 12px;cursor:pointer;text-decoration:none}
+  .ghost.sm{padding:5px 9px;font-size:13px}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+  .tile{background:var(--surf);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+  .tile .who{display:flex;justify-content:space-between;align-items:start;gap:8px}
+  .tile .who b{font-size:18px}
+  .tile .pts{font:400 44px/1 Anton,Impact,sans-serif;color:var(--yellow);text-align:right}
+  .strip{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
+  .strip span{background:#1d1c1b;border-radius:6px;text-align:center;font:600 13px Lexend,sans-serif;padding:6px 0;color:var(--grey)}
+  .strip .ok{background:#1f5a32;color:#fff}.strip .no{background:#6a1414;color:#fff}
+  .tile .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .tile.over{outline:2px solid var(--yellow)}
+  .tile.dead{opacity:.6}
+  .empty{color:var(--grey);text-align:center;padding:60px 20px;border:2px dashed var(--dim);border-radius:16px}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.8);display:grid;place-items:center;z-index:50;padding:16px}
+  .modal .card{background:var(--bg);border-radius:18px;padding:20px;max-width:520px;width:100%;display:flex;flex-direction:column;gap:12px}
   .qr{background:#fff;border-radius:16px;padding:14px;display:grid;place-items:center}
-  .qr svg{width:100%;height:auto;max-width:380px}
-  .slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
-  .slot{background:var(--surf);border-radius:14px;padding:12px;min-height:96px}
-  .slot .n{font:30px Anton,sans-serif;color:var(--grey)}
-  .slot.ok{background:#1f5a32}.slot.no{background:#6a1414}
-  .slot.ok .n,.slot.no .n{color:#fff}
-  .total{font:400 96px/1 Anton,Impact,sans-serif;color:var(--yellow)}
-  .ghost{background:transparent;border:2px solid var(--dim);color:var(--grey);font:15px Lexend,sans-serif;border-radius:10px;padding:8px 12px;cursor:pointer}
+  .qr svg{width:100%;height:auto;max-width:400px}
   ol.how{margin:0;padding-left:20px}ol.how li{margin:4px 0}
+  details.sum summary{cursor:pointer;color:var(--grey)}
 </style>
 <script src="/sdk.js" data-station="5"></script>
 <script src="cards/manifest.js"></script>
@@ -24,84 +36,205 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script src="s5.js"></script>
 </head><body>
-<main class="lap" id="app"></main>
+<main class="dash" id="app"><p class="muted">Loading…</p></main>
+<div id="modal"></div>
 <script>
-/* Station 5 laptop. The SDK's start screen picks the Participant; this page then
- * deals 8 Site Cards (3 Real + 5 Fake), shows the Join QR for the phone, scores the
- * Verdicts the phone sends, and calls Scamurai.finish() with a score out of 800. */
-const REAL = 3, FAKE = 5, MAX = (REAL + FAKE) * 100;
-const app = document.getElementById('app');
+/* Station 5 laptop: a Game Master dashboard for many Participants at once.
+ * "+ New player" opens the SDK picker; each Round gets its own deal (8 random board numbers,
+ * 3 Real + 5 Fake cards behind them), posted to the Round as { t:'deal', cards:{n:slug}, order:[n…] }.
+ * The phone reads the deal, so a board number means a different card every Round.
+ * One poll loop reads every open Round's events and scores the Verdicts. Reloading the page,
+ * or opening it on a second laptop, rebuilds the tiles from the server's open Rounds. */
+const REAL = 3, FAKE = 5, N = REAL + FAKE, MAX = N * 100;
+const app = document.getElementById('app'), modal = document.getElementById('modal');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const dir = location.pathname.replace(/[^/]*$/, '');
+const joinUrl = R => `${location.origin}${dir}phone.html#${R.roundId}.${R.token}`;
+const hdr = R => ({ 'Content-Type': 'application/json', 'X-Round-Token': R.token });
 
-Scamurai.onStart(async p => {
-  app.innerHTML = '<p>Dealing cards…</p>';
-  const cards = await Promise.all(CARD_MANIFEST.map(m => SimCards.load(m.slug).then(c => ({ n: m.id, card: c }))));
-  const deal = shuffle([...shuffle(cards.filter(x => x.card.real)).slice(0, REAL), ...shuffle(cards.filter(x => !x.card.real)).slice(0, FAKE)]);
-  const byN = Object.fromEntries(deal.map(x => [x.n, x.card]));
-  const dir = location.pathname.replace(/[^/]*$/, '');
-  const joinUrl = `${location.origin}${dir}phone.html#${p.roundId}.${p.token}.${deal.map(x => x.n).join('-')}`;
-  const qr = qrcode(0, 'M'); qr.addData(joinUrl); qr.make();
-  window.S5_JOIN = joinUrl;   // for testing without a camera
+let CARDS = {};          // slug -> card (real, brand, …)
+const rounds = new Map(); // roundId -> Round state
+window.S5_ROUNDS = rounds; window.S5_JOIN = null;   // for tests without a camera
 
-  const got = {};        // n -> {v, ms, correct, pts}
-  let joined = false, lastId = 0, ended = false;
+function newDeal() {
+  const slugs = Object.keys(CARDS);
+  const pick = shuffle([...shuffle(slugs.filter(s => CARDS[s].real)).slice(0, REAL), ...shuffle(slugs.filter(s => !CARDS[s].real)).slice(0, FAKE)]);
+  const pos = shuffle(CARD_MANIFEST.map(m => m.id)).slice(0, N);
+  return { t: 'deal', cards: Object.fromEntries(pos.map((n, i) => [n, pick[i]])), order: pos };
+}
 
-  app.innerHTML = `
-    <section style="display:flex;flex-direction:column;gap:14px">
-      <div class="head"><img class="logo" src="/assets/logo.jpg" alt=""><div><h1>Scan Me <em>If You Can</em></h1><p class="tag">${esc(p.name)} · ${esc(p.id)}</p></div></div>
-      <div class="qr" id="qr">${qr.createSvgTag({ cellSize: 8, margin: 2, scalable: true })}</div>
-      <div class="box" id="how"><b>Scan this with your phone camera</b>
-        <ol class="how"><li>Your phone lists 8 QR numbers.</li><li>Find each one on the board and scan it.</li>
-        <li>30 seconds per site: explore it, then tap <b>REAL</b> or <b>FAKE</b>.</li><li>Right and fast = more points.</li></ol></div>
-      <button class="ghost" id="end">End round now</button>
-    </section>
-    <section style="display:flex;flex-direction:column;gap:14px">
-      <div style="display:flex;justify-content:space-between;align-items:end"><div><p class="muted" style="margin:0">Score</p><div class="total" id="score">0</div></div>
-        <p class="muted" id="state">Waiting for the phone to join…</p></div>
-      <div class="slots" id="slots"></div>
-    </section>`;
-  const $ = id => document.getElementById(id);
+// A Round as the dashboard tracks it. deal stays null until the server echoes a deal event back,
+// so two laptops that both deal the same Round end up using the same (first) one, as the phone does.
+function track({ roundId, token, startedAt, participant }) {
+  if (rounds.has(roundId)) return rounds.get(roundId);
+  const R = { roundId, token, startedAt, p: participant, deal: null, order: [], got: {}, joined: false, lastId: 0,
+    posted: false, state: 'open', result: null, finishing: false };
+  rounds.set(roundId, R);
+  return R;
+}
 
-  function draw() {
-    const pts = Object.values(got).reduce((s, g) => s + g.pts, 0);
-    $('score').textContent = pts;
-    $('slots').innerHTML = deal.map(({ n }) => {
-      const g = got[n], c = byN[n];
-      if (!g) return `<div class="slot"><div class="n">#${n}</div><span class="muted">…</span></div>`;
-      return `<div class="slot ${g.correct ? 'ok' : 'no'}"><div class="n">#${n} ${g.correct ? '✓' : '✗'}</div>
-        ${esc(c.brand)} · <b>${c.real ? 'REAL' : 'FAKE'}</b><br><small>${g.v === 'timeout' ? 'time ran out' : 'said ' + g.v.toUpperCase()} · ${(g.ms / 1000).toFixed(1)}s · +${g.pts}</small></div>`;
-    }).join('');
-    const done = Object.keys(got).length;
-    $('state').textContent = joined ? `${done} of ${deal.length} sites judged` : 'Waiting for the phone to join…';
-    return pts;
+async function postDeal(R) {
+  if (R.posted) return; R.posted = true;
+  try { await fetch(`/api/rounds/${R.roundId}/events`, { method: 'POST', headers: hdr(R), body: JSON.stringify({ data: newDeal() }) }); }
+  catch { R.posted = false; }
+}
+
+async function pollRound(R) {
+  if (R.state !== 'open') return;
+  let j;
+  try {
+    const res = await fetch(`/api/rounds/${R.roundId}/events?after=${R.lastId}`, { headers: { 'X-Round-Token': R.token } });
+    if (res.status === 403 || res.status === 404) { R.state = 'gone'; return; }
+    j = await res.json();
+  } catch { R.offline = true; return; }
+  R.offline = false;
+  for (const e of j.events || []) {
+    R.lastId = Math.max(R.lastId, e.id);
+    const d = e.data || {};
+    if (d.t === 'deal' && !R.deal) { R.deal = d.cards; R.order = (d.order || Object.keys(d.cards)).map(Number); }
+    if (d.t === 'join') R.joined = true;
+    if (d.t === 'v' && R.deal && R.deal[d.n] && !R.got[d.n]) {
+      R.joined = true;
+      const card = CARDS[R.deal[d.n]];
+      const ms = Math.max(0, Math.min(S5.SECS * 1000, +d.ms || 0));
+      const v = ['real', 'fake'].includes(d.v) ? d.v : 'timeout';
+      const correct = v !== 'timeout' && (v === 'real') === card.real;
+      R.got[d.n] = { v, ms, correct, pts: S5.points(correct, ms) };
+    }
+  }
+  if (!R.deal && !(j.events || []).length && R.lastId === 0) postDeal(R);   // nobody has dealt this Round yet
+  if (j.cancelled) R.state = 'cancelled';
+  else if (j.ended) { R.state = 'ended'; fetchResult(R); }
+  else if (R.deal && Object.keys(R.got).length === N && !R.finishing) { R.finishing = true; setTimeout(() => end(R), 2500); }
+  if (R.joined && modal.dataset.round == R.roundId) closeModal();
+}
+
+const score = R => Object.values(R.got).reduce((s, g) => s + g.pts, 0);
+
+async function end(R) {
+  if (R.state !== 'open' && R.state !== 'ending') return;
+  R.state = 'ending'; draw();
+  try {
+    R.result = await Scamurai.finishRound(R.roundId, { score: score(R), maxScore: MAX });
+    R.state = 'ended';
+  } catch (e) {
+    if (e.status === 409) R.state = 'cancelled';
+    else { R.state = 'open'; R.finishing = false; R.err = 'Could not save: ' + e.message; }
   }
   draw();
+}
+// Ended on another laptop: finish is idempotent, so asking again returns the stored result.
+async function fetchResult(R) { if (!R.result) try { R.result = await Scamurai.finishRound(R.roundId, { score: score(R), maxScore: MAX }); draw(); } catch {} }
 
-  async function end() {
-    if (ended) return; ended = true; clearInterval(poll);
-    await Scamurai.finish({ score: draw(), maxScore: MAX });
+async function cancel(R) {
+  if (!confirm(`Cancel ${R.p.name}'s round? It won't count, and they can start again.`)) return;
+  try { await Scamurai.cancelRound(R.roundId); R.state = 'cancelled'; } catch (e) { if (e.status === 409) R.state = 'ended'; else alert(e.message); }
+  draw();
+}
+
+function showQR(R) {
+  const q = qrcode(0, 'M'); q.addData(joinUrl(R)); q.make();
+  window.S5_JOIN = joinUrl(R);
+  modal.dataset.round = R.roundId;
+  modal.innerHTML = `<div class="modal"><div class="card">
+    <div class="head"><img class="logo" src="/assets/logo.jpg" alt=""><div><h1>Scan Me <em>If You Can</em></h1><p class="tag">${esc(R.p.name)} · ${esc(R.p.id)}</p></div></div>
+    <div class="qr">${q.createSvgTag({ cellSize: 8, margin: 2, scalable: true })}</div>
+    <div class="box"><b>${esc(R.p.name)}: scan this with your phone camera</b>
+      <ol class="how"><li>Your phone shows a QR number.</li><li>Find it on the board and scan it.</li>
+      <li>30 seconds per site: explore it, then tap <b>REAL</b> or <b>FAKE</b>.</li><li>8 sites. Right and fast = more points.</li></ol></div>
+    <button class="ghost" id="mclose">Close (the QR stays on ${esc(R.p.name)}'s tile)</button></div></div>`;
+  document.getElementById('mclose').onclick = closeModal;
+}
+function closeModal() { modal.innerHTML = ''; delete modal.dataset.round; }
+
+function tile(R) {
+  const n = Object.keys(R.got).length;
+  const strip = R.order.map(b => { const g = R.got[b]; return `<span class="${g ? (g.correct ? 'ok' : 'no') : ''}" title="${g ? esc(CARDS[R.deal[b]].brand) : ''}">${b}</span>`; }).join('')
+    || Array(N).fill('<span>·</span>').join('');
+  let status, btns;
+  if (R.state === 'open' || R.state === 'ending') {
+    status = R.err ? `<span class="err">${esc(R.err)}</span>` : R.offline ? 'Reconnecting…' : !R.deal ? 'Dealing…' : !R.joined ? 'Waiting for the phone to join' : `${n} of ${N} judged`;
+    status += ` · <span class="el" data-t="${R.startedAt}"></span>`;
+    btns = `<button class="ghost sm" data-a="qr">Join QR</button><button class="ghost sm" data-a="end">End now</button><button class="ghost sm" data-a="cancel">Cancel</button>`;
+  } else if (R.state === 'ended') {
+    const r = R.result;
+    status = r ? `<b style="color:var(--yellow)">${r.pct}%</b> · best here ${r.best}% · ${r.stationsDone.length}/5 stations${r.already ? ' · ended on another laptop' : ''}` : 'Round over';
+    btns = (r && r.surveyDue ? `<button class="btn" data-a="survey">Exit survey</button>` : '') + `<button class="ghost sm" data-a="dismiss">Dismiss</button>`;
+  } else {
+    status = R.state === 'cancelled' ? 'Cancelled (doesn’t count)' : 'Round not found';
+    btns = `<button class="ghost sm" data-a="dismiss">Dismiss</button>`;
   }
-  $('end').onclick = () => { if (confirm('End this round now? Unjudged sites score 0.')) end(); };
+  const detail = n ? `<details class="sum"><summary>Answers</summary>${R.order.filter(b => R.got[b]).map(b => {
+    const g = R.got[b], c = CARDS[R.deal[b]];
+    return `<div><small>#${b} ${esc(c.brand)} · <b>${c.real ? 'REAL' : 'FAKE'}</b> · ${g.v === 'timeout' ? 'time ran out' : 'said ' + g.v.toUpperCase()} · ${(g.ms / 1000).toFixed(1)}s · +${g.pts}</small></div>`; }).join('')}</details>` : '';
+  return `<div class="tile ${R.state === 'ended' ? 'over' : R.state === 'cancelled' || R.state === 'gone' ? 'dead' : ''}" data-id="${R.roundId}">
+    <div class="who"><div><b>${esc(R.p.name)}</b><br><small class="muted">${esc(R.p.id)} · round ${R.roundId}</small></div><div class="pts">${score(R)}</div></div>
+    <div class="strip">${strip}</div><div class="muted">${status}</div>${detail}<div class="row">${btns}</div></div>`;
+}
 
-  const poll = setInterval(async () => {
-    try {
-      const j = await fetch(`/api/rounds/${p.roundId}/events?after=${lastId}`, { headers: { 'X-Round-Token': p.token } }).then(r => r.json());
-      for (const e of j.events || []) {
-        lastId = Math.max(lastId, e.id);
-        const d = e.data || {};
-        if (d.t === 'join' && !joined) { joined = true; $('qr').style.display = 'none'; $('how').innerHTML = '<b>Phone connected ✓</b><p class="muted">The participant is hunting QR codes on the board.</p>'; }
-        if (d.t === 'v' && byN[d.n] && !got[d.n]) {
-          joined = true;
-          const ms = Math.max(0, Math.min(S5.SECS * 1000, +d.ms || 0));
-          const correct = d.v !== 'timeout' && (d.v === 'real') === byN[d.n].real;
-          got[d.n] = { v: ['real', 'fake'].includes(d.v) ? d.v : 'timeout', ms, correct, pts: S5.points(correct, ms) };
-        }
-      }
-      draw();
-      if (Object.keys(got).length === deal.length) setTimeout(end, 2500);
-    } catch { $('state').textContent = 'Reconnecting…'; }
+// Only tiles whose content changed are replaced, so a button under the mouse isn't swapped out mid-click.
+function draw() {
+  const all = [...rounds.values()];
+  const t = document.getElementById('tiles'); if (!t) return;
+  if (!all.length) { t.innerHTML = `<div class="empty">No one is playing. Press <b>+ New player</b>.</div>`; }
+  else {
+    t.querySelector('.empty')?.remove();
+    t.querySelectorAll('.tile').forEach(el => { if (!rounds.has(+el.dataset.id)) el.remove(); });
+    for (const R of all) {
+      const html = tile(R);
+      let el = t.querySelector(`.tile[data-id="${R.roundId}"]`);
+      if (el && el._html === html) continue;
+      const wasOpen = el?.querySelector('details')?.open;
+      const tmp = document.createElement('div'); tmp.innerHTML = html; const nu = tmp.firstElementChild; nu._html = html;
+      if (wasOpen && nu.querySelector('details')) nu.querySelector('details').open = true;
+      el ? el.replaceWith(nu) : t.appendChild(nu);
+    }
+  }
+  tick();
+  document.getElementById('count').textContent = all.filter(R => R.state === 'open').length;
+}
+function tick() {
+  document.querySelectorAll('.el[data-t]').forEach(e => { const s = Math.max(0, Math.round((Date.now() - +e.dataset.t) / 1000)); e.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; });
+}
+
+async function newPlayer() {
+  const p = await Scamurai.pick();
+  if (!p) return;
+  const R = track({ roundId: p.roundId, token: p.token, startedAt: p.startedAt, participant: { id: p.id, name: p.name } });
+  await postDeal(R);
+  showQR(R); draw(); pollRound(R).then(draw);
+}
+
+async function syncOpen() {
+  try { for (const o of await Scamurai.openRounds()) if (!rounds.has(o.roundId)) track(o); } catch {}
+}
+
+Scamurai.onDashboard(async ({ stationName }) => {
+  app.innerHTML = `<div class="top">
+      <div class="head"><img class="logo" src="/assets/logo.jpg" alt=""><div><h1>Scan Me <em>If You Can</em></h1><p class="tag">${esc(stationName || 'Station 5')} · <span id="count">0</span> playing</p></div></div>
+      <div class="acts"><button class="btn" id="new">+ New player</button><button class="ghost" id="leave">Leaving</button><a class="ghost" href="board.html" target="_blank">Board QRs</a></div>
+    </div><div class="tiles" id="tiles"></div>`;
+  CARDS = Object.fromEntries(await Promise.all(CARD_MANIFEST.map(m => SimCards.load(m.slug).then(c => [m.slug, c]))));
+  document.getElementById('new').onclick = newPlayer;
+  document.getElementById('leave').onclick = () => Scamurai.leaving();
+  document.getElementById('tiles').onclick = e => {
+    const b = e.target.closest('[data-a]'); if (!b) return;
+    const R = rounds.get(+b.closest('.tile').dataset.id); if (!R) return;
+    ({ qr: () => showQR(R),
+       end: () => confirm(`End ${R.p.name}'s round now? Unjudged sites score 0.`) && end(R),
+       cancel: () => cancel(R),
+       survey: () => Scamurai.survey({ id: R.p.id, name: R.p.name }, R.result.stationsDone),
+       dismiss: () => { rounds.delete(R.roundId); draw(); } })[b.dataset.a]();
+  };
+  await syncOpen(); draw();
+  let busy = false;
+  setInterval(async () => {
+    if (busy) return; busy = true;
+    try { await Promise.all([...rounds.values()].map(pollRound)); draw(); } finally { busy = false; }
   }, 1500);
+  setInterval(syncOpen, 8000);
+  setInterval(tick, 1000);
 });
 </script>
 </body></html>

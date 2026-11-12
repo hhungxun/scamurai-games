@@ -19,6 +19,24 @@ cd server && npm install
 ADMIN_PIN=9999 STAFF_PIN=1111 STATION_PINS="1:5001,2:5002,3:5003,4:5004,5:5005" PORT=3031 node server.js
 ```
 
+## Test
+
+```bash
+cd server && npm test            # PLAYERS=300 npm test for a bigger crowd
+```
+
+`test/pressure.js` starts its own server on a throwaway database and checks: many Participants registering and playing Station 5 at once with scores landing exactly; one open Round per Participant per Station (even with 10 simultaneous starts); two laptops finishing the same Round; cancel racing finish; event cap, oversized bodies, wrong tokens and the wrong-PIN lockout.
+
+## Rounds API (Game Master devices)
+
+| Route | Who | Does |
+|---|---|---|
+| `POST /api/rounds` `{participantId}` | station PIN | opens a Round; 409 if they already have one open at this Station |
+| `GET /api/rounds/open` | station PIN | this Station's open Rounds with tokens (a dashboard rebuilds from this) |
+| `POST /api/rounds/:id/finish` `{score, maxScore}` | station PIN | ends it; a repeat returns the stored result with `already: true` |
+| `POST /api/rounds/:id/cancel` | station PIN | closes it without counting |
+| `POST/GET /api/rounds/:id/events` | round token | free message channel between a game's devices (max 200 per Round); GET also says `ended` / `cancelled` |
+
 ## Environment
 
 | Var | Meaning |

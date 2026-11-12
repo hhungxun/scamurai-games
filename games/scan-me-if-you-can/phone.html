@@ -11,21 +11,24 @@
 const app = document.getElementById('app');
 const H = `<div class="head"><img class="logo" src="/assets/logo.jpg" alt=""><div><h1>Scan Me <em>If You Can</em></h1><p class="tag">Station 5 · Scamurai</p></div></div>`;
 
-// Join: phone.html#<roundId>.<token>.<n-n-n…>
-if (location.hash.length > 2) {
-  const [id, token, list] = location.hash.slice(1).split('.');
-  const cards = (list || '').split('-').map(Number).filter(Boolean);
-  const old = S5.get();
-  if (+id && token && cards.length) {
-    S5.save(old && old.id === +id ? old : { id: +id, token, cards, done: {}, joinedAt: Date.now() });
-    if (!old || old.id !== +id) S5.post(S5.get(), { t: 'join', ua: navigator.userAgent.slice(0, 80) });
-  }
+// Join: phone.html#<roundId>.<token>. The deal (which card is behind which board number) comes from the server.
+async function join() {
+  if (location.hash.length <= 2) return;
+  const [id, token] = location.hash.slice(1).split('.');
   history.replaceState(null, '', location.pathname);
+  const old = S5.get();
+  if (!+id || !token || (old && old.id === +id)) return;
+  app.innerHTML = H + `<div class="box" style="text-align:center">Joining…</div>`;
+  const d = await S5.fetchDeal(+id, token);
+  if (d.error) { app.innerHTML = H + `<div class="box">${d.error}</div>`; return 'error'; }
+  const cards = (d.order || Object.keys(d.deal)).map(Number);
+  S5.save({ id: +id, token, cards, deal: d.deal, done: {}, joinedAt: Date.now() });
+  S5.post(S5.get(), { t: 'join', ua: navigator.userAgent.slice(0, 80) });
 }
 
 async function render() {
   const r = S5.get();
-  if (!r) { app.innerHTML = H + `<div class="box">Scan the <b>Join QR</b> on the Station 5 laptop to start.</div>`; return; }
+  if (!r || !r.deal) { app.innerHTML = H + `<div class="box">Scan the <b>Join QR</b> on the Station 5 laptop to start.</div>`; return; }
   const n = S5.next(r);
   const chips = r.cards.map(c => `<span class="${r.done[c] ? (r.done[c].correct ? 'ok' : 'no') : c === n ? 'cur' : ''}">${c}</span>`).join('');
   const score = r.cards.reduce((s, c) => s + (r.done[c] ? r.done[c].pts : 0), 0);
@@ -38,9 +41,13 @@ async function render() {
     app.innerHTML = H + `<div class="box" style="text-align:center"><div class="big">${score}</div><p>points out of ${r.cards.length * 100}</p>
       <p class="muted">All ${r.cards.length} sites done. Head back to the Station 5 laptop for your result.</p></div><div class="chips">${chips}</div>`;
   }
-  if (await S5.ended(r) && n) app.insertAdjacentHTML('beforeend', `<div class="box">This round has ended at the laptop.</div>`);
+  const over = await S5.ended(r);
+  if (over === 'cancelled') app.insertAdjacentHTML('beforeend', `<div class="box">The Game Master cancelled this round (it doesn't count). Ask them for a new Join QR.</div>`);
+  else if (over && n) app.insertAdjacentHTML('beforeend', `<div class="box">This round has ended at the laptop.</div>`);
 }
-render();
+setInterval(() => document.visibilityState === 'visible' && S5.get() && render(), 10000);
+join().then(e => e !== 'error' && render());
+addEventListener('hashchange', () => location.reload());   // a new Join QR opened in the already open tab
 addEventListener('storage', render);
 addEventListener('visibilitychange', () => document.visibilityState === 'visible' && render());
 </script>

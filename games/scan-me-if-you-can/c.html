@@ -26,9 +26,11 @@
 const app = document.getElementById('app'), sim = document.getElementById('sim');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const H = `<div class="head"><img class="logo" src="/assets/logo.jpg" alt=""><div><h1>Scan Me <em>If You Can</em></h1><p class="tag">Station 5 · Scamurai</p></div></div>`;
-const slug = new URLSearchParams(location.search).get('k');
-const m = CARD_MANIFEST.find(c => c.slug === slug);
-const r = S5.get();
+// Board QR: c.html?n=<board number>. This Round's deal says which card is behind it.
+const bn = parseInt(new URLSearchParams(location.search).get('n'), 10);
+const r = S5.get() && S5.get().deal ? S5.get() : null;
+const slug = r && r.deal[bn];
+const m = slug ? { id: bn, slug } : (bn >= 1 && bn <= CARD_MANIFEST.length ? { id: bn } : null);
 const say = html => { app.innerHTML = H + html; };
 
 if (!m) say(`<div class="box">Unknown QR code.</div>`);
@@ -41,7 +43,9 @@ else {
     <p class="muted">You get ${S5.SECS} seconds. Check the address bar, the padlock, where links really go (long-press them), and what the site asks for. Nothing you type is ever sent.</p></div>
     <button class="btn" id="go">Start the timer</button>`);
   const cardP = SimCards.load(slug);
+  const endedP = S5.ended(r);
   document.getElementById('go').onclick = async () => {
+    if (await endedP) return say(`<div class="box">This round has ${await endedP === 'cancelled' ? 'been cancelled' : 'ended'} at the laptop. Ask the Game Master for a new Join QR.</div>`);
     let card;
     try { card = await cardP; } catch (e) { return say(`<div class="box">Could not load this site: ${esc(e.message)}. Tell the Game Master.</div>`); }
     app.innerHTML = '';

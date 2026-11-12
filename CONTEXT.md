@@ -29,8 +29,11 @@ One of the five booths, each running one game. Participants visit Stations in an
 _Avoid_: booth (in code and docs), level
 
 **Round**:
-One Participant's single attempt at one Station, from the Game Master's start to the game's finish. A Participant may play several Rounds at a Station.
+One Participant's single attempt at one Station, from the Game Master's start to the game's finish. A Participant may play several Rounds at a Station, but only one at a time per Station. Several Participants can each have a Round open at the same Station at once.
 _Avoid_: session, attempt, play
+
+**Cancelled Round**:
+A Round the Game Master closes without a score (wrong player picked, phone trouble). It counts for nothing, and the Participant can start again.
 
 **Station Score**:
 A Participant's highest Round score at a Station, scaled to 0–100. Five Stations give a total out of 500.
@@ -60,8 +63,14 @@ The live ranking of Participants by total Station Score, ties broken by the shor
 
 ### Station 5: Scan Me If You Can
 
+**Board Number**:
+One of the 25 numbered QR codes printed on the Station 5 board (#1–#25). A Board Number says nothing about any website: which Site Card is behind it is decided by each Round's Deal.
+
+**Deal**:
+The 8 Board Numbers a Station 5 Round uses and the Site Card behind each (3 Real, 5 Fake), drawn fresh for every Round. The same Board Number shows different Site Cards to different Participants.
+
 **Site Card**:
-One of the 25 QR codes on the Station 5 board. Each opens an interactive copy of a website inside the Sim Browser. It is either **Real** (a genuine site at its true address, 10 cards) or **Fake** (an imitation using scam tactics, 15 cards). Public Bank, the sponsor, appears only as Real.
+One of the 25 website copies used at Station 5, shown inside the Sim Browser when a Participant scans a Board Number in their Deal. It is either **Real** (a genuine site at its true address, 10 cards) or **Fake** (an imitation using scam tactics, 15 cards). Public Bank, the sponsor, appears only as Real.
 _Avoid_: QR site, link
 
 **Sim Browser**:
@@ -80,7 +89,7 @@ The code the Game Master's screen shows at the start of a Station 5 Round. Scann
 - A **Participant**'s **Station Score** comes from their best **Round** at that Station.
 - An **Exit Survey** covers only the **Stations** where the Participant finished a **Round**.
 - Only the **Secretary** creates **Participants**. Anyone unregistered at a **Station** goes back to the front desk.
-- A Station 5 **Round** shows a random 8 of the 25 **Site Cards** and records one **Verdict** for each.
+- A Station 5 **Round** has one **Deal**: 8 **Board Numbers**, each showing one **Site Card**, and records one **Verdict** for each.
 
 ## Example dialogue
 

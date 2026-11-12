@@ -39,6 +39,7 @@
   .sb-url .dim{color:#5f6368}
   .sb-tabs{width:22px;height:22px;border:2px solid #5f6368;border-radius:4px;font-size:11px;display:grid;place-items:center;font-weight:700;color:#5f6368;flex:none}
   .sb-view{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;position:relative;background:#fff}
+  .sb-view.snap{overflow:hidden;padding-bottom:0!important}.sb-view.snap .sb-page{height:100%}
   .sb-status{position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);background:#fff;border:1px solid #dadce0;border-radius:6px;padding:4px 8px;font-size:12px;color:#202124;box-shadow:0 1px 4px rgba(0,0,0,.2);word-break:break-all;pointer-events:none;opacity:0;transition:opacity .15s;z-index:5}
   .sb-status.show{opacity:1}
   .sb-sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;z-index:20}
@@ -109,9 +110,26 @@
       urlEl.innerHTML = (u.protocol === 'https:' ? '' : '<span class="dim">http://</span>') + esc(host) + '<span class="dim">' + esc(rest) + '</span>';
     }
 
+    const pageFor = p => card.pages[p] ?? card.pages[p.replace(/\/$/, '')];
+
     function render(path) {
       timers.forEach(clearInterval); timers = [];
-      const html = card.pages[path] ?? card.pages[path.replace(/\/$/, '')] ?? card.pages['/404'] ??
+      const pg = pageFor(path);
+      if (pg && typeof pg === 'object' && pg.snap) {
+        // A captured copy of the live page: shown in a script-less frame so its own CSS renders exactly.
+        shadow.innerHTML = `<style>:host{all:initial;display:block;height:100%}iframe{display:block;width:100%;height:100%;border:0;background:#fff}</style>
+          <iframe sandbox="allow-same-origin" referrerpolicy="no-referrer" src="${esc(new URL('cards/snap/' + pg.snap, document.baseURI).href)}"></iframe>`;
+        const fr = shadow.querySelector('iframe');
+        view.classList.add('snap');
+        fr.addEventListener('load', () => { if (!fr.contentDocument) return; wire(fr.contentDocument); fr.contentDocument.documentElement.style.scrollPaddingBottom = (opts.bottomInset || 0) + 'px'; padBottom(fr.contentDocument); });
+        showUrl(new URL(path, origin));
+        $('[data-act=back]').disabled = idx <= 0;
+        $('[data-act=fwd]').disabled = idx >= hist.length - 1;
+        opts.onNavigate && opts.onNavigate(path);
+        return;
+      }
+      view.classList.remove('snap');
+      const html = (typeof pg === 'string' ? pg : null) ?? card.pages['/404'] ??
         `<div style="padding:40px 20px;font-family:sans-serif;text-align:center;color:#555"><h2>404</h2><p>Page not found</p></div>`;
       shadow.innerHTML = `<style>:host{all:initial;display:block;font-family:Arial,Helvetica,sans-serif;color:#222}*{box-sizing:border-box}img{max-width:100%}${card.css || ''}</style><div class="page">${html}</div>`;
       showUrl(new URL(path, origin));
@@ -124,7 +142,7 @@
         tick(); timers.push(setInterval(tick, 1000));
       });
       const pop = shadow.querySelector('[data-sim-onload-alert]');
-      if (pop) setTimeout(() => alertBox(pop.dataset.simOnloadAlert), 700);
+      if (pop) timers.push(setTimeout(() => alertBox(pop.dataset.simOnloadAlert), 700));   // cleared by close()
       opts.onNavigate && opts.onNavigate(path);
     }
 
@@ -175,42 +193,55 @@
       if (act === 'url') openSheet(`<b>Address</b><div class="sb-fullurl">${esc(new URL(currentPath(), origin).href)}</div><button data-close>Close</button>`);
     });
 
-    // ---- link preview: hover (desktop) and long-press (touch) ----
-    let pressT = null, pressed = false;
-    const showStatus = a => { const u = abs(a.getAttribute('href')); if (!u) return; status.textContent = u.href; status.classList.add('show'); };
-    const hideStatus = () => status.classList.remove('show');
-    shadow.addEventListener('mouseover', e => { const a = e.target.closest('a[href]'); a ? showStatus(a) : hideStatus(); });
-    shadow.addEventListener('mouseleave', hideStatus);
-    shadow.addEventListener('touchstart', e => {
-      const a = e.target.closest('a[href]'); if (!a) return;
-      pressed = false; clearTimeout(pressT);
-      pressT = setTimeout(() => { pressed = true; showStatus(a); if (navigator.vibrate) navigator.vibrate(20); }, 450);
-    }, { passive: true });
-    shadow.addEventListener('touchend', () => { clearTimeout(pressT); if (pressed) setTimeout(hideStatus, 1600); });
-    shadow.addEventListener('touchmove', () => clearTimeout(pressT), { passive: true });
-    shadow.addEventListener('contextmenu', e => e.preventDefault());
+    const snapCard = Object.values(card.pages).some(p => p && typeof p === 'object');
+    // Bottom space so the verdict bar never covers the end of a captured page.
+    function padBottom(doc) { if (opts.bottomInset && doc.body) doc.body.style.paddingBottom = `calc(${getComputedStyle(doc.body).paddingBottom} + ${opts.bottomInset}px)`; }
 
-    shadow.addEventListener('click', e => {
-      if (pressed) { e.preventDefault(); pressed = false; return; }
-      const tog = e.target.closest('[data-sim-toggle]');
-      if (tog) { e.preventDefault(); shadow.querySelectorAll(tog.dataset.simToggle).forEach(x => x.classList.toggle('open')); return; }
-      const al = e.target.closest('[data-sim-alert]');
-      if (al) { e.preventDefault(); alertBox(al.dataset.simAlert); return; }
-      const a = e.target.closest('a[href]'); if (!a) return;
-      e.preventDefault();
-      const href = a.getAttribute('href');
-      if (href.startsWith('#')) return;
-      const u = abs(href); if (!u) return;
-      if (u.origin === origin) go(u.pathname);
-      else toast('This simulation stays on one site. Long-press a link to see where it goes.');
-    });
+    function wire(root) {
+      // ---- link preview: hover (desktop) and long-press (touch) ----
+      let pressT = null, pressed = false;
+      const showStatus = a => { const u = abs(a.getAttribute('href')); if (!u) return; status.textContent = u.href; status.classList.add('show'); };
+      const hideStatus = () => status.classList.remove('show');
+      root.addEventListener('mouseover', e => { const a = e.target.closest('a[href]'); a ? showStatus(a) : hideStatus(); });
+      root.addEventListener('mouseleave', hideStatus);
+      root.addEventListener('touchstart', e => {
+        const a = e.target.closest('a[href]'); if (!a) return;
+        pressed = false; clearTimeout(pressT);
+        pressT = setTimeout(() => { pressed = true; showStatus(a); if (navigator.vibrate) navigator.vibrate(20); }, 450);
+      }, { passive: true });
+      root.addEventListener('touchend', () => { clearTimeout(pressT); if (pressed) setTimeout(hideStatus, 1600); });
+      root.addEventListener('touchmove', () => clearTimeout(pressT), { passive: true });
+      root.addEventListener('contextmenu', e => e.preventDefault());
 
-    shadow.addEventListener('submit', e => {
-      e.preventDefault();
-      const f = e.target;
-      toast('Simulation: nothing you type is ever sent.');
-      if (f.dataset.simNext) setTimeout(() => go(f.dataset.simNext), 500);
-    });
+      root.addEventListener('click', e => {
+        if (pressed) { e.preventDefault(); pressed = false; return; }
+        const tog = e.target.closest('[data-sim-toggle]');
+        if (tog) { e.preventDefault(); root.querySelectorAll(tog.dataset.simToggle).forEach(x => x.classList.toggle('open')); return; }
+        const al = e.target.closest('[data-sim-alert]');
+        if (al) { e.preventDefault(); alertBox(al.dataset.simAlert); return; }
+        const a = e.target.closest('a[href]'); if (!a) return;
+        e.preventDefault();
+        const href = a.getAttribute('href');
+        if (href.startsWith('#')) return;
+        const u = abs(href); if (!u) return;
+        if (u.origin === origin && (pageFor(u.pathname) !== undefined || !snapCard)) go(u.pathname);
+        else if (u.origin === origin) toast('This copy only includes the pages on this card. Long-press a link to see where it goes.');
+        else toast('This simulation stays on one site. Long-press a link to see where it goes.');
+      });
+
+      // Sandboxed snapshot frames block form submission before 'submit' fires, so catch the button too.
+      root.addEventListener('click', e => {
+        const b = e.target.closest('button,input[type=submit],input[type=image]');
+        if (b && b.form && !b.form.dataset.simNext && (b.type === 'submit' || b.type === 'image')) { e.preventDefault(); toast('Simulation: nothing you type is ever sent.'); }
+      });
+      root.addEventListener('submit', e => {
+        e.preventDefault();
+        const f = e.target;
+        toast('Simulation: nothing you type is ever sent.');
+        if (f.dataset.simNext) setTimeout(() => go(f.dataset.simNext), 500);
+      });
+    }
+    wire(shadow);
 
     go(start.pathname);
     return { toast, close: () => { timers.forEach(clearInterval); host.innerHTML = ''; } };
