@@ -33,55 +33,89 @@ const slug = r && r.deal[bn];
 const m = slug ? { id: bn, slug } : (bn >= 1 && bn <= CARD_MANIFEST.length ? { id: bn } : null);
 const say = html => { app.innerHTML = H + html; };
 
+S5.flush(r);   // any Verdict an earlier scan could not deliver goes now
+
 if (!m) say(`<div class="box">Unknown QR code.</div>`);
-else if (!r) say(`<div class="box">This is QR <b>#${m.id}</b>. First scan the <b>Join QR</b> on the Station 5 laptop, then come back to this code.</div>`);
+else if (!r) say(`<div class="box">This is QR <b>#${m.id}</b>. First scan the <b>Join QR</b> on the Station 5 laptop, then come back to this code.</div>
+  <p class="muted">Already joined? Scan this code with the same phone camera you used for the Join QR (not WeChat or another app's scanner), so it opens in the same browser.</p>`);
 else if (!r.cards.includes(m.id)) say(`<div class="box">QR <b>#${m.id}</b> isn't one of yours this round.<br><br>Find <b style="color:var(--yellow);font-size:26px">#${S5.next(r) || '—'}</b></div>`);
 else if (r.done[m.id]) say(`<div class="box">You already judged QR <b>#${m.id}</b>.<br><br>${S5.next(r) ? `Next: find <b style="color:var(--yellow);font-size:26px">#${S5.next(r)}</b>` : 'All done: head back to the laptop.'}</div>`);
 else {
+  // The timer start is saved, so reloading or going back never gives a fresh 30 s (and a phone that slept keeps counting).
+  const startedAt = () => ((S5.get() || r).started || {})[m.id];
+  const leftAt = () => startedAt() ? S5.SECS - (Date.now() - startedAt()) / 1000 : S5.SECS;
   say(`<div class="box" style="text-align:center"><div class="big">#${m.id}</div>
     <p>Is this site <b>REAL</b> or <b>FAKE</b>?</p>
     <p class="muted">You get ${S5.SECS} seconds. Check the address bar, the padlock, where links really go (long-press them), and what the site asks for. Nothing you type is ever sent.</p></div>
-    <button class="btn" id="go">Start the timer</button>`);
-  const cardP = SimCards.load(slug);
+    <button class="btn" id="go" disabled>Loading the site…</button><p class="muted" id="lerr" style="text-align:center"></p>`);
+  const go = document.getElementById('go'), lerr = document.getElementById('lerr');
   const endedP = S5.ended(r);
-  document.getElementById('go').onclick = async () => {
-    if (await endedP) return say(`<div class="box">This round has ${await endedP === 'cancelled' ? 'been cancelled' : 'ended'} at the laptop. Ask the Game Master for a new Join QR.</div>`);
-    let card;
-    try { card = await cardP; } catch (e) { return say(`<div class="box">Could not load this site: ${esc(e.message)}. Tell the Game Master.</div>`); }
+  let card = null;
+  // Download the whole site first: the 30 s start only once it can be shown at once, whatever its size.
+  async function prepare() {
+    go.disabled = true; go.textContent = 'Loading the site…'; lerr.textContent = '';
+    try { card = await SimCards.load(slug); await SimCards.prefetch(card); }
+    catch (e) { go.disabled = false; go.textContent = 'Try again'; go.onclick = prepare; lerr.textContent = `Could not load this site (${e.message}). Check your internet.`; return; }
+    if (startedAt() && leftAt() <= 0) return start();   // came back after the time ran out: that counts as a timeout
+    go.disabled = false;
+    go.textContent = startedAt() ? `Continue · ${Math.max(1, Math.ceil(leftAt()))} s left` : 'Start the timer';
+    go.onclick = start;
+  }
+  prepare();
+
+  async function start() {
+    go.disabled = true;
+    const over0 = await endedP;
+    if (over0 === 'gone') { try { localStorage.removeItem(S5.KEY); } catch {} return say(`<div class="box">This round is not on the server any more. Ask the Game Master for a new Join QR.</div>`); }
+    if (over0) return say(`<div class="box">This round has ${over0 === 'cancelled' ? 'been cancelled' : 'ended'} at the laptop. Ask the Game Master for a new Join QR.</div>`);
     app.innerHTML = '';
-    const b = SimBrowser(sim, card, { bottomInset: 84 });
     const bar = document.createElement('div');
     bar.className = 'vbar';
     bar.innerHTML = `<button class="real">REAL</button><div class="t"><b>${S5.SECS}</b></div><button class="fake">FAKE</button>`;
-    document.body.appendChild(bar);
-    const t0 = performance.now(), ring = bar.querySelector('.t'), num = ring.querySelector('b');
-    let over = false;
-    const tick = setInterval(() => {
-      const left = Math.max(0, S5.SECS - (performance.now() - t0) / 1000);
-      ring.style.setProperty('--p', left / S5.SECS); num.textContent = Math.ceil(left);
-      ring.classList.toggle('low', left <= 10);
-      if (left <= 0) verdict('timeout');
-    }, 100);
+    let over = false, tick = null, fallback = null;
+    const ring = bar.querySelector('.t'), num = ring.querySelector('b');
     ring.style.setProperty('--p', 1);
+    function run() {   // the clock starts when the page is on screen (or after 5 s, whichever is first)
+      if (tick || over) return;
+      clearTimeout(fallback);
+      const cur = S5.get() || r;
+      if (!startedAt()) { cur.started = { ...(cur.started || {}), [m.id]: Date.now() }; S5.save(cur); r.started = cur.started; }
+      const draw = () => {
+        const left = Math.max(0, leftAt());
+        ring.style.setProperty('--p', left / S5.SECS); num.textContent = Math.ceil(left);
+        ring.classList.toggle('low', left <= 10);
+        if (left <= 0) verdict('timeout');
+      };
+      document.body.appendChild(bar);   // REAL/FAKE appear with the clock, never before the page is there
+      draw(); tick = setInterval(draw, 100);
+    }
+    if (startedAt() && leftAt() <= 0) return verdict('timeout');
+    let b = null;
+    b = SimBrowser(sim, card, { bottomInset: 84, onReady: () => run() });
+    fallback = setTimeout(run, 5000);
     bar.querySelector('.real').onclick = () => verdict('real');
     bar.querySelector('.fake').onclick = () => verdict('fake');
+    // The phone's own Back button (Android) works like the simulated one instead of leaving the card.
+    history.pushState({ s5: 1 }, '');
+    const onPop = () => { if (over) return; history.pushState({ s5: 1 }, ''); b && b.back(); };
+    addEventListener('popstate', onPop);
 
     async function verdict(v) {
-      if (over) return; over = true; clearInterval(tick);
-      const ms = Math.min(S5.SECS * 1000, Math.round(performance.now() - t0));
+      if (over) return; over = true; clearInterval(tick); clearTimeout(fallback); removeEventListener('popstate', onPop);
+      const ms = Math.min(S5.SECS * 1000, Math.max(0, Math.round(Date.now() - (startedAt() || Date.now()))));
       const correct = v !== 'timeout' && (v === 'real') === card.real;
-      const pts = S5.points(correct, ms);
+      const pts = S5.points(correct, ms, v);
       const cur = S5.get() || r;
-      cur.done[m.id] = { v, ms, correct, pts };
+      cur.done[m.id] = { v, ms, correct, pts, sent: false };
       S5.save(cur);
-      bar.remove(); b.close();
-      const sent = S5.post(cur, { t: 'v', n: m.id, v, ms });
+      bar.remove(); b && b.close();
+      const sent = S5.send(cur, m.id);
       const next = S5.next(cur);
       const missed = !card.real && !correct;
       const res = document.createElement('div'); res.className = 'res';
       res.innerHTML = `<main class="s5">${H}
         <div class="box" style="text-align:center">
-          <div class="big" style="color:${correct ? '#7CFC8A' : 'var(--red)'}">${correct ? '✓ +' + pts : v === 'timeout' ? "Time's up" : '✗ 0'}</div>
+          <div class="big" style="color:${correct ? '#7CFC8A' : 'var(--red)'}">${correct ? '✓ +' + pts : v === 'timeout' ? "Time's up · 0" : '✗ ' + pts}</div>
           <p>It was <b style="color:${card.real ? '#7CFC8A' : 'var(--red)'}">${card.real ? 'REAL' : 'FAKE'}</b> · ${esc(card.brand)}</p>
           <p class="muted" style="word-break:break-all">${esc(card.url)}</p></div>
         <div class="box"><b>${card.real ? 'Why it is genuine' : missed ? 'What you missed' : 'The tells'}</b>
@@ -89,9 +123,12 @@ else {
         <div class="box" style="text-align:center">${next ? `Next: find <span class="big" style="display:block;font-size:64px">#${next}</span>` : 'All done! Head back to the Station 5 laptop for your result.'}</div>
         <p class="muted" id="sent" style="text-align:center">Saving…</p></main>`;
       document.body.appendChild(res);
-      document.getElementById('sent').textContent = (await sent) ? 'Saved to the laptop ✓' : 'Could not reach the laptop. Show this screen to the Game Master.';
+      const st = await sent;
+      document.getElementById('sent').textContent = st === 'ok' ? 'Saved to the laptop ✓'
+        : st === 'over' ? 'Not counted: this round has already ended at the laptop.'
+        : 'No connection yet. Keep going: your answer is kept on this phone and sent with the next scan.';
     }
-  };
+  }
 }
 </script>
 </body></html>

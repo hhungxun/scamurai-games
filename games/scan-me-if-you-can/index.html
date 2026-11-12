@@ -22,6 +22,8 @@
   .tile .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   .tile.over{outline:2px solid var(--yellow)}
   .tile.dead{opacity:.6}
+  .tile .err{color:#ff6b6b;font-weight:600}
+  .banner{background:var(--red);color:#fff;border-radius:12px;padding:10px 14px;margin-bottom:12px}
   .empty{color:var(--grey);text-align:center;padding:60px 20px;border:2px dashed var(--dim);border-radius:16px}
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.8);display:grid;place-items:center;z-index:50;padding:16px}
   .modal .card{background:var(--bg);border-radius:18px;padding:20px;max-width:520px;width:100%;display:flex;flex-direction:column;gap:12px}
@@ -68,7 +70,7 @@ function newDeal() {
 // so two laptops that both deal the same Round end up using the same (first) one, as the phone does.
 function track({ roundId, token, startedAt, participant }) {
   if (rounds.has(roundId)) return rounds.get(roundId);
-  const R = { roundId, token, startedAt, p: participant, deal: null, order: [], got: {}, joined: false, lastId: 0,
+  const R = { roundId, token, startedAt, p: participant, deal: null, order: [], got: {}, joined: false, devs: new Set(), lastId: 0,
     posted: false, state: 'open', result: null, finishing: false };
   rounds.set(roundId, R);
   return R;
@@ -76,8 +78,10 @@ function track({ roundId, token, startedAt, participant }) {
 
 async function postDeal(R) {
   if (R.posted) return; R.posted = true;
-  try { await fetch(`/api/rounds/${R.roundId}/events`, { method: 'POST', headers: hdr(R), body: JSON.stringify({ data: newDeal() }) }); }
-  catch { R.posted = false; }
+  try {
+    const res = await fetch(`/api/rounds/${R.roundId}/events`, { method: 'POST', headers: hdr(R), body: JSON.stringify({ data: newDeal() }) });
+    if (!res.ok && res.status !== 409 && res.status !== 403) R.posted = false;   // 5xx/429: deal again on the next poll
+  } catch { R.posted = false; }
 }
 
 async function pollRound(R) {
@@ -94,23 +98,25 @@ async function pollRound(R) {
     const d = e.data || {};
     if (d.t === 'deal' && !R.deal) { R.deal = d.cards; R.order = (d.order || Object.keys(d.cards)).map(Number); }
     if (d.t === 'join') R.joined = true;
+    if ((d.t === 'join' || d.t === 'v') && d.dev) R.devs.add(d.dev);
     if (d.t === 'v' && R.deal && R.deal[d.n] && !R.got[d.n]) {
       R.joined = true;
       const card = CARDS[R.deal[d.n]];
+      if (!card) { R.err = `Card ${R.deal[d.n]} is not loaded on this laptop. Reload the page.`; continue; }
       const ms = Math.max(0, Math.min(S5.SECS * 1000, +d.ms || 0));
       const v = ['real', 'fake'].includes(d.v) ? d.v : 'timeout';
       const correct = v !== 'timeout' && (v === 'real') === card.real;
-      R.got[d.n] = { v, ms, correct, pts: S5.points(correct, ms) };
+      R.got[d.n] = { v, ms, correct, pts: S5.points(correct, ms, v) };
     }
   }
-  if (!R.deal && !(j.events || []).length && R.lastId === 0) postDeal(R);   // nobody has dealt this Round yet
+  if (!R.deal && !(j.events || []).length && R.lastId === 0 && Object.keys(CARDS).length) postDeal(R);   // nobody has dealt this Round yet
   if (j.cancelled) R.state = 'cancelled';
   else if (j.ended) { R.state = 'ended'; fetchResult(R); }
   else if (R.deal && Object.keys(R.got).length === N && !R.finishing) { R.finishing = true; setTimeout(() => end(R), 2500); }
   if (R.joined && modal.dataset.round == R.roundId) closeModal();
 }
 
-const score = R => Object.values(R.got).reduce((s, g) => s + g.pts, 0);
+const score = R => S5.total(Object.values(R.got));
 
 async function end(R) {
   if (R.state !== 'open' && R.state !== 'ending') return;
@@ -142,7 +148,7 @@ function showQR(R) {
     <div class="qr">${q.createSvgTag({ cellSize: 8, margin: 2, scalable: true })}</div>
     <div class="box"><b>${esc(R.p.name)}: scan this with your phone camera</b>
       <ol class="how"><li>Your phone shows a QR number.</li><li>Find it on the board and scan it.</li>
-      <li>30 seconds per site: explore it, then tap <b>REAL</b> or <b>FAKE</b>.</li><li>8 sites. Right and fast = more points.</li></ol></div>
+      <li>30 seconds per site: explore it, then tap <b>REAL</b> or <b>FAKE</b>.</li><li>8 sites. Right and fast = more points. A wrong call costs 100, so don't guess.</li></ol></div>
     <button class="ghost" id="mclose">Close (the QR stays on ${esc(R.p.name)}'s tile)</button></div></div>`;
   document.getElementById('mclose').onclick = closeModal;
 }
@@ -150,11 +156,12 @@ function closeModal() { modal.innerHTML = ''; delete modal.dataset.round; }
 
 function tile(R) {
   const n = Object.keys(R.got).length;
-  const strip = R.order.map(b => { const g = R.got[b]; return `<span class="${g ? (g.correct ? 'ok' : 'no') : ''}" title="${g ? esc(CARDS[R.deal[b]].brand) : ''}">${b}</span>`; }).join('')
+  const strip = R.order.map(b => { const g = R.got[b]; return `<span class="${g ? (g.correct ? 'ok' : 'no') : ''}" title="${g ? esc(CARDS[R.deal[b]]?.brand) : ''}">${b}</span>`; }).join('')
     || Array(N).fill('<span>·</span>').join('');
   let status, btns;
   if (R.state === 'open' || R.state === 'ending') {
     status = R.err ? `<span class="err">${esc(R.err)}</span>` : R.offline ? 'Reconnecting…' : !R.deal ? 'Dealing…' : !R.joined ? 'Waiting for the phone to join' : `${n} of ${N} judged`;
+    if (R.devs.size > 1) status += ` · <b style="color:var(--red)">${R.devs.size} phones joined this round</b>`;
     status += ` · <span class="el" data-t="${R.startedAt}"></span>`;
     btns = `<button class="ghost sm" data-a="qr">Join QR</button><button class="ghost sm" data-a="end">End now</button><button class="ghost sm" data-a="cancel">Cancel</button>`;
   } else if (R.state === 'ended') {
@@ -166,7 +173,7 @@ function tile(R) {
     btns = `<button class="ghost sm" data-a="dismiss">Dismiss</button>`;
   }
   const detail = n ? `<details class="sum"><summary>Answers</summary>${R.order.filter(b => R.got[b]).map(b => {
-    const g = R.got[b], c = CARDS[R.deal[b]];
+    const g = R.got[b], c = CARDS[R.deal[b]] || { brand: R.deal[b] };
     return `<div><small>#${b} ${esc(c.brand)} · <b>${c.real ? 'REAL' : 'FAKE'}</b> · ${g.v === 'timeout' ? 'time ran out' : 'said ' + g.v.toUpperCase()} · ${(g.ms / 1000).toFixed(1)}s · +${g.pts}</small></div>`; }).join('')}</details>` : '';
   return `<div class="tile ${R.state === 'ended' ? 'over' : R.state === 'cancelled' || R.state === 'gone' ? 'dead' : ''}" data-id="${R.roundId}">
     <div class="who"><div><b>${esc(R.p.name)}</b><br><small class="muted">${esc(R.p.id)} · round ${R.roundId}</small></div><div class="pts">${score(R)}</div></div>
@@ -199,10 +206,11 @@ function tick() {
 }
 
 async function newPlayer() {
+  if (!Object.keys(CARDS).length) return alert('The Site Cards have not loaded yet. Check the Wi-Fi and reload this page.');
   const p = await Scamurai.pick();
   if (!p) return;
   const R = track({ roundId: p.roundId, token: p.token, startedAt: p.startedAt, participant: { id: p.id, name: p.name } });
-  await postDeal(R);
+  if (!p.existing) await postDeal(R);   // an already open Round keeps its deal; pollRound deals if it has none
   showQR(R); draw(); pollRound(R).then(draw);
 }
 
@@ -215,8 +223,17 @@ Scamurai.onDashboard(async ({ stationName }) => {
       <div class="head"><img class="logo" src="/assets/logo.jpg" alt=""><div><h1>Scan Me <em>If You Can</em></h1><p class="tag">${esc(stationName || 'Station 5')} · <span id="count">0</span> playing</p></div></div>
       <div class="acts"><button class="btn" id="new">+ New player</button><button class="ghost" id="leave">Leaving</button><a class="ghost" href="board.html" target="_blank">Board QRs</a></div>
     </div><div class="tiles" id="tiles"></div>`;
-  CARDS = Object.fromEntries(await Promise.all(CARD_MANIFEST.map(m => SimCards.load(m.slug).then(c => [m.slug, c]))));
   document.getElementById('new').onclick = newPlayer;
+  // One card failing to load (booth Wi-Fi) must not leave the dashboard dead: retry it, deal from the rest, and say so.
+  const loadCard = async m => { for (let i = 0; ; i++) try { return [m.slug, await SimCards.load(m.slug)]; } catch (e) {
+    if (i === 2) throw e; document.querySelectorAll(`script[src*="${m.file}"]`).forEach(x => x.remove()); await new Promise(r => setTimeout(r, 1000)); } };
+  const got = await Promise.allSettled(CARD_MANIFEST.map(loadCard));
+  CARDS = Object.fromEntries(got.filter(x => x.status === 'fulfilled').map(x => x.value));
+  const missing = CARD_MANIFEST.filter((m, i) => got[i].status === 'rejected');
+  const realN = Object.values(CARDS).filter(c => c.real).length, fakeN = Object.keys(CARDS).length - realN;
+  if (missing.length) app.insertAdjacentHTML('afterbegin', `<div class="banner">${missing.length} Site Card(s) did not load (${missing.map(m => esc(m.slug)).join(', ')}).
+    ${realN < REAL || fakeN < FAKE ? '<b>Not enough cards to deal a round. Reload this page.</b>' : 'Rounds are dealt from the others; reload when the Wi-Fi is back.'}</div>`);
+  if (realN < REAL || fakeN < FAKE) CARDS = {};
   document.getElementById('leave').onclick = () => Scamurai.leaving();
   document.getElementById('tiles').onclick = e => {
     const b = e.target.closest('[data-a]'); if (!b) return;

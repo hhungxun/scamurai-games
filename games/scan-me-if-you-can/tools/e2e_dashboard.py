@@ -7,7 +7,10 @@ Usage:  python3 tools/e2e_dashboard.py [--port 3041] [--base http://127.0.0.1:30
   --base  use an already running local server instead (needs PINs admin 9999, staff 1111, station 5 = 5005)
 
 Scenarios: 1 three simultaneous players, 2 per-round shuffle, 3 picker refuses a playing player,
-4 second dashboard tab, 5 reload mid-round, 6 cancel, 7 End now. Console errors fail the run.
+4 second dashboard tab, 5 reload mid-round, 6 cancel, 7 End now, 8 phone robustness (reload mid-timer resumes,
+a Verdict lost to the network is resent, someone else's Join QR asks first, a stale round is dropped), 9 Game Master
+robustness (picker 409 hands back the open round, two phones on one round are flagged). Console errors fail the run,
+except network errors a scenario provokes on purpose (EXPECT_NET).
 """
 import argparse, json, os, random, re, shutil, signal, subprocess, sys, tempfile, time, urllib.request, urllib.error
 from urllib.parse import urlparse
@@ -28,6 +31,7 @@ assert urlparse(BASE).hostname in ('127.0.0.1', 'localhost'), 'local server only
 GAME = BASE + '/games/scan-me-if-you-can/'
 
 results, problems, console_errors = {}, [], []
+EXPECT_NET = set()   # page labels whose failed requests are deliberate in the running scenario
 
 def check(scn, cond, msg):
     results.setdefault(scn, True)
@@ -50,7 +54,7 @@ def wait_until(fn, secs=30, what='condition'):
     while time.time() < end:
         try:
             v = fn()
-            if v: return v
+            if v or (v == 0 and v is not False and v is not None): return v   # 0 % is a real score now (wrong calls cost 100)
         except Exception: pass
         time.sleep(0.25)
     raise TimeoutError(what)
@@ -84,7 +88,8 @@ def route(ctx):
     ctx.route(re.compile(r'https://fonts\.(googleapis|gstatic)\.com/.*'), lambda r: r.fulfill(status=200, content_type='text/css', body=''))
 
 def watch(page, label):
-    page.on('console', lambda m: m.type == 'error' and console_errors.append(f'{label}: {m.text} @ {m.location.get("url","")}'))
+    page.on('console', lambda m: m.type == 'error' and not (label in EXPECT_NET and m.text.startswith('Failed to load resource'))
+            and console_errors.append(f'{label}: {m.text} @ {m.location.get("url","")}'))
     page.on('pageerror', lambda e: console_errors.append(f'{label}: pageerror {e} {getattr(e, "stack", "")[:300]}'))
 
 def new_ctx(b, label, mobile):
@@ -142,7 +147,7 @@ def judge(phone, k, pick=None):
 
 def phone_sum(phone):
     r = phone.evaluate('S5.get()')
-    return sum(d['pts'] for d in r['done'].values()), len(r['done'])
+    return max(0, sum(d['pts'] for d in r['done'].values())), len(r['done'])
 
 def tile_text(dash, rid):
     return dash.evaluate(f"(document.querySelector('.tile[data-id=\"{rid}\"]')||{{}}).innerText || ''")
@@ -290,6 +295,77 @@ def run(pw):
     deals[rid7] = ph6.evaluate('S5.get().deal')
     ph6.goto(GAME + 'phone.html')
     ph6.wait_for_function("/ended at the laptop|done|points/.test(document.body.innerText)", timeout=15000)
+
+    # ===== Scenario 8: phone robustness =====
+    print('S8 phone: reload mid-timer, lost verdict, foreign Join QR, stale round')
+    rid8, j8 = start_player(D, IDS[6])
+    ph8 = mk_phone(IDS[6]); phone_join(ph8, j8); close_modal(D)
+    r8 = ph8.evaluate('S5.get()'); n1, n2 = r8['cards'][0], r8['cards'][1]
+    ph8.goto(f'{GAME}c.html?n={n1}'); ph8.click('#go', timeout=15000); ph8.wait_for_selector('.vbar', timeout=15000)
+    time.sleep(3.2)
+    ph8.reload()
+    ph8.wait_for_function("/Continue/.test(document.getElementById('go').textContent)", timeout=15000)
+    left = int(re.search(r'(\d+) s left', ph8.evaluate("document.getElementById('go').textContent")).group(1))
+    check(8, left <= 27, f'reload mid-timer offers "Continue" with the time left ({left} s), not a fresh 30 s')
+    ph8.click('#go'); ph8.wait_for_selector('.vbar')
+    shown = int(ph8.inner_text('.vbar .t b'))
+    check(8, shown <= 27, f'the resumed timer shows {shown} s')
+    ph8.click('.vbar .fake')
+    ph8.wait_for_function("/Saved/.test(document.getElementById('sent').textContent)", timeout=15000)
+    ms = ph8.evaluate(f"S5.get().done[{n1}].ms")
+    check(8, ms >= 3000, f'the Verdict time counts from the first start ({ms} ms)')
+
+    EXPECT_NET.add('phone-' + IDS[6])
+    ph8.route('**/api/rounds/*/events', lambda rt: rt.fulfill(status=503, body='{}') if rt.request.method == 'POST' else rt.continue_())
+    ph8.goto(f'{GAME}c.html?n={n2}'); ph8.click('#go', timeout=15000); ph8.wait_for_selector('.vbar', timeout=15000)
+    ph8.click('.vbar .real')
+    ph8.wait_for_function("/No connection yet/.test(document.getElementById('sent').textContent)", timeout=25000)
+    check(8, ph8.evaluate(f"S5.get().done[{n2}].sent") is False, 'a Verdict the laptop did not get is kept as unsent')
+    check(8, '1 of 8' in tile_text(D, rid8), 'the laptop has only the first Verdict so far')
+    ph8.unroute('**/api/rounds/*/events')
+    ph8.goto(GAME + 'phone.html')
+    try:
+        wait_until(lambda: '2 of 8' in tile_text(D, rid8), 20, 'resent verdict reaches the laptop')
+        check(8, True, 'opening the phone page again resends it: the laptop counts 2 of 8')
+    except TimeoutError:
+        check(8, False, 'opening the phone page again resends it: the laptop counts 2 of 8')
+    check(8, ph8.evaluate(f"S5.get().done[{n2}].sent") == 'ok', 'and the phone marks it delivered')
+
+    # ===== Scenario 9: picker 409 + two phones on one round =====
+    print('S9 Game Master: picker 409 returns the open round; two phones flagged')
+    EXPECT_NET.add('dash1')
+    D.evaluate('window.S5_JOIN = null')
+    D.click('#new'); D.wait_for_selector('.scm .find'); D.fill('.scm .find', IDS[7])
+    D.wait_for_function("!document.querySelector('.scm .go').disabled")
+    st, other = api('POST', '/api/rounds', STATION, {'participantId': IDS[7]})   # "another laptop" starts them first
+    D.click('.scm .go')
+    D.wait_for_function('window.S5_JOIN', timeout=15000)
+    j9 = D.evaluate('window.S5_JOIN')
+    check(9, f"#{other['roundId']}.{other['token']}" in j9, 'Start on a stale list shows the already open round\'s Join QR, no dead end')
+    EXPECT_NET.discard('dash1')
+    ph9 = mk_phone(IDS[7]); phone_join(ph9, j9); close_modal(D)
+    check(9, len(ph9.evaluate('Object.keys(S5.get().deal)')) == N, 'the open round got a deal')
+    # the S8 phone (still mid-round) scans this Join QR: it must ask before dropping its own round
+    msgs = []
+    ph8.once('dialog', lambda d: (msgs.append(d.message), d.dismiss()))
+    ph8.goto('about:blank'); ph8.goto(j9); ph8.wait_for_timeout(3000)   # a camera opens the Join URL fresh; wait_for_timeout lets the dialog handler run
+    check(8, msgs and 'still playing' in msgs[0], f'someone else\'s Join QR asks first ({msgs[:1]})')
+    check(8, ph8.evaluate('S5.get().id') == rid8, 'declining keeps the phone\'s own round')
+    ph8.once('dialog', lambda d: d.accept())
+    ph8.goto('about:blank'); ph8.goto(j9); ph8.wait_for_function(f"S5.get() && S5.get().id === {other['roundId']}", timeout=20000)
+    try:
+        wait_until(lambda: '2 phones' in tile_text(D, other['roundId']), 15, 'two phones flagged')
+        check(9, True, 'a second phone joining the same round is flagged on the tile')
+    except TimeoutError:
+        check(9, False, 'a second phone joining the same round is flagged on the tile: ' + tile_text(D, other['roundId']))
+    # a round the server no longer knows (wiped rehearsal database) is dropped, not polled for ever
+    ph8.evaluate("S5.save({ id: 999999, token: 'stale', cards: [1,2], deal: {1: 'x', 2: 'y'}, done: {} })")
+    ph8.goto(GAME + 'phone.html')
+    ph8.wait_for_function("/Scan the Join QR/.test(document.body.innerText)", timeout=15000)
+    check(8, ph8.evaluate('S5.get()') is None, 'a stale round from a wiped database is forgotten')
+    st, _ = api('POST', '/api/auth', STATION)
+    check(8, st == 200, f'and its polling never locks out the shared IP (auth {st})')
+    ph8.context.close(); ph9.context.close()
 
     # ===== Scenario 2 across all rounds =====
     print('S2 per-round shuffle across', len(deals), 'rounds')

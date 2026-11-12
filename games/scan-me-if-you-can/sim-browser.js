@@ -24,7 +24,15 @@
         document.head.appendChild(s);
       });
     },
+    // Download a card's snapshot pages before the timer starts, so a megabyte page loading over booth Wi-Fi
+    // neither eats the 30 s nor gives itself away (a slow white page used to mean "Real").
+    // Same URL as the frame uses, so the frame then revalidates from the cache (304).
+    prefetch(card) {
+      const snaps = Object.values(card.pages || {}).filter(p => p && typeof p === 'object' && p.snap);
+      return Promise.all(snaps.map(p => fetch(snapUrl(p.snap)).then(r => { if (!r.ok) throw new Error('page ' + r.status); return r.blob(); })));
+    },
   };
+  const snapUrl = f => new URL('cards/snap/' + f, document.baseURI).href;
 
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
@@ -44,7 +52,7 @@
   .sb-status{position:absolute;left:8px;bottom:8px;max-width:calc(100% - 16px);background:#fff;border:1px solid #dadce0;border-radius:6px;padding:4px 8px;font-size:12px;color:#202124;box-shadow:0 1px 4px rgba(0,0,0,.2);word-break:break-all;pointer-events:none;opacity:0;transition:opacity .15s;z-index:5}
   .sb-status.show{opacity:1}
   .sb-sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;z-index:20}
-  .sb-sheet{position:fixed;left:0;right:0;top:0;background:#fff;border-radius:0 0 14px 14px;padding:16px 18px 18px;z-index:21;display:none;box-shadow:0 4px 18px rgba(0,0,0,.25);font-size:14px;max-height:80vh;overflow:auto}
+  .sb-sheet{position:fixed;left:0;right:0;top:0;background:#fff;color:#202124;border-radius:0 0 14px 14px;padding:16px 18px 18px;z-index:21;display:none;box-shadow:0 4px 18px rgba(0,0,0,.25);font-size:14px;max-height:80vh;overflow:auto}
   .sb-sheet.show,.sb-sheet-bg.show{display:block}
   .sb-sheet h3{margin:0 0 4px;font-size:16px;font-weight:500;word-break:break-all}
   .sb-sheet .row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid #eee}
@@ -58,7 +66,7 @@
   .sb-toast.show{opacity:1}
   .sb-dialog{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.4);z-index:25}
   .sb-dialog.show{display:grid}
-  .sb-dialog>div{background:#fff;border-radius:10px;padding:18px;width:min(300px,86vw);font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.3)}
+  .sb-dialog>div{background:#fff;color:#202124;border-radius:10px;padding:18px;width:min(300px,86vw);font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.3)}
   .sb-dialog .host{font-weight:500;margin-bottom:8px;word-break:break-all}
   .sb-dialog button{float:right;margin-top:12px;border:0;background:none;color:#1a73e8;font-weight:500;font-size:14px}
   `;
@@ -98,7 +106,9 @@
     if (opts.bottomInset) view.style.paddingBottom = opts.bottomInset + 'px';
     const shadow = pageHost.attachShadow({ mode: 'open' });
 
-    let hist = [], idx = -1, timers = [];
+    let hist = [], idx = -1, timers = [], readyDone = false;
+    // opts.onReady: called once, when the first page is on screen (a snapshot frame has loaded).
+    const ready = () => { if (!readyDone) { readyDone = true; opts.onReady && opts.onReady(); } };
 
     const abs = href => { try { return new URL(href, origin + currentPath()); } catch { return null; } };
     const currentPath = () => hist[idx] || start.pathname;
@@ -119,10 +129,12 @@
       if (pg && typeof pg === 'object' && pg.snap) {
         // A captured copy of the live page: shown in a script-less frame so its own CSS renders exactly.
         shadow.innerHTML = `<style>:host{all:initial;display:block;height:100%}iframe{display:block;width:100%;height:100%;border:0;background:#fff}</style>
-          <iframe sandbox="allow-same-origin" referrerpolicy="no-referrer" src="${esc(new URL('cards/snap/' + pg.snap, document.baseURI).href)}"></iframe>`;
+          <iframe sandbox="allow-same-origin" referrerpolicy="no-referrer" src="${esc(snapUrl(pg.snap))}"></iframe>`;
         const fr = shadow.querySelector('iframe');
         view.classList.add('snap');
-        fr.addEventListener('load', () => { if (!fr.contentDocument) return; wire(fr.contentDocument); fr.contentDocument.documentElement.style.scrollPaddingBottom = (opts.bottomInset || 0) + 'px'; padBottom(fr.contentDocument); });
+        fr.addEventListener('load', () => { ready(); if (!fr.contentDocument) return; wire(fr.contentDocument);
+          // iOS: a long-press on a link opens a native preview that loads the real site. Use our status bubble instead.
+          fr.contentDocument.head && fr.contentDocument.head.insertAdjacentHTML('beforeend', '<style>a{-webkit-touch-callout:none}</style>'); fr.contentDocument.documentElement.style.scrollPaddingBottom = (opts.bottomInset || 0) + 'px'; padBottom(fr.contentDocument); });
         showUrl(new URL(path, origin));
         $('[data-act=back]').disabled = idx <= 0;
         $('[data-act=fwd]').disabled = idx >= hist.length - 1;
@@ -132,7 +144,8 @@
       view.classList.remove('snap');
       const html = (typeof pg === 'string' ? pg : null) ?? card.pages['/404'] ??
         `<div style="padding:40px 20px;font-family:sans-serif;text-align:center;color:#555"><h2>404</h2><p>Page not found</p></div>`;
-      shadow.innerHTML = `<style>:host{all:initial;display:block;font-family:Arial,Helvetica,sans-serif;color:#222}*{box-sizing:border-box}img{max-width:100%}${card.css || ''}</style><div class="page">${html}</div>`;
+      shadow.innerHTML = `<style>:host{all:initial;display:block;font-family:Arial,Helvetica,sans-serif;color:#222}*{box-sizing:border-box}img{max-width:100%}a{-webkit-touch-callout:none}${card.css || ''}</style><div class="page">${html}</div>`;
+      ready();
       showUrl(new URL(path, origin));
       view.scrollTop = 0;
       $('[data-act=back]').disabled = idx <= 0;
@@ -245,6 +258,7 @@
     wire(shadow);
 
     go(start.pathname);
-    return { toast, close: () => { timers.forEach(clearInterval); host.innerHTML = ''; } };
+    return { toast, close: () => { timers.forEach(clearInterval); host.innerHTML = ''; },
+      back: () => { if (idx > 0) { idx--; render(hist[idx]); } } };   // the phone's own Back button
   };
 })();

@@ -130,6 +130,8 @@ const mask = (name, id) => `${String(name).trim().split(/\s+/)[0]} · …${id.sl
 // ---- http helpers ----
 const failures = new Map();                 // ip -> [timestamps]
 const clientIp = req => req.headers['cf-connecting-ip'] || req.socket.remoteAddress;
+// On this machine itself (not through the Cloudflare tunnel, which adds cf-connecting-ip).
+const isLocal = req => !req.headers['cf-connecting-ip'] && /^(127\.|::1$|::ffff:127\.)/.test(req.socket.remoteAddress || '');
 function tooManyFailures(ip) {
   const now = Date.now(), list = (failures.get(ip) || []).filter(t => now - t < 10 * 60 * 1000);
   failures.set(ip, list); return list.length >= 20;
@@ -298,7 +300,13 @@ route('POST', '/api/rounds/:id/events', async (req, { id }) => {
 route('GET', '/api/rounds/:id/events', async (req, { id }) => {
   const r = q.getR.get(+id);
   need(r, 404, 'No such round');
-  if (req.headers['x-round-token'] !== r.token) auth(req, ['station']);
+  if (req.headers['x-round-token'] !== r.token) {
+    // A phone with a stale round (e.g. from a rehearsal database) polls with an old token. That is not a PIN
+    // guess, so it must not count towards the PIN lockout: every phone and laptop on campus Wi-Fi shares one IP.
+    const pin = req.headers['x-pin'] || new URL(req.url, 'http://x').searchParams.get('pin');
+    need(pin, 403, 'Bad round token');
+    auth(req, ['station']);
+  }
   const after = +new URL(req.url, 'http://x').searchParams.get('after') || 0;
   return { ended: r.ended_at != null, cancelled: !!r.cancelled, events: q.evs.all(r.id, after).map(e => ({ id: e.id, at: e.at, data: JSON.parse(e.data) })) };
 });
@@ -371,11 +379,20 @@ function serveStatic(req, res, pathname) {
   let base = PUBLIC, rel = pathname;
   if (pathname.startsWith('/games/')) { base = path.join(ROOT, 'games'); rel = pathname.slice('/games'.length); }
   if (rel.endsWith('/')) rel += 'index.html';
-  const file = path.normalize(path.join(base, decodeURIComponent(rel)));
+  // preview.html shows every Site Card with its answer: only on this machine, never through the tunnel or LAN.
+  if (/\/preview\.html$/.test(rel) && !isLocal(req)) return false;
+  let file; try { file = path.normalize(path.join(base, decodeURIComponent(rel))); } catch { return false; }
   if (!file.startsWith(base + path.sep) || /\/\./.test(rel)) return false;
   let st; try { st = fs.statSync(file); } catch { return false; }
   if (st.isDirectory()) { res.writeHead(301, { Location: pathname + '/' }); res.end(); return true; }
   const head = { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-cache', 'X-Robots-Tag': 'noindex' };
+  if (path.extname(file) !== '.html') {
+    // Site Card snapshots are megabytes each and every phone asks again on every scan: let it revalidate with a 304.
+    const lm = new Date(Math.floor(st.mtimeMs / 1000) * 1000).toUTCString();
+    head['Last-Modified'] = lm;
+    const ims = Date.parse(req.headers['if-modified-since'] || '');
+    if (ims && ims >= Math.floor(st.mtimeMs / 1000) * 1000) { res.writeHead(304, head); res.end(); return true; }
+  }
   if (path.extname(file) === '.html') {
     // Cloudflare overrides no-cache with a 4 h browser cache, so a deploy could leave laptops on an old
     // sdk.js. Pages ask for this site's scripts and styles as ?v=<BUILD>, which changes on every restart.

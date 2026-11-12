@@ -59,6 +59,10 @@ A Participant can't have two Rounds open at the same Station. Finishing a Round 
 
 Station 5, [`games/scan-me-if-you-can/`](games/scan-me-if-you-can/), is a full example (dashboard, phones, live events).
 
+Station 5 scoring, per site: right = 60 + up to 40 for speed, wrong call = −100, time ran out = 0; a round's total never goes below 0. The penalty means tapping FAKE on everything (about 5 of 8 are Fake) scores far below reading carefully.
+
+Station 5 on the phone: the whole site is downloaded before **Start the timer** is enabled, and the clock starts once the page is on screen, so a large page costs no time. The timer start is saved on the phone, so reloading or going back resumes the clock ("Continue · 18 s left") and never gives a fresh 30 s. A Verdict that can't reach the laptop is kept on the phone and resent on the next scan or page open. Scanning a second Join QR while a round is unfinished asks first. If two phones join one round, the laptop tile says so in red. A Station 5 laptop deals from the cards that loaded and shows a red banner if any failed.
+
 ## Rules
 
 - Only add or change files inside your own `games/<name>/` folder.

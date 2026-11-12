@@ -34,8 +34,16 @@ async function load() {
     .map(([k, v]) => `<div><b>${v}</b>${k}</div>`).join('');
   $('per').innerHTML = d.perStation.map(s => `<tr><td>${s.n}. ${esc(s.name)}</td><td>${s.players} players</td></tr>`).join('');
   $('rows').innerHTML = d.rows.map(p => `<tr><td>${esc(p.id)}</td><td>${esc(p.name)}</td><td>${esc(p.status)}</td><td>${p.done}/5</td><td>${p.total}</td></tr>`).join('');
-  $('csvP').href = '/api/export/participants.csv?pin=' + encodeURIComponent(PIN);
-  $('csvR').href = '/api/export/rounds.csv?pin=' + encodeURIComponent(PIN);
+  // Downloaded with the PIN in a header, so it never lands in browser history or the tunnel's access logs.
+  const csv = name => async e => {
+    e.preventDefault();
+    const res = await fetch('/api/export/' + name, { headers: { 'X-Pin': PIN } });
+    if (!res.ok) return alert('Download failed: ' + res.status);
+    const a = document.createElement('a'); a.href = URL.createObjectURL(await res.blob()); a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  };
+  $('csvP').onclick = csv('participants.csv');
+  $('csvR').onclick = csv('rounds.csv');
 }
 $('go').onclick = async () => { PIN = $('pin').value.trim(); try { await load(); setInterval(() => load().catch(() => {}), 15000); } catch (e) { $('err').textContent = e.message; } };
 $('pin').onkeydown = e => { if (e.key === 'Enter') $('go').click(); };

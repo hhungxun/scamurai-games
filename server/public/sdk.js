@@ -14,7 +14,8 @@
  *
  * Several players at once (a Game Master dashboard, e.g. Station 5):
  *   Scamurai.onDashboard(info => { ... draw your dashboard ... });   // replaces the one-player flow
- *   const p = await Scamurai.pick();          // picker overlay; resolves { id, name, roundId, token } or null
+ *   const p = await Scamurai.pick();          // picker overlay; resolves { id, name, roundId, token, existing? } or null
+ *                                             // (existing: true = they were already playing here; that open Round is returned)
  *   const res = await Scamurai.finishRound(p.roundId, { score, maxScore });   // no reload
  *   await Scamurai.cancelRound(p.roundId);    // closes it without counting
  *   await Scamurai.openRounds();              // this station's open rounds (rebuild after a reload)
@@ -112,11 +113,23 @@
     if (!pin()) return askPin();
     try {
       const a = await api('/api/auth', { method: 'POST' });
-      if (a.role === 'station' && a.station !== STATION) throw new Error(`That PIN is for station ${a.station}`);
+      if (a.role === 'station' && a.station !== STATION) throw Object.assign(new Error(`That PIN is for station ${a.station}`), { status: 403 });
       stationName = a.stationName;
       if (dashCb) { hide(); return dashCb({ station: STATION, stationName }); }
       showPicker(a.stationName);
-    } catch (e) { setPin(''); askPin(e.status === 429 ? e.message : e.status === 0 ? '' : e.message); }
+    } catch (e) {
+      // Only a PIN the server refused is forgotten. Booth Wi-Fi dropping out, a server restart or the lockout (429)
+      // keep it, so a laptop refreshed mid-event comes back by itself instead of asking the Game Master again.
+      if (e.status === 401 || e.status === 403) { setPin(''); return askPin(e.message); }
+      offline(e.status === 429 ? e.message : e.status ? `Server error (${e.status}).` : 'Can\'t reach the server. Check the Wi-Fi.');
+    }
+  }
+  function offline(msg) {
+    const el = screen(`<h2 style="font:24px Anton,sans-serif;margin:8px 0">Station ${STATION}</h2>
+      <p class="err">${esc(msg)}</p><p class="muted">Trying again by itself every 10 seconds. Your PIN is still saved.</p>
+      <button class="go">Retry now</button>`);
+    const t = setTimeout(boot, 10000);
+    el.querySelector('.go').onclick = () => { clearTimeout(t); boot(); };
   }
   function askPin(msg = '') {
     const el = screen(`<h2 style="font:24px Anton,sans-serif;margin:8px 0">Station ${STATION} setup</h2>
@@ -184,7 +197,18 @@
         round = { id: r.roundId, token: r.token, startedAt: Date.now() };
         hide();
         if (startCb) startCb(Scamurai.player);
-      } catch (e) { err.textContent = e.message; go.disabled = false; }
+      } catch (e) {
+        if (e.status === 409 && pickRes) {
+          // Already playing here: the list was stale, another laptop started them, or the first tap's reply was lost.
+          // Hand the open Round back so the dashboard shows its Join QR again, instead of a dead end.
+          try {
+            const o = (await api('/api/rounds/open')).find(x => x.participant.id === sel.id);
+            if (o) { clearInterval(pollT); hide(); const done = pickRes; pickRes = null;
+              return done({ id: sel.id, name: sel.name, station: STATION, roundId: o.roundId, token: o.token, startedAt: o.startedAt, existing: true }); }
+          } catch {}
+        }
+        err.textContent = e.message; go.disabled = false;
+      }
     };
     const refresh = async () => { try { list = await loadList(); render(); } catch (e) { if (e.status === 401) { setPin(''); clearInterval(pollT); askPin('PIN no longer valid'); } else err.textContent = 'Offline? ' + e.message; } };
     refresh(); clearInterval(pollT); pollT = setInterval(refresh, 8000);

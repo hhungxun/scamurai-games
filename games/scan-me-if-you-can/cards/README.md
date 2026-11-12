@@ -38,7 +38,26 @@ Real cards don't hand-draw pages. Each page is an exact capture of the live site
 pages: { '/': { snap: 'a1c4e7r2.html' }, '/login': { snap: 'k9x2.html' } },   // no `css` needed
 ```
 
-A snapshot is one self-contained, script-free HTML file (CSS, images, fonts inline as data URIs), shown inside a sandboxed iframe with no scripts. Links are real absolute URLs: hover or long-press shows the true target, a tap on the same host goes to that path if the card has it (otherwise the "stays on one site" toast), and form submits are blocked. File names are random so the network tab doesn't reveal brand or Real/Fake. Fake cards still use inline HTML strings.
+A snapshot is one self-contained, script-free HTML file (CSS, images, fonts inline as data URIs), shown inside a sandboxed iframe with no scripts. Links are real absolute URLs: hover or long-press shows the true target, a tap on the same host goes to that path if the card has it (otherwise the "stays on one site" toast), and form submits are blocked. File names are random so the network tab doesn't reveal brand or Real/Fake.
+
+## Fake cards: phishing-kit-edited snapshots (`{ snap }` pages)
+
+Fake cards are now snapshots too, so the HTML/screenshot format can't give the answer away. Each Fake starts from captures of the imitated **brand's own** real mobile pages, then edited the way a phishing kit would edit them: a lookalike address and certificate, extra steps that ask for data (card, OTP, online-banking login), and urgency cues (countdowns, deadlines), all built into the page's own components so the header, footer, fonts, logo and spacing stay the brand's. Keep 1–3 subtle tells per card. The scam HTML is stripped of scripts and the final step is a real `<button type=submit>` in a form, which the Sim Browser blocks with the "nothing you type is ever sent" toast, so the Station can never act as a working phishing kit.
+
+Build Fakes with the editing kit under the agent scratchpad (`kit/kit.py edit`, `kit/card.py`, `kit/verify.py`): capture the brand's page, apply an edit script, and install the snaps into `snap/`.
+
+**Hand-built Fakes (exceptions).** A few Fakes stay hand-drawn inline HTML because the brand's real page can't be captured statically:
+
+| Slug | Brand | Why hand-built |
+|---|---|---|
+| `x1qiyc` | Apple | Sign-in form is injected by Apple's own JS; the static capture has only nav + footer. |
+| `xazv10` | WhatsApp | WhatsApp Web (link-device/QR) is canvas/JS-rendered; the only static page is the marketing homepage. |
+| `9axijx` | Microsoft 365 | Off-limits by rule: Microsoft sign-in pages are never captured or published. |
+| `26onfw` | DHL | Capture hit a bot block. |
+| `ftfoqf` | Shopee | Capture hit a CAPTCHA (snap.py exit 3). |
+| `ywzpkv` | MySejahtera | Capture hit a suspended / access-denied page. |
+
+Captured Fakes this round: Grab, XMUM, LHDN, TNG, Netflix, PDRM, Pos, Instagram and TNB (an electricity-rebate lure over the real TNB homepage and myTNB login). All other Fake cards still use inline HTML strings.
 
 Capture one with `tools/snap.py` (needs `pip install playwright`, then `playwright install chromium`):
 

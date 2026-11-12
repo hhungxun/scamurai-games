@@ -25,17 +25,24 @@ ADMIN_PIN=9999 STAFF_PIN=1111 STATION_PINS="1:5001,2:5002,3:5003,4:5004,5:5005" 
 cd server && npm test            # PLAYERS=300 npm test for a bigger crowd
 ```
 
-`test/pressure.js` starts its own server on a throwaway database and checks: many Participants registering and playing Station 5 at once with scores landing exactly; one open Round per Participant per Station (even with 10 simultaneous starts); two laptops finishing the same Round; cancel racing finish; event cap, oversized bodies, wrong tokens and the wrong-PIN lockout.
+`test/pressure.js` starts its own server on a throwaway database and checks: many Participants registering and playing Station 5 at once with scores landing exactly; one open Round per Participant per Station (even with 10 simultaneous starts); two laptops finishing the same Round; cancel racing finish; event cap, oversized bodies, wrong tokens and the wrong-PIN lockout; stale round tokens never counting towards that lockout; `preview.html` hidden from the tunnel; 304 revalidation of static files.
+
+Behaviour worth knowing on the day:
+- **Lockout is per IP**, and on campus Wi-Fi every phone and laptop shares one. Only wrong PINs count. A phone polling with an old round token (a round left over from a rehearsal database) gets 403 without counting, and the phone then forgets that round.
+- **`preview.html`** (every Site Card with its answer) is served only to requests made on the server machine itself. Through the Cloudflare tunnel it returns 404.
+- **A laptop keeps its saved PIN** when the server can't be reached or answers 429/5xx. It shows "Can't reach the server" and retries every 10 s. Only a PIN the server refuses (401/403) is forgotten.
+- **Static files** carry `Last-Modified` and answer `If-Modified-Since` with 304, so the multi-megabyte Site Card snapshots are not downloaded again on every scan.
+- **Admin CSVs** are downloaded with the PIN in a header, so it never appears in a URL.
 
 ## Rounds API (Game Master devices)
 
 | Route | Who | Does |
 |---|---|---|
-| `POST /api/rounds` `{participantId}` | station PIN | opens a Round; 409 if they already have one open at this Station |
+| `POST /api/rounds` `{participantId}` | station PIN | opens a Round; 409 if they already have one open at this Station (the SDK picker then returns that open Round with `existing: true`) |
 | `GET /api/rounds/open` | station PIN | this Station's open Rounds with tokens (a dashboard rebuilds from this) |
 | `POST /api/rounds/:id/finish` `{score, maxScore}` | station PIN | ends it; a repeat returns the stored result with `already: true` |
 | `POST /api/rounds/:id/cancel` | station PIN | closes it without counting |
-| `POST/GET /api/rounds/:id/events` | round token | free message channel between a game's devices (max 200 per Round); GET also says `ended` / `cancelled` |
+| `POST/GET /api/rounds/:id/events` | round token | free message channel between a game's devices (max 200 per Round); GET also says `ended` / `cancelled`. A wrong token gets 403 (GET with a station PIN instead is allowed) |
 
 ## Environment
 

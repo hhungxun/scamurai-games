@@ -29,7 +29,7 @@ async function call(method, url, { pin, token, body, raw } = {}) {
 }
 const ok = async p => { const r = await p; assert.ok(r.status < 300, `expected 2xx, got ${r.status} ${JSON.stringify(r.json)}`); return r.json; };
 const st = n => PINS.s[n];
-const points = (correct, ms) => correct ? Math.round(60 + 40 * Math.max(0, 1 - ms / 30000)) : 0;   // as S5.points
+const points = (correct, ms) => correct ? Math.round(60 + 40 * Math.max(0, 1 - ms / 30000)) : -100;   // as S5.points (no timeouts here)
 
 let passed = 0;
 async function check(name, fn) {
@@ -76,11 +76,13 @@ async function main() {
       for (const n of deal.order) {
         const correct = (i + n) % 3 !== 0, ms = (i * 997 + n * 131) % 30000;
         score += points(correct, ms);
+        // (total is floored at 0 below, as S5.total)
         await ok(call('POST', `/api/rounds/${r.roundId}/events`, { token: r.token, body: { data: { t: 'v', n, v: correct ? 'real' : 'fake', ms } } }));
       }
       const ev = await ok(call('GET', `/api/rounds/${r.roundId}/events?after=0`, { token: r.token }));
       assert.equal(ev.events.length, 10);
       assert.equal(ev.events[0].data.t, 'deal');
+      score = Math.max(0, score);
       const fin = await ok(call('POST', `/api/rounds/${r.roundId}/finish`, { pin: st(5), body: { score, maxScore: 800 } }));
       expected[id] = Math.round(score / 800 * 1000) / 10;
       assert.equal(fin.pct, expected[id]);
@@ -134,7 +136,7 @@ async function main() {
 
   await check('wrong round token: posting and reading are refused (403)', async () => {
     assert.equal((await call('POST', `/api/rounds/${ra.roundId}/events`, { token: 'nope', body: { data: 1 } })).status, 403);
-    assert.equal((await call('GET', `/api/rounds/${ra.roundId}/events`, { token: 'nope' })).status, 401);
+    assert.equal((await call('GET', `/api/rounds/${ra.roundId}/events`, { token: 'nope' })).status, 403);
   });
 
   await check('another station cannot finish or cancel this round (403)', async () => {
@@ -223,12 +225,34 @@ async function main() {
     assert.ok(lb.rows.some(r => r.eligible));
   });
 
+  await check('stale phones polling with an old round token never lock the shared IP out', async () => {
+    // 30 phones on campus Wi-Fi share one IP; each still holds a round from a wiped rehearsal database
+    const res = await Promise.all(Array.from({ length: 30 }, () => call('GET', `/api/rounds/${ra.roundId}/events?after=0`, { token: 'stale' })));
+    assert.ok(res.every(x => x.status === 403), res.map(x => x.status).join());
+    assert.equal((await call('POST', '/api/auth', { pin: PINS.admin })).status, 200);
+  });
+
+  await check('preview.html (the answer gallery) is served locally only, never through the tunnel', async () => {
+    const local = await fetch(`${BASE}/games/scan-me-if-you-can/preview.html`);
+    assert.equal(local.status, 200);
+    const tunnel = await fetch(`${BASE}/games/scan-me-if-you-can/preview.html`, { headers: { 'cf-connecting-ip': '203.0.113.9' } });
+    assert.equal(tunnel.status, 404);
+  });
+
+  await check('static files revalidate with 304 (snapshots are megabytes)', async () => {
+    const u = `${BASE}/games/scan-me-if-you-can/s5.js`;
+    const first = await fetch(u);
+    const lm = first.headers.get('last-modified');
+    assert.ok(lm, 'no Last-Modified');
+    assert.equal((await fetch(u, { headers: { 'if-modified-since': lm } })).status, 304);
+    assert.equal((await fetch(`${BASE}/games/%E0%A4%A`)).status, 404);   // malformed escape: no crash
+  });
+
   await check('wrong PINs: the 21st attempt is locked out (429) (run last)', async () => {
-    // earlier checks with a bad token also count as failures, so the lock can come a little sooner
     const res = [];
     for (let i = 0; i < 21; i++) res.push((await call('POST', '/api/auth', { pin: '0000' })).status);
     const k = res.indexOf(429);
-    assert.ok(k >= 15, `locked too early: ${res}`);
+    assert.equal(k, 20, `lock at the wrong attempt: ${res}`);
     assert.ok(res.slice(0, k).every(x => x === 401) && res.slice(k).every(x => x === 429), String(res));
     assert.equal((await call('POST', '/api/auth', { pin: PINS.admin })).status, 429);   // even a right PIN waits
   });
