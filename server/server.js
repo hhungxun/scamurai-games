@@ -64,6 +64,10 @@ CREATE TABLE IF NOT EXISTS events (
   data TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS events_r ON events(round_id);
+CREATE TABLE IF NOT EXISTS participant_passes (
+  participant_id TEXT PRIMARY KEY REFERENCES participants(id),
+  token TEXT NOT NULL UNIQUE
+);
 `);
 // Migration: a cancelled Round is closed without counting towards anything.
 if (!db.prepare('PRAGMA table_info(rounds)').all().some(c => c.name === 'cancelled')) db.exec('ALTER TABLE rounds ADD COLUMN cancelled INTEGER NOT NULL DEFAULT 0');
@@ -88,7 +92,16 @@ const q = {
   insE: db.prepare('INSERT INTO events (round_id,at,data) VALUES (?,?,?)'),
   evs: db.prepare('SELECT id,at,data FROM events WHERE round_id=? AND id>? ORDER BY id'),
   checkout: db.prepare('UPDATE participants SET checked_out_at=?, checkout_station=?, survey=? WHERE id=?'),
+  passOf: db.prepare('SELECT token FROM participant_passes WHERE participant_id=?'),
+  insertPass: db.prepare('INSERT OR IGNORE INTO participant_passes (participant_id,token) VALUES (?,?)'),
+  participantByPass: db.prepare('SELECT p.* FROM participants p JOIN participant_passes a ON a.participant_id=p.id WHERE a.token=?'),
 };
+function participantPass(id) {
+  const saved = q.passOf.get(id);
+  if (saved) return saved.token;
+  q.insertPass.run(id, crypto.randomBytes(32).toString('hex'));
+  return q.passOf.get(id).token;
+}
 
 // ---- domain: derive a Participant's progress from their Rounds ----
 function summarise(p, rounds, now = Date.now()) {
@@ -160,7 +173,7 @@ function cors(req, res) {
   if (o && (CORS_ORIGINS.includes(o) || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o))) {
     res.setHeader('Access-Control-Allow-Origin', o);
     res.setHeader('Vary', 'Origin');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Pin, X-Round-Token');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Pin, X-Round-Token, X-Participant-Token');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   }
 }
@@ -212,7 +225,40 @@ route('POST', '/api/participants', async req => {
       consent: 1, registered_at: Date.now(), registered_by: who.role });
   });
   tx();
-  return { id, name };
+  return { id, name, participantToken: participantPass(id) };
+});
+
+// Personal pass: read-only, unguessable, and separate from staff/Station PINs.
+// Existing registrations get a pass on demand; no re-registration is needed.
+route('GET', '/api/participants/:id/pass', async (req, { id }) => {
+  auth(req, ['staff', 'station']);
+  const p = q.getP.get(cleanId(id));
+  need(p, 404, 'Not registered');
+  return { id: p.id, name: p.name, participantToken: participantPass(p.id) };
+});
+route('GET', '/api/rounds/:id/participant', async (req, { id }) => {
+  const r = q.getR.get(+id);
+  need(r && req.headers['x-round-token'] === r.token, 403, 'Bad round token');
+  const p = q.getP.get(r.participant_id);
+  return { id: p.id, name: p.name, participantToken: participantPass(p.id) };
+});
+route('GET', '/api/participant/me', req => {
+  const token = req.headers['x-participant-token'];
+  need(typeof token === 'string' && /^[a-f0-9]{64}$/.test(token), 401, 'Scan your personal QR from registration to open your page.');
+  const p = q.participantByPass.get(token);
+  need(p, 401, 'This personal QR is no longer valid. Ask the registration desk for yours.');
+  const rounds = q.roundsOf.all(p.id), s = summarise(p, rounds);
+  return {
+    id: p.id, name: p.name, idKind: /^G\d+$/.test(p.id) ? 'Guest ID' : 'Student ID',
+    total: s.total, maxTotal: STATION_COUNT * 100, stationsDone: s.stationsDone,
+    roundsPlayed: s.roundsPlayed, surveyDone: s.surveyDone, eligible: s.eligible,
+    checkedOut: !!p.checked_out_at,
+    stations: CONFIG.stations.map(st => {
+      const open = rounds.find(r => r.station === st.n && r.ended_at == null && Date.now() - r.started_at < IDLE_MS);
+      return { n: st.n, name: st.name, score: s.best[st.n]?.pct ?? null, openRoundId: open?.id ?? null,
+        status: open ? 'playing' : s.best[st.n] ? 'completed' : 'not-started' };
+    }),
+  };
 });
 
 // Picker list for start screens and the registration desk

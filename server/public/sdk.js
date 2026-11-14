@@ -102,6 +102,35 @@
     return root.firstChild;
   }
   const hide = () => { if (root) root.style.display = 'none'; };
+  let qrLibrary = null;
+  async function participantURL(p) {
+    if (TEST) return API + '/participant.html';
+    const pass = await api(`/api/participants/${encodeURIComponent(p.id)}/pass`);
+    return `${API}/participant.html#${pass.participantToken}`;
+  }
+  async function personalQR(host, p) {
+    host.textContent = 'Opening personal QR…';
+    try {
+      const url = await participantURL(p);
+      if (!window.qrcode) {
+        if (!qrLibrary) qrLibrary = new Promise((resolve, reject) => {
+          const s = document.createElement('script'); s.src = API + '/vendor/qrcode.js' + new URL(me.src).search;
+          s.onload = resolve; s.onerror = () => { qrLibrary = null; reject(new Error('Could not load the QR. Try again.')); }; document.head.appendChild(s);
+        });
+        await qrLibrary;
+      }
+      const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
+      host.innerHTML = `<p><b>${esc(p.name)} · ${esc(p.id)}</b></p><div style="background:white;padding:12px;border-radius:12px;max-width:260px;margin:auto">${qr.createSvgTag({ cellSize: 5, margin: 4, scalable: true })}</div><p>Scan with your phone to keep checking your name, ID and scores across all five stations.</p>`;
+    } catch (e) { host.textContent = e.message; }
+  }
+  function participantButton(p) {
+    document.getElementById('scamurai-personal-page')?.remove();
+    const el = h(`<div id="scamurai-personal-page" style="position:fixed;right:12px;bottom:12px;z-index:2147482000;font:14px system-ui;color:white;max-width:min(360px,calc(100vw - 24px))">
+      <button style="padding:10px 14px;min-height:44px;border-radius:10px;background:${C.surf};color:${C.yellow};border:1px solid ${C.dim}">My participant page</button>
+      <div hidden style="background:${C.bg};border:1px solid ${C.dim};border-radius:12px;padding:14px;max-height:70vh;overflow:auto"></div></div>`);
+    document.body.appendChild(el);
+    el.querySelector('button').onclick = () => { const panel = el.querySelector('div'); panel.hidden = !panel.hidden; if (!panel.hidden) personalQR(panel, p); };
+  }
 
   // ---------- 1. Station PIN ----------
   let stationName = null;
@@ -196,6 +225,7 @@
         participant = sel;
         round = { id: r.roundId, token: r.token, startedAt: Date.now() };
         hide();
+        participantButton(sel);
         if (startCb) startCb(Scamurai.player);
       } catch (e) {
         if (e.status === 409 && pickRes) {
@@ -236,11 +266,13 @@
       <p style="text-align:center" class="muted">${secs}s · best here ${res.best}%${res.pct >= res.best && res.pct > 0 ? ' · new best!' : ''}</p>
       <div class="dots">${[1, 2, 3, 4, 5].map(n => `<span class="${res.stationsDone.includes(n) ? 'on' : ''}">${n}</span>`).join('')}</div>
       <p style="text-align:center">${res.stationsDone.length < 5 ? `${5 - res.stationsDone.length} station${5 - res.stationsDone.length > 1 ? 's' : ''} to go.` : 'All five stations done!'}</p>
+      <button class="ghost personal" style="width:100%">My participant page QR</button><div class="personal-qr"></div>
       <button class="go">${res.surveyDue ? 'Exit survey (for the prize)' : 'Next player'}</button>
       ${res.surveyDue ? '<div class="row"><span></span><button class="ghost more">Play more first</button></div>' : ''}`);
     el.querySelector('.go').onclick = () => res.surveyDue ? survey(participant, res.stationsDone, true) : nextPlayer();
     const more = el.querySelector('.more'); if (more) more.onclick = () => nextPlayer();
-    if (!res.surveyDue) setTimeout(() => location.reload(), 30000);
+    const reloadTimer = !res.surveyDue && setTimeout(() => location.reload(), 30000);
+    el.querySelector('.personal').onclick = () => { clearTimeout(reloadTimer); personalQR(el.querySelector('.personal-qr'), participant); };
     return res;
   }
 
@@ -287,6 +319,7 @@
     finish,
     get player() { return participant && { id: participant.id, name: participant.name, station: STATION, roundId: round.id, token: round.token }; },
     api, API, STATION,
+    participantURL,
     resetPin() { setPin(''); location.reload(); },
     // ---- dashboard mode (several players at once) ----
     onDashboard(cb) { dashCb = cb; },

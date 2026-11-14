@@ -4,6 +4,7 @@
 <title>Scamurai · Registration</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Lexend:wght@400;600&family=Permanent+Marker&display=swap">
 <link rel="stylesheet" href="style.css">
+<script src="vendor/qrcode.js"></script>
 </head><body><div class="wrap">
 <div class="top"><img src="assets/logo.jpg" alt=""><div><h1>Scam<em>urai</em></h1><p class="tag">Front desk · registration</p></div></div>
 
@@ -47,10 +48,17 @@
   <p class="ok" id="ok"></p>
 </form>
 
+<section class="card" id="passCard" hidden>
+  <h2>Your participant page</h2><p id="passIdentity"></p>
+  <div id="passQR" style="background:white;padding:16px;border-radius:12px;max-width:280px"></div>
+  <p>Scan this personal QR with your phone. Keep the page open or bookmark it to check your name, ID, scores and progress throughout the event.</p>
+  <p><a id="passLink" style="color:var(--yellow)" target="_blank" rel="noreferrer">Open participant page</a></p>
+  <button class="ghost" id="nextParticipant">Register next participant</button>
+</section>
 <div class="card" id="recent" hidden>
   <h2>Registered <span id="count" class="muted"></span></h2>
   <input id="search" placeholder="Search name or ID">
-  <table><thead><tr><th>ID</th><th>Name</th><th>Stations</th><th>Status</th></tr></thead><tbody id="rows"></tbody></table>
+  <table><thead><tr><th>ID</th><th>Name</th><th>Stations</th><th>Status</th><th>Page</th></tr></thead><tbody id="rows"></tbody></table>
   <p class="muted" style="margin-top:14px"><a href="leaderboard.html" style="color:var(--yellow)">Leaderboard</a> ·
     <a href="#" id="lock" style="color:var(--grey)">Lock this device</a></p>
 </div>
@@ -96,7 +104,7 @@ $('form').onsubmit = async e => {
   try {
     const r = await api('/api/participants', { method: 'POST', body });
     $('ok').innerHTML = `✓ Registered <b>${esc(r.name)}</b> as <b style="color:var(--yellow);font-size:22px">${esc(r.id)}</b>. ${guest ? 'Write this Guest ID on their hand stamp/card. ' : ''}Off to any station!`;
-    $('form').reset(); $('idRow').hidden = false; refresh(); $('sid').focus();
+    $('form').reset(); $('idRow').hidden = false; refresh(); showPass(r);
   } catch (e) { $('err').textContent = e.message; }
   $('go').disabled = false;
 };
@@ -104,8 +112,24 @@ function render() {
   const t = $('search').value.trim().toUpperCase();
   const rows = list.filter(p => !t || p.id.includes(t) || p.name.toUpperCase().includes(t)).reverse();
   $('count').textContent = `(${list.length})`;
-  $('rows').innerHTML = rows.slice(0, 50).map(p => `<tr><td>${esc(p.id)}</td><td>${esc(p.name)}</td><td>${p.stationsDone.length}/5</td><td>${esc(p.status)}${p.surveyDone ? ' ✓' : ''}</td></tr>`).join('');
+  $('rows').innerHTML = rows.slice(0, 50).map(p => `<tr><td>${esc(p.id)}</td><td>${esc(p.name)}</td><td>${p.stationsDone.length}/5</td><td>${esc(p.status)}${p.surveyDone ? ' ✓' : ''}</td><td><button class="ghost" data-pass="${esc(p.id)}">Personal QR</button></td></tr>`).join('');
 }
+function showPass(p) {
+  const url = `${location.origin}/participant.html#${p.participantToken}`;
+  const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
+  $('passQR').innerHTML = qr.createSvgTag({ cellSize: 5, margin: 4, scalable: true });
+  $('passIdentity').textContent = `${p.name} · ${p.id}`;
+  $('passLink').href = url;
+  $('passCard').hidden = false; $('passCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+$('rows').onclick = async e => {
+  const button = e.target.closest('[data-pass]'); if (!button) return;
+  button.disabled = true;
+  try { showPass(await api(`/api/participants/${encodeURIComponent(button.dataset.pass)}/pass`)); }
+  catch (err) { $('err').textContent = err.message; }
+  finally { button.disabled = false; }
+};
+$('nextParticipant').onclick = () => { $('passCard').hidden = true; $('sid').focus(); };
 $('search').oninput = render;
 async function refresh() { try { list = await api('/api/participants'); render(); } catch (e) { if (e.status === 401) { setPin(''); location.reload(); } } }
 if (pin()) unlock(); else $('pinCard').hidden = false;

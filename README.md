@@ -8,6 +8,9 @@ Anyone in the group can add a game. Every game lives in its own folder under `ga
 
 - **Event site:** https://scamurai.physicsxmum.my/ (registration desk, games, [leaderboard](https://scamurai.physicsxmum.my/leaderboard.html))
 - Game list on GitHub Pages: https://hhungxun.github.io/scamurai-games/ (no scores saved there)
+- **My participant page:** https://scamurai.physicsxmum.my/participant.html (scan your personal QR at registration once; this phone remembers you)
+
+Registration shows each Participant a personal QR for their own page. It displays the registered name, Student ID or Guest ID, total out of 500, best score and playing/completed status at all five Stations, and Exit Survey progress. It refreshes every 5 seconds. Keep it open or bookmark it throughout the event. The Secretary can re-show an existing Participant's QR from the registration list. Scores from active Rounds appear once the Game Master finishes them; the page labels those Stations as playing in the meantime.
 
 ## Add your game
 
@@ -40,6 +43,7 @@ Every visitor registers once at the front desk and gets a Participant ID (studen
 - While building, use `data-test="1"` on the script tag: you get a fake "Test Player" and nothing is saved.
 - `data-station` is your station number (1–5). Ask the group for the station PIN on the day; PINs never go in this repo.
 - Your station's exit-survey questions live in `server/stations.json`. Send a PR to change them.
+- The shared SDK provides a **My participant page** QR button during single-player games and on their result screen. Custom dashboards can obtain the same personal URL with `await Scamurai.participantURL(participant)` and display its QR. Participant passes are read-only and cannot start or finish Rounds.
 
 ### Several players at once
 
@@ -65,7 +69,7 @@ Station 5 on the phone: scanning the Join QR opens an in-game camera scanner and
 
 Timer start times are saved on the phone, so reloading or going back resumes the existing clock automatically and never gives a fresh 12 seconds. A Verdict that cannot reach the laptop is kept on the phone and resent on the next scan or page open. Scanning a second Join QR while a Round is unfinished asks first. If two phones join one Round, the laptop tile says so in red. A Station 5 laptop deals from the cards that loaded and shows a red banner if any failed.
 
-**My scores** is available on the phone scanner, before and during each Site Card, and after every result, including the last one. It opens `phone.html?view=scores` with the current Round's total and results for each QR, without requesting camera access. **Continue playing** returns to scanning; **Resume QR** returns to an unfinished card with its original deadline. Opening scores does not pause or reset a running timer.
+**My scores** is available on the phone scanner, before and during each Site Card, and after every result, including the last one. It opens the event-wide participant page and connects the phone to the correct Participant automatically from their Join QR. That page links to **Game 5 QR results** (`phone.html?view=scores`) for this Round's raw points and results by QR. **Continue playing** returns to scanning; **Resume QR** returns to an unfinished card with its original deadline. These score pages do not request camera access, pause or reset a running timer.
 
 Station 5 browser checks (local, throwaway data only):
 

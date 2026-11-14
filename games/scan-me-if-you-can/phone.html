@@ -9,6 +9,7 @@
 <script src="sim-browser.js"></script>
 <script src="vendor/jsQR.js"></script>
 <script src="scanner.js"></script>
+<script src="/participant.js"></script>
 </head><body>
 <main class="s5" id="app"></main>
 <script>
@@ -31,6 +32,7 @@ async function join() {
   if (d.error) { app.innerHTML = H + `<div class="box">${d.error}</div>`; return 'error'; }
   const cards = (d.order || Object.keys(d.deal)).map(Number);
   S5.save({ id: +id, token, cards, deal: d.deal, done: {}, joinedAt: Date.now() });
+  ScamuraiParticipant.rememberRound(S5.get()).catch(() => {});
   S5.post(S5.get(), { t: 'join', ua: navigator.userAgent.slice(0, 80) });   // carries this phone's id, so the laptop sees a second phone
 }
 
@@ -78,7 +80,7 @@ async function render() {
       app.innerHTML = H + `<div class="box" style="text-align:center"><div class="big">${score}</div><p>points out of ${r.cards.length * 100}</p>
         <p class="muted">All ${r.cards.length} sites done. Head back to the Station 5 laptop for your result.</p></div><div class="chips">${chips}</div>`;
     }
-    if (!viewScores) app.insertAdjacentHTML('afterbegin', '<a class="scores-link" href="phone.html?view=scores">My scores</a>');
+    app.insertAdjacentHTML('afterbegin', '<a class="scores-link" href="/participant.html?from=station5">My scores</a>');
     app.insertAdjacentHTML('beforeend', '<p id="unsent" class="muted" style="text-align:center"></p>');
   }
   S5.flush(r);   // resend any Verdict the laptop has not confirmed; keep the camera running during polls

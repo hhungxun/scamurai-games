@@ -148,6 +148,10 @@ def run():
                 requests = page.evaluate("+localStorage.getItem('test.requests')")
                 expected_score = page.evaluate('S5.total(Object.values(S5.get().done))')
                 page.get_by_role('link', name='My scores', exact=True).click()
+                page.wait_for_selector('#participant-name')
+                assert page.inner_text('#participant-id') == 'SCAN001'
+                assert page.inner_text('#participant-name') == 'Scanner Test'
+                page.get_by_role('link', name='Game 5 QR results', exact=True).click()
                 page.wait_for_selector('#my-score')
                 assert int(page.inner_text('#my-score')) == expected_score
                 assert page.locator('.score-list tbody tr').count() == 8
@@ -173,8 +177,9 @@ def run():
                 print('PASS: later QR starts at detection; reload preserves the deadline without a Start button')
 
                 page.get_by_role('link', name='My scores', exact=True).click()
-                page.wait_for_selector('#my-score')
-                assert page.evaluate('S5.get().started[2]') == start
+                page.wait_for_selector('#participant-name')
+                assert page.inner_text('#participant-id') == 'SCAN001'
+                assert page.evaluate('ScamuraiParticipant.round().started[2]') == start
                 assert 'timer keeps running' in page.inner_text('main')
                 page.get_by_role('link', name='Resume QR #2', exact=True).click()
                 page.wait_for_function("document.querySelector('.vbar .real') && !document.querySelector('.vbar .real').disabled")
@@ -211,6 +216,10 @@ def run():
                 expected_score = page.evaluate('S5.total(Object.values(S5.get().done))')
                 api(f'/api/rounds/{rid}/finish', {'score': expected_score, 'maxScore': 800}, {'X-Pin': '5005'})
                 page.get_by_role('link', name='My scores', exact=True).click()
+                page.wait_for_selector('#participant-name')
+                assert page.inner_text('#participant-id') == 'SCAN001'
+                assert page.inner_text('#participant-name') == 'Scanner Test'
+                page.get_by_role('link', name='Game 5 QR results', exact=True).click()
                 page.wait_for_selector('#my-score')
                 assert int(page.inner_text('#my-score')) == expected_score
                 assert '8 of 8 sites judged' in page.inner_text('main')

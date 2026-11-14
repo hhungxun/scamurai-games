@@ -7,6 +7,7 @@ Live: https://scamurai.physicsxmum.my (labvps, via the existing Cloudflare tunne
 | Page | Who |
 |---|---|
 | `/register.html` | Secretary at the front desk (staff PIN) |
+| `/participant.html` | Participant's own name, ID, five Station Scores and visit progress (personal QR pass, remembered on their phone) |
 | `/games/<name>/` | Game Master laptops (station PIN, entered once per laptop) |
 | `/leaderboard.html` | Public screen |
 | `/admin.html` | Overview + `participants.csv` / `rounds.csv` (admin PIN) |
@@ -26,6 +27,22 @@ cd server && npm test            # PLAYERS=300 npm test for a bigger crowd
 ```
 
 `test/pressure.js` starts its own server on a throwaway database and checks: many Participants registering and playing Station 5 at once with scores landing exactly; one open Round per Participant per Station (even with 10 simultaneous starts); two laptops finishing the same Round; cancel racing finish; event cap, oversized bodies, wrong tokens and the wrong-PIN lockout; stale round tokens never counting towards that lockout; `preview.html` hidden from the tunnel; 304 revalidation of static files.
+
+`python3 server/test/e2e_participant.py` (from the repo root, Python Playwright + Chromium) checks registration QR handoff, remembered identity, personal-only read access, live five-station scores, replay bests, zero scores, guests, survey status, and shared SDK QR buttons. It uses its own temporary database.
+
+## Participant pages
+
+The Secretary hands each Participant their personal page QR after Registration; **Personal QR** in the registration list shows it again. Existing registrations receive a pass on demand. The page stores the pass on the phone and removes it from the URL fragment, refreshes every 5 seconds, and shows best completed Station Scores out of 100 (500 total). Active Rounds are labelled playing. It never returns registration survey answers or staff credentials.
+
+The `participant_passes` table is added automatically without changing existing Participants or Rounds. Passes persist across service restarts. They allow read-only access to one Participant's own profile; no ID-only public lookup is available. The public leaderboard continues to mask names and IDs.
+
+| Route | Access | Purpose |
+|---|---|---|
+| `GET /api/participant/me` | `X-Participant-Token` | Own identity, Station Scores and progress |
+| `GET /api/participants/:id/pass` | Staff/Station PIN | Show an existing Participant's personal QR again |
+| `GET /api/rounds/:id/participant` | `X-Round-Token` | Connect a Participant's game phone to the same personal page |
+
+Registration responses include `participantToken` for the QR. Game 5 remembers the matching pass when its Join QR is scanned; **My scores** opens `/participant.html`. Custom SDK games can call `Scamurai.participantURL(participant)` to show the personal QR.
 
 Behaviour worth knowing on the day:
 - **Lockout is per IP**, and on campus Wi-Fi every phone and laptop shares one. Only wrong PINs count. A phone polling with an old round token (a round left over from a rehearsal database) gets 403 without counting, and the phone then forgets that round.

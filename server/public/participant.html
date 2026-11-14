@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<title>Scamurai · My participant page</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Lexend:wght@400;600&family=Permanent+Marker&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  .identity h2{font:600 25px Lexend,system-ui,sans-serif;text-transform:none;overflow-wrap:anywhere;margin:4px 0 12px}
+  .identity p{margin:4px 0}.identity strong{color:var(--yellow);overflow-wrap:anywhere}
+  .total{text-align:center}.total .number{font:80px/1 Anton,Impact,sans-serif;color:var(--yellow);margin:14px 0}
+  .total progress{width:100%;height:12px;accent-color:var(--red)}
+  .station{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 0;border-bottom:1px solid var(--surf)}
+  .station:last-child{border-bottom:0}.station p{margin:4px 0 0}.station strong{display:block}.station .score{white-space:nowrap;font:28px Anton,Impact,sans-serif;color:var(--yellow)}
+  .playing{color:var(--yellow)}.completed{color:#7CFC8A}.actions{display:flex;flex-direction:column;gap:10px}.actions .btn{text-align:center}
+  .meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}.meta p{margin:0}
+</style>
+<script src="participant.js"></script>
+</head><body><main class="wrap">
+<div class="top"><img src="assets/logo.jpg" alt=""><div><h1>Scam<em>urai</em></h1><p class="tag">My participant page</p></div></div>
+<p class="muted" id="connection" role="status">Opening your page…</p>
+<div id="profile"></div>
+<div class="meta"><button class="ghost" id="refresh">Refresh scores</button><a href="leaderboard.html" style="color:var(--yellow)">Leaderboard</a></div>
+</main><script>
+const P = ScamuraiParticipant, root = document.getElementById('profile'), connection = document.getElementById('connection');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+// The pass travels in a fragment, is saved on this phone, then removed from the address bar.
+const incoming = location.hash.slice(1);
+if (incoming) { P.remember(incoming); history.replaceState(null, '', location.pathname + location.search); }
+let pending = false, lastToken = '';
+let linkRound = !incoming && (new URLSearchParams(location.search).get('from') === 'station5' || !P.token()) ? P.round() : null;
+async function refresh() {
+  if (pending) return; pending = true;
+  try {
+    if (incoming && !/^[a-f0-9]{64}$/.test(incoming)) { root.innerHTML = ''; connection.textContent = 'That personal QR is not valid. Ask the registration desk for yours.'; return; }
+    if (linkRound) { if (!await P.rememberRound(linkRound)) throw new Error('Your Game 5 round changed. Open My scores from your current round.'); linkRound = null; history.replaceState(null, '', location.pathname); }
+    const token = P.token();
+    if (!token) {
+      lastToken = '';
+      root.innerHTML = '<section class="card"><h2>Your own page, all event long</h2><p>Scan your personal QR at the registration desk. This phone will remember your page so you can return here for your name, ID, scores and progress.</p><p class="muted">Already playing Game 5? Open My scores from the game to connect your page.</p></section>';
+      connection.textContent = 'Your personal QR is needed to open your details.'; return;
+    }
+    if (lastToken && lastToken !== token) root.innerHTML = '';
+    lastToken = token;
+    const res = await fetch('/api/participant/me', { headers: { 'X-Participant-Token': token } });
+    const p = await res.json();
+    if (P.token() !== token) { root.innerHTML = ''; return; }
+    if (!res.ok) { if (res.status === 401) root.innerHTML = ''; throw new Error(p.error || 'Could not load your scores.'); }
+    const r = P.round(), ownRound = r && r.participantId === p.id;
+    const next = ownRound && r.cards.find(n => !r.done[n]);
+    const active = ownRound && r.cards.find(n => !r.done[n] && (r.started || {})[n]);
+    const resume = active ? `/games/scan-me-if-you-can/c.html?n=${active}`
+      : ownRound && r.firstCard && !r.done[r.firstCard] ? `/games/scan-me-if-you-can/c.html?n=${r.firstCard}` : '/games/scan-me-if-you-can/phone.html';
+    const roundActions = ownRound ? `<section class="card actions"><h2>Your Game 5 round</h2>${next && p.stations.find(s => s.n === 5)?.openRoundId === r.id ? `<a class="btn" href="${resume}">${active ? `Resume QR #${active}` : 'Continue playing'}</a>${active ? '<p class="muted">Your site timer keeps running while you view this page.</p>' : ''}` : ''}<a class="btn ghost" href="/games/scan-me-if-you-can/phone.html?view=scores">Game 5 QR results</a></section>` : '';
+    root.innerHTML = `<section class="card identity"><p class="muted">Registered name</p><h2 id="participant-name">${esc(p.name)}</h2><p>${esc(p.idKind)}: <strong id="participant-id">${esc(p.id)}</strong></p>
+      <p class="muted">${p.checkedOut ? 'Checked out' : p.stations.some(s => s.status === 'playing') ? 'Playing now' : 'Registered · welcome to Scamurai'}</p></section>
+      ${next ? roundActions : ''}
+      <section class="card total"><h2>Total score</h2><div class="number" id="event-total">${p.total}<span style="font-size:30px;color:var(--grey)"> / ${p.maxTotal}</span></div>
+      <p>${p.stationsDone.length} of ${p.stations.length} stations completed</p><progress value="${p.stationsDone.length}" max="${p.stations.length}" aria-label="Stations completed"></progress><p class="muted">Your best finished round at each station counts.</p></section>
+      <section class="card"><h2>Your stations</h2>${p.stations.map(s => `<div class="station" data-station="${s.n}"><div><strong>${s.n}. ${esc(s.name)}</strong><p class="muted ${s.status}">${s.status === 'playing' ? 'Playing now · score updates when the round finishes' : s.status === 'completed' ? 'Completed' : 'Not played yet'}</p></div><span class="score">${s.score === null ? '—' : s.score + ' / 100'}</span></div>`).join('')}</section>
+      <section class="card"><h2>Visit progress</h2><p>Exit survey: <strong>${p.surveyDone ? 'Completed' : 'Not completed yet'}</strong></p><p>${p.eligible ? 'All five stations and the exit survey are complete. You qualify for the prize ranking.' : 'Complete all five stations and the exit survey to qualify for the prize ranking.'}</p>
+      ${!p.surveyDone ? '<p class="muted">When you are ready to leave, ask a Game Master for the exit survey.</p>' : ''}</section>
+      ${!next ? roundActions : ''}`;
+    connection.textContent = 'Up to date · refreshes automatically every 5 seconds';
+  } catch (e) { connection.textContent = e.message || 'Connection lost. Your last scores are shown; trying again shortly.'; }
+  finally { pending = false; if (lastToken && lastToken !== P.token()) queueMicrotask(refresh); }
+}
+document.getElementById('refresh').onclick = refresh;
+setInterval(() => { if (!document.hidden) refresh(); }, 5000);
+addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+addEventListener('storage', e => { if (e.key === 'scamurai.participant.token') { root.innerHTML = ''; refresh(); } });
+addEventListener('pageshow', e => { if (e.persisted) refresh(); });
+addEventListener('hashchange', () => location.reload());
+refresh();
+</script></body></html>
