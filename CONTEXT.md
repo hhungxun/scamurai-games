@@ -78,7 +78,7 @@ The phone-browser simulation that shows every Site Card. It has an address bar, 
 _Avoid_: preview, iframe
 
 **Verdict**:
-A Participant's "Real" or "Fake" call on a Site Card, made before the card's 30-second timer runs out.
+A Participant's "Real" or "Fake" call on a Site Card, made before the card's 12-second timer runs out.
 
 **Join QR**:
 The code the Game Master's screen shows at the start of a Station 5 Round. Scanning it binds the Participant's phone to that Round.

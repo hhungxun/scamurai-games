@@ -5,6 +5,10 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Lexend:wght@400;600&family=Permanent+Marker&display=swap">
 <link rel="stylesheet" href="s5.css">
 <script src="s5.js"></script>
+<script src="cards/manifest.js"></script>
+<script src="sim-browser.js"></script>
+<script src="vendor/jsQR.js"></script>
+<script src="scanner.js"></script>
 </head><body>
 <main class="s5" id="app"></main>
 <script>
@@ -29,34 +33,47 @@ async function join() {
   S5.post(S5.get(), { t: 'join', ua: navigator.userAgent.slice(0, 80) });   // carries this phone's id, so the laptop sees a second phone
 }
 
+let scanner = null, rendered = '', rendering = 0;
 async function render() {
+  const revision = ++rendering;
   const r = S5.get();
-  if (!r || !r.deal) { app.innerHTML = H + `<div class="box">Scan the <b>Join QR</b> on the Station 5 laptop to start.</div>`; return; }
+  if (!r || !r.deal) {
+    scanner?.stop(); scanner = null; rendered = '';
+    app.innerHTML = H + `<div class="box">Scan the <b>Join QR</b> on the Station 5 laptop to start.</div>`; return;
+  }
+  const over = await S5.ended(r);
+  if (revision !== rendering || S5.get()?.id !== r.id) return;
+  if (over === 'gone') { try { localStorage.removeItem(S5.KEY); } catch {} return render(); }
   const n = S5.next(r);
   const chips = r.cards.map(c => `<span class="${r.done[c] ? (r.done[c].correct ? 'ok' : 'no') : c === n ? 'cur' : ''}">${c}</span>`).join('');
   const score = S5.total(r.cards.map(c => r.done[c]));
-  if (n) {
-    app.innerHTML = H + `<div class="box" style="text-align:center"><p class="muted" style="margin:0">Find this QR on the board and scan it with your camera</p>
-      <div class="big">#${n}</div><p class="muted">You get ${S5.SECS} seconds per site. Explore it, then tap REAL or FAKE. A wrong call costs 100 points.</p></div>
-      <div class="chips">${chips}</div>
-      <p class="muted" style="text-align:center">${Object.keys(r.done).length} of ${r.cards.length} done · ${score} pts</p>`;
-  } else {
-    app.innerHTML = H + `<div class="box" style="text-align:center"><div class="big">${score}</div><p>points out of ${r.cards.length * 100}</p>
-      <p class="muted">All ${r.cards.length} sites done. Head back to the Station 5 laptop for your result.</p></div><div class="chips">${chips}</div>`;
+  const key = `${r.id}:${Object.keys(r.done).length}:${over}`;
+  if (key !== rendered) {
+    rendered = key; scanner?.stop(); scanner = null;
+    if (over && n) {
+      app.innerHTML = H + `<div class="box">${over === 'cancelled' ? "The Game Master cancelled this round (it doesn't count)." : 'This round has ended at the laptop.'} Ask them for a new Join QR.</div>`;
+    } else if (n) {
+      app.innerHTML = H + `<div class="box" style="text-align:center"><p class="muted" style="margin:0">Find this QR on the board</p><div class="big">#${n}</div>
+        <p class="muted">${S5.SECS} seconds per site. Only your first site has a Start timer button. After that, scanning starts the timer immediately.</p></div>
+        <div id="scanner"></div><div class="chips">${chips}</div>
+        <p class="muted" style="text-align:center">${Object.keys(r.done).length} of ${r.cards.length} done · ${score} pts</p>`;
+      S5.warm(r);
+      scanner = S5Scanner.mount(document.getElementById('scanner'));
+    } else {
+      app.innerHTML = H + `<div class="box" style="text-align:center"><div class="big">${score}</div><p>points out of ${r.cards.length * 100}</p>
+        <p class="muted">All ${r.cards.length} sites done. Head back to the Station 5 laptop for your result.</p></div><div class="chips">${chips}</div>`;
+    }
+    app.insertAdjacentHTML('beforeend', '<p id="unsent" class="muted" style="text-align:center"></p>');
   }
-  S5.flush(r);   // resend any Verdict the laptop has not confirmed
+  S5.flush(r);   // resend any Verdict the laptop has not confirmed; keep the camera running during polls
   const unsent = S5.unsent(r);
-  if (unsent) app.insertAdjacentHTML('beforeend', `<p class="muted" style="text-align:center">${unsent} answer(s) waiting for a connection to reach the laptop…</p>`);
-  const over = await S5.ended(r);
-  // The server no longer knows this round (e.g. a rehearsal database was reset): forget it, don't keep polling.
-  if (over === 'gone') { try { localStorage.removeItem(S5.KEY); } catch {} return render(); }
-  if (over === 'cancelled') app.insertAdjacentHTML('beforeend', `<div class="box">The Game Master cancelled this round (it doesn't count). Ask them for a new Join QR.</div>`);
-  else if (over && n) app.insertAdjacentHTML('beforeend', `<div class="box">This round has ended at the laptop.</div>`);
+  document.getElementById('unsent').textContent = unsent ? `${unsent} answer(s) waiting for a connection to reach the laptop…` : '';
 }
 setInterval(() => document.visibilityState === 'visible' && S5.get() && render(), 10000);
 join().then(e => e !== 'error' && render());
 addEventListener('hashchange', () => location.reload());   // a new Join QR opened in the already open tab
 addEventListener('storage', render);
 addEventListener('visibilitychange', () => document.visibilityState === 'visible' && render());
+addEventListener('pageshow', e => { if (e.persisted) location.reload(); });
 </script>
 </body></html>

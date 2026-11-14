@@ -15,3 +15,9 @@ body{margin:0;background:var(--bg);color:#fff;font:16px/1.45 Lexend,system-ui,sa
 .logo{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--red)}
 .head{display:flex;gap:12px;align-items:center}
 ul.tells{margin:6px 0 0;padding-left:20px}ul.tells li{margin:6px 0}
+.scanner h2{font:400 28px/1.1 Anton,Impact,sans-serif;margin:0}.scanner h2 span{color:var(--yellow)}
+.scanner-view{position:relative;aspect-ratio:1;max-height:48vh;border-radius:12px;overflow:hidden;background:#111}
+.scanner-view video{display:block;width:100%;height:100%;object-fit:cover}
+.scanner-guide{position:absolute;inset:15%;border:3px solid var(--yellow);border-radius:14px;pointer-events:none}
+.scanner-status{min-height:2.8em;margin-bottom:0}.scanner-retry{margin-top:12px}
+.btn:disabled{opacity:.55;cursor:wait}[hidden]{display:none!important}

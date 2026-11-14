@@ -25,7 +25,7 @@
       });
     },
     // Download a card's snapshot pages before the timer starts, so a megabyte page loading over booth Wi-Fi
-    // neither eats the 30 s nor gives itself away (a slow white page used to mean "Real").
+    // can be warmed while the Participant is finding a QR. Later-card clocks still start at scan time.
     // Same URL as the frame uses, so the frame then revalidates from the cache (304).
     prefetch(card) {
       const snaps = Object.values(card.pages || {}).filter(p => p && typeof p === 'object' && p.snap);

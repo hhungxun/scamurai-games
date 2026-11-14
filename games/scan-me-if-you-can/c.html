@@ -19,6 +19,8 @@
 <script src="cards/manifest.js"></script>
 <script src="sim-browser.js"></script>
 <script src="s5.js"></script>
+<script src="vendor/jsQR.js"></script>
+<script src="scanner.js"></script>
 </head><body>
 <main class="s5" id="app"></main>
 <div id="sim"></div>
@@ -26,109 +28,134 @@
 const app = document.getElementById('app'), sim = document.getElementById('sim');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const H = `<div class="head"><img class="logo" src="/assets/logo.jpg" alt=""><div><h1>Scan Me <em>If You Can</em></h1><p class="tag">Station 5 · Scamurai</p></div></div>`;
-// Board QR: c.html?n=<board number>. This Round's deal says which card is behind it.
-const bn = parseInt(new URLSearchParams(location.search).get('n'), 10);
-const r = S5.get() && S5.get().deal ? S5.get() : null;
-const slug = r && r.deal[bn];
-const m = slug ? { id: bn, slug } : (bn >= 1 && bn <= CARD_MANIFEST.length ? { id: bn } : null);
+// The in-game scanner records later cards' start times before navigating here.
+const bn = Number(new URLSearchParams(location.search).get('n'));
+const r = S5.get();
 const say = html => { app.innerHTML = H + html; };
+const back = '<p><a href="phone.html" style="color:var(--yellow)">Back to the QR scanner</a></p>';
+S5.flush(r);
 
-S5.flush(r);   // any Verdict an earlier scan could not deliver goes now
-
-if (!m) say(`<div class="box">Unknown QR code.</div>`);
-else if (!r) say(`<div class="box">This is QR <b>#${m.id}</b>. First scan the <b>Join QR</b> on the Station 5 laptop, then come back to this code.</div>
-  <p class="muted">Already joined? Scan this code with the same phone camera you used for the Join QR (not WeChat or another app's scanner), so it opens in the same browser.</p>`);
-else if (!r.cards.includes(m.id)) say(`<div class="box">QR <b>#${m.id}</b> isn't one of yours this round.<br><br>Find <b style="color:var(--yellow);font-size:26px">#${S5.next(r) || '—'}</b></div>`);
-else if (r.done[m.id]) say(`<div class="box">You already judged QR <b>#${m.id}</b>.<br><br>${S5.next(r) ? `Next: find <b style="color:var(--yellow);font-size:26px">#${S5.next(r)}</b>` : 'All done: head back to the laptop.'}</div>`);
+if (!Number.isInteger(bn) || bn < 1 || bn > 25) say(`<div class="box">Unknown QR code.${back}</div>`);
+else if (!r || !r.deal) say(`<div class="box">This is QR <b>#${bn}</b>. First scan the <b>Join QR</b> on the Station 5 laptop.${back}</div>`);
 else {
-  // The timer start is saved, so reloading or going back never gives a fresh 30 s (and a phone that slept keeps counting).
-  const startedAt = () => ((S5.get() || r).started || {})[m.id];
-  const leftAt = () => startedAt() ? S5.SECS - (Date.now() - startedAt()) / 1000 : S5.SECS;
-  say(`<div class="box" style="text-align:center"><div class="big">#${m.id}</div>
+  const error = S5.scan(r, bn);
+  if (error) say(`<div class="box">${esc(error)}${back}</div>`);
+  else play();
+}
+
+function play() {
+  const slug = r.deal[bn];
+  const current = () => { const cur = S5.get(); return cur && cur.id === r.id ? cur : null; };
+  const startedAt = () => ((current() || r).started || {})[bn];
+  const leftAt = () => startedAt() ? Math.max(0, S5.SECS - (Date.now() - startedAt()) / 1000) : S5.SECS;
+  let card = null, browser = null, bar = null, tick = null, over = false, scanner = null;
+  let onPop = null;
+  const automatic = !!startedAt();
+  say(`<div class="box" style="text-align:center"><div class="big">#${bn}</div>
     <p>Is this site <b>REAL</b> or <b>FAKE</b>?</p>
-    <p class="muted">You get ${S5.SECS} seconds. Check the address bar, the padlock, where links really go (long-press them), and what the site asks for. Nothing you type is ever sent.</p></div>
+    <p class="muted">${automatic ? 'Your 12 seconds started when you scanned this QR.' : 'You get 12 seconds. Tap Start timer when you are ready. Later sites start immediately when scanned.'}</p></div>
     <button class="btn" id="go" disabled>Loading the site…</button><p class="muted" id="lerr" style="text-align:center"></p>`);
   const go = document.getElementById('go'), lerr = document.getElementById('lerr');
-  const endedP = S5.ended(r);
-  let card = null;
-  // Download the whole site first: the 30 s start only once it can be shown at once, whatever its size.
-  async function prepare() {
-    go.disabled = true; go.textContent = 'Loading the site…'; lerr.textContent = '';
-    try { card = await SimCards.load(slug); await SimCards.prefetch(card); }
-    catch (e) { go.disabled = false; go.textContent = 'Try again'; go.onclick = prepare; lerr.textContent = `Could not load this site (${e.message}). Check your internet.`; return; }
-    if (startedAt() && leftAt() <= 0) return start();   // came back after the time ran out: that counts as a timeout
-    go.disabled = false;
-    go.textContent = startedAt() ? `Continue · ${Math.max(1, Math.ceil(leftAt()))} s left` : 'Start the timer';
-    go.onclick = start;
-  }
-  prepare();
+  // Server checks never hold up a running clock, even on poor Wi-Fi.
+  S5.ended(r).then(ended => {
+    if (!ended || over) return;
+    over = true; cleanup(); bar?.remove(); browser?.close();
+    if (ended === 'gone' && current()) { try { localStorage.removeItem(S5.KEY); } catch {} }
+    say(`<div class="box">This round has ${ended === 'cancelled' ? 'been cancelled' : 'ended'} at the laptop. Ask the Game Master for a new Join QR.</div>`);
+  });
 
-  async function start() {
-    go.disabled = true;
-    const over0 = await endedP;
-    if (over0 === 'gone') { try { localStorage.removeItem(S5.KEY); } catch {} return say(`<div class="box">This round is not on the server any more. Ask the Game Master for a new Join QR.</div>`); }
-    if (over0) return say(`<div class="box">This round has ${over0 === 'cancelled' ? 'been cancelled' : 'ended'} at the laptop. Ask the Game Master for a new Join QR.</div>`);
-    app.innerHTML = '';
-    const bar = document.createElement('div');
-    bar.className = 'vbar';
-    bar.innerHTML = `<button class="real">REAL</button><div class="t"><b>${S5.SECS}</b></div><button class="fake">FAKE</button>`;
-    let over = false, tick = null, fallback = null;
+  function cleanup() {
+    clearInterval(tick);
+    if (onPop) removeEventListener('popstate', onPop);
+  }
+  function clock() {
+    if (bar || over) return;
+    bar = document.createElement('div'); bar.className = 'vbar';
+    bar.innerHTML = `<button class="real" disabled>REAL</button><div class="t"><b>${S5.SECS}</b></div><button class="fake" disabled>FAKE</button>`;
+    document.body.appendChild(bar);
     const ring = bar.querySelector('.t'), num = ring.querySelector('b');
-    ring.style.setProperty('--p', 1);
-    function run() {   // the clock starts when the page is on screen (or after 5 s, whichever is first)
-      if (tick || over) return;
-      clearTimeout(fallback);
-      const cur = S5.get() || r;
-      if (!startedAt()) { cur.started = { ...(cur.started || {}), [m.id]: Date.now() }; S5.save(cur); r.started = cur.started; }
-      const draw = () => {
-        const left = Math.max(0, leftAt());
-        ring.style.setProperty('--p', left / S5.SECS); num.textContent = Math.ceil(left);
-        ring.classList.toggle('low', left <= 10);
-        if (left <= 0) verdict('timeout');
-      };
-      document.body.appendChild(bar);   // REAL/FAKE appear with the clock, never before the page is there
-      draw(); tick = setInterval(draw, 100);
-    }
-    if (startedAt() && leftAt() <= 0) return verdict('timeout');
-    let b = null;
-    b = SimBrowser(sim, card, { bottomInset: 84, onReady: () => run() });
-    fallback = setTimeout(run, 5000);
+    const draw = () => {
+      const left = leftAt();
+      ring.style.setProperty('--p', left / S5.SECS); num.textContent = Math.ceil(left);
+      ring.classList.toggle('low', left <= 3);
+      if (left <= 0) verdict('timeout');
+    };
     bar.querySelector('.real').onclick = () => verdict('real');
     bar.querySelector('.fake').onclick = () => verdict('fake');
-    // The phone's own Back button (Android) works like the simulated one instead of leaving the card.
-    history.pushState({ s5: 1 }, '');
-    const onPop = () => { if (over) return; history.pushState({ s5: 1 }, ''); b && b.back(); };
-    addEventListener('popstate', onPop);
-
-    async function verdict(v) {
-      if (over) return; over = true; clearInterval(tick); clearTimeout(fallback); removeEventListener('popstate', onPop);
-      const ms = Math.min(S5.SECS * 1000, Math.max(0, Math.round(Date.now() - (startedAt() || Date.now()))));
-      const correct = v !== 'timeout' && (v === 'real') === card.real;
-      const pts = S5.points(correct, ms, v);
-      const cur = S5.get() || r;
-      cur.done[m.id] = { v, ms, correct, pts, sent: false };
-      S5.save(cur);
-      bar.remove(); b && b.close();
-      const sent = S5.send(cur, m.id);
-      const next = S5.next(cur);
-      const missed = !card.real && !correct;
-      const res = document.createElement('div'); res.className = 'res';
-      res.innerHTML = `<main class="s5">${H}
-        <div class="box" style="text-align:center">
-          <div class="big" style="color:${correct ? '#7CFC8A' : 'var(--red)'}">${correct ? '✓ +' + pts : v === 'timeout' ? "Time's up · 0" : '✗ ' + pts}</div>
-          <p>It was <b style="color:${card.real ? '#7CFC8A' : 'var(--red)'}">${card.real ? 'REAL' : 'FAKE'}</b> · ${esc(card.brand)}</p>
-          <p class="muted" style="word-break:break-all">${esc(card.url)}</p></div>
-        <div class="box"><b>${card.real ? 'Why it is genuine' : missed ? 'What you missed' : 'The tells'}</b>
-          <ul class="tells">${(card.tells || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>
-        <div class="box" style="text-align:center">${next ? `Next: find <span class="big" style="display:block;font-size:64px">#${next}</span>` : 'All done! Head back to the Station 5 laptop for your result.'}</div>
-        <p class="muted" id="sent" style="text-align:center">Saving…</p></main>`;
-      document.body.appendChild(res);
-      const st = await sent;
-      document.getElementById('sent').textContent = st === 'ok' ? 'Saved to the laptop ✓'
-        : st === 'over' ? 'Not counted: this round has already ended at the laptop.'
-        : 'No connection yet. Keep going: your answer is kept on this phone and sent with the next scan.';
-    }
+    tick = setInterval(draw, 100); draw();
   }
+  function showSite() {
+    if (over || !card) return;
+    app.innerHTML = '';
+    browser = SimBrowser(sim, card, { bottomInset: 84, onReady: () => {
+      if (over) return;
+      if (leftAt() <= 0) return verdict('timeout');
+      bar.querySelectorAll('button').forEach(b => b.disabled = false);
+    } });
+    history.pushState({ s5: 1 }, '');
+    onPop = () => { if (over) return; history.pushState({ s5: 1 }, ''); browser?.back(); };
+    addEventListener('popstate', onPop);
+  }
+  function start() {
+    if (over) return;
+    const cur = current();
+    if (!cur) return;
+    cur.started = { ...(cur.started || {}), [bn]: startedAt() || Date.now() };
+    S5.save(cur); r.started = cur.started;
+    clock(); showSite();
+  }
+  async function prepare() {
+    if (over) return;
+    go.disabled = true; go.textContent = 'Loading the site…'; lerr.textContent = '';
+    try { card = await SimCards.load(slug); await SimCards.prefetch(card); }
+    catch (e) {
+      if (over) return;
+      go.disabled = false; go.textContent = 'Retry loading'; go.onclick = prepare;
+      lerr.textContent = `Could not load this site. Check your internet.${automatic ? ' The timer is still running.' : ''}`;
+      return;
+    }
+    if (over) return;
+    if (startedAt()) return showSite();
+    go.disabled = false; go.textContent = 'Start timer'; go.onclick = start;
+  }
+  // No extra tap or load grace period on a later card, including after a reload.
+  if (automatic) clock();
+  if (!over) prepare();
+
+  async function verdict(v) {
+    if (over) return;
+    // A tap after the deadline is a timeout even if the browser throttled its draw loop.
+    if (leftAt() <= 0) v = 'timeout';
+    over = true; cleanup();
+    const cur = current();
+    if (!cur) { bar?.remove(); browser?.close(); return say(`<div class="box">This phone has switched rounds.${back}</div>`); }
+    const ms = Math.min(S5.SECS * 1000, Math.max(0, Date.now() - (startedAt() || Date.now())));
+    const correct = v !== 'timeout' && card && (v === 'real') === card.real;
+    const pts = S5.points(correct, ms, v);
+    cur.done[bn] = { v, ms, correct: !!correct, pts, sent: false };
+    S5.save(cur);
+    bar?.remove(); browser?.close();
+    const sent = S5.send(cur, bn);
+    const next = S5.next(cur);
+    const res = document.createElement('div'); res.className = 'res';
+    res.innerHTML = `<main class="s5">${H}
+      <div class="box" style="text-align:center">
+        <div class="big" style="color:${correct ? '#7CFC8A' : 'var(--red)'}">${correct ? '✓ +' + pts : v === 'timeout' ? "Time's up · 0" : '✗ ' + pts}</div>
+        ${card ? `<p>It was <b style="color:${card.real ? '#7CFC8A' : 'var(--red)'}">${card.real ? 'REAL' : 'FAKE'}</b> · ${esc(card.brand)}</p><p class="muted" style="word-break:break-all">${esc(card.url)}</p>` : '<p>The site did not load before time ran out.</p>'}</div>
+      ${next ? '<div id="scanner"></div>' : '<div class="box">All done! Head back to the Station 5 laptop for your result.</div>'}
+      ${card ? `<div class="box"><b>${card.real ? 'Why it is genuine' : !correct ? 'What you missed' : 'The tells'}</b><ul class="tells">${(card.tells || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>` : ''}
+      <p class="muted" id="sent" style="text-align:center">Saving…</p></main>`;
+    document.body.appendChild(res);
+    if (next) { S5.warm(cur); scanner = S5Scanner.mount(document.getElementById('scanner')); }
+    const st = await sent;
+    document.getElementById('sent').textContent = st === 'ok' ? 'Saved to the laptop ✓'
+      : st === 'over' ? 'Not counted: this round has already ended at the laptop.'
+      : 'No connection yet. Keep going: your answer is kept on this phone and sent with the next scan.';
+    if (st === 'over') scanner?.stop();
+  }
+  addEventListener('pagehide', () => { cleanup(); scanner?.stop(); });
 }
+addEventListener('pageshow', e => { if (e.persisted) location.reload(); });
+
 </script>
 </body></html>

@@ -61,7 +61,18 @@ Station 5, [`games/scan-me-if-you-can/`](games/scan-me-if-you-can/), is a full e
 
 Station 5 scoring, per site: right = 60 + up to 40 for speed, wrong call = −100, time ran out = 0; a round's total never goes below 0. The penalty means tapping FAKE on everything (about 5 of 8 are Fake) scores far below reading carefully.
 
-Station 5 on the phone: the whole site is downloaded before **Start the timer** is enabled, and the clock starts once the page is on screen, so a large page costs no time. The timer start is saved on the phone, so reloading or going back resumes the clock ("Continue · 18 s left") and never gives a fresh 30 s. A Verdict that can't reach the laptop is kept on the phone and resent on the next scan or page open. Scanning a second Join QR while a round is unfinished asks first. If two phones join one round, the laptop tile says so in red. A Station 5 laptop deals from the cards that loaded and shows a red banner if any failed.
+Station 5 on the phone: scanning the Join QR opens an in-game camera scanner and requests camera access. Each Site Card has **12 seconds**. Only the first scanned card offers **Start timer**, after its site has loaded. Later cards start their clock immediately when their board QR is detected, including navigation and loading time. The next requested site is warmed in the background while the Participant finds its QR. After every Verdict, the result screen opens the scanner for the next QR; no switch back to the phone's camera app is needed. Camera permission failures show instructions and an **Enable camera** retry button. The scanner uses native QR detection where available and a bundled jsQR fallback for other browsers. Camera frames stay on the device.
+
+Timer start times are saved on the phone, so reloading or going back resumes the existing clock automatically and never gives a fresh 12 seconds. A Verdict that cannot reach the laptop is kept on the phone and resent on the next scan or page open. Scanning a second Join QR while a Round is unfinished asks first. If two phones join one Round, the laptop tile says so in red. A Station 5 laptop deals from the cards that loaded and shows a red banner if any failed.
+
+Station 5 browser checks (local, throwaway data only):
+
+```bash
+python3 games/scan-me-if-you-can/tools/e2e_dashboard.py
+python3 games/scan-me-if-you-can/tools/e2e_phone.py
+```
+
+Both use Python Playwright with Chromium installed; the camera-feed test also needs `qrcode` and Pillow. The camera test decodes QR images from a canvas video stream and covers permission recovery, wrong/repeated QRs, first-card start, scan-time deadlines, reloads, and timeout during loading. Check camera permission and focus on a physical phone before event day.
 
 ## Rules
 
@@ -74,4 +85,4 @@ Station 5 on the phone: the whole site is downloaded before **Start the timer** 
 | Game | Folder | Made by | How to play |
 |---|---|---|---|
 | *(template)* | `games/_template/` | — | Copy this to start |
-| Scan Me If You Can (Station 5) | `games/scan-me-if-you-can/` | Hung Xun | Game Master runs many players at once from one laptop; each scans a Join QR, then 8 of the 25 numbered board QRs (a fresh deal every round) and judges each site REAL or FAKE in 30 s |
+| Scan Me If You Can (Station 5) | `games/scan-me-if-you-can/` | Hung Xun | Game Master runs many players at once from one laptop; each scans a Join QR, then 8 of the 25 numbered board QRs (a fresh deal every round) and judges each site REAL or FAKE in 12 s using the in-game QR scanner |

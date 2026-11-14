@@ -12,7 +12,7 @@ a Verdict lost to the network is resent, someone else's Join QR asks first, a st
 robustness (picker 409 hands back the open round, two phones on one round are flagged). Console errors fail the run,
 except network errors a scenario provokes on purpose (EXPECT_NET).
 """
-import argparse, json, os, random, re, shutil, signal, subprocess, sys, tempfile, time, urllib.request, urllib.error
+import argparse, json, math, os, random, re, shutil, signal, subprocess, sys, tempfile, time, urllib.request, urllib.error
 from urllib.parse import urlparse
 from playwright.sync_api import sync_playwright
 
@@ -137,7 +137,8 @@ def judge(phone, k, pick=None):
         n = next((c for c in r['cards'] if str(c) not in r['done']), None)
         if n is None: break
         phone.goto(f'{GAME}c.html?n={n}')
-        phone.click('#go', timeout=15000)
+        if not phone.evaluate(f'(S5.get().started || {{}})[{n}]'):
+            phone.click('#go', timeout=15000)
         phone.wait_for_selector('.vbar', timeout=15000)
         v = pick or random.choice(['real', 'fake'])
         phone.click(f'.vbar .{v}')
@@ -158,7 +159,7 @@ def tile_pct(dash, rid, secs=30):
         return float(m.group(1)) if m else None
     return wait_until(f, secs, f'tile {rid} shows %')
 
-def pct_of(score): return round(score / (N * 100) * 1000) / 10
+def pct_of(score): return math.floor(score / (N * 100) * 1000 + 0.5) / 10
 
 deals = {}   # round id -> {n: slug}
 
@@ -237,7 +238,7 @@ def run(pw):
     csv4 = [l for l in rounds_csv().splitlines() if l.startswith(f'{rid4},')]
     check(4, len(csv4) == 1 and csv4[0].split(',')[-2] == str(s4), f'server holds one finished round, score {s4}: {csv4}')
     check(4, sum(1 for l in rounds_csv().splitlines() if f',{IDS[3]},' in l) == 1, 'participant has exactly one round (no double count)')
-    check(4, overview_total(IDS[3]) == overview_total(IDS[3]) > 0, 'overview total present')
+    check(4, overview_total(IDS[3]) == pct_of(s4), 'overview total matches the Station Score, including a zero score')
     deals[rid4] = ph4.evaluate('S5.get().deal')
     ph4.context.close(); D2ctx.close()
 
@@ -304,12 +305,10 @@ def run(pw):
     ph8.goto(f'{GAME}c.html?n={n1}'); ph8.click('#go', timeout=15000); ph8.wait_for_selector('.vbar', timeout=15000)
     time.sleep(3.2)
     ph8.reload()
-    ph8.wait_for_function("/Continue/.test(document.getElementById('go').textContent)", timeout=15000)
-    left = int(re.search(r'(\d+) s left', ph8.evaluate("document.getElementById('go').textContent")).group(1))
-    check(8, left <= 27, f'reload mid-timer offers "Continue" with the time left ({left} s), not a fresh 30 s')
-    ph8.click('#go'); ph8.wait_for_selector('.vbar')
+    ph8.wait_for_selector('.vbar', timeout=15000)
     shown = int(ph8.inner_text('.vbar .t b'))
-    check(8, shown <= 27, f'the resumed timer shows {shown} s')
+    check(8, shown <= 9, f'reload resumes the existing 12-second timer automatically ({shown} s)')
+    check(8, ph8.get_by_role('button', name='Start timer', exact=True).count() == 0, 'reload does not offer another Start timer button')
     ph8.click('.vbar .fake')
     ph8.wait_for_function("/Saved/.test(document.getElementById('sent').textContent)", timeout=15000)
     ms = ph8.evaluate(f"S5.get().done[{n1}].ms")
@@ -317,7 +316,7 @@ def run(pw):
 
     EXPECT_NET.add('phone-' + IDS[6])
     ph8.route('**/api/rounds/*/events', lambda rt: rt.fulfill(status=503, body='{}') if rt.request.method == 'POST' else rt.continue_())
-    ph8.goto(f'{GAME}c.html?n={n2}'); ph8.click('#go', timeout=15000); ph8.wait_for_selector('.vbar', timeout=15000)
+    ph8.goto(f'{GAME}c.html?n={n2}'); ph8.wait_for_selector('.vbar', timeout=15000)
     ph8.click('.vbar .real')
     ph8.wait_for_function("/No connection yet/.test(document.getElementById('sent').textContent)", timeout=25000)
     check(8, ph8.evaluate(f"S5.get().done[{n2}].sent") is False, 'a Verdict the laptop did not get is kept as unsent')
