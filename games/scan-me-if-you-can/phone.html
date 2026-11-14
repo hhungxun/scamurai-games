@@ -13,6 +13,7 @@
 <main class="s5" id="app"></main>
 <script>
 const app = document.getElementById('app');
+const viewScores = new URLSearchParams(location.search).get('view') === 'scores';
 const H = `<div class="head"><img class="logo" src="/assets/logo.jpg" alt=""><div><h1>Scan Me <em>If You Can</em></h1><p class="tag">Station 5 · Scamurai</p></div></div>`;
 
 // Join: phone.html#<roundId>.<token>. The deal (which card is behind which board number) comes from the server.
@@ -50,7 +51,21 @@ async function render() {
   const key = `${r.id}:${Object.keys(r.done).length}:${over}`;
   if (key !== rendered) {
     rendered = key; scanner?.stop(); scanner = null;
-    if (over && n) {
+    if (viewScores) {
+      const active = r.cards.find(c => !r.done[c] && (r.started || {})[c]) || (r.firstCard && !r.done[r.firstCard] ? r.firstCard : null);
+      const resume = active ? `c.html?n=${active}` : 'phone.html';
+      const rows = r.cards.map(c => {
+        const d = r.done[c];
+        const label = d ? d.v === 'timeout' ? 'Time ran out' : d.correct ? 'Correct' : 'Wrong' : (r.started || {})[c] ? 'In progress' : 'Not played';
+        return `<tr><th scope="row">#${c}</th><td class="${d ? d.correct ? 'correct' : 'wrong' : ''}">${label}</td><td>${d ? d.pts > 0 ? '+' + d.pts : d.pts : '—'}</td></tr>`;
+      }).join('');
+      app.innerHTML = H + `<section class="box score-summary"><h2>My Game 5 score</h2><div class="big" id="my-score">${score}</div>
+        <p>points out of ${r.cards.length * 100}</p><p class="muted">${Object.keys(r.done).length} of ${r.cards.length} sites judged</p>
+        ${over === 'cancelled' ? '<p>This round was cancelled and does not count.</p>' : over && n ? '<p>This round has ended at the laptop.</p>' : !n ? '<p>All done! Your Game 5 results are below.</p>' : ''}</section>
+        ${n && !over ? `<a class="btn" href="${resume}">${active ? `Resume QR #${active}` : 'Continue playing'}</a>${active && (r.started || {})[active] ? '<p class="muted">Your current site timer keeps running while you view scores.</p>' : ''}` : ''}
+        <section class="box"><table class="score-list"><caption>Results by QR</caption><thead><tr><th scope="col">QR</th><th scope="col">Result</th><th scope="col">Points</th></tr></thead><tbody>${rows}</tbody></table>
+        <p class="muted">Wrong calls deduct 100 points. Your total cannot go below zero.</p></section>`;
+    } else if (over && n) {
       app.innerHTML = H + `<div class="box">${over === 'cancelled' ? "The Game Master cancelled this round (it doesn't count)." : 'This round has ended at the laptop.'} Ask them for a new Join QR.</div>`;
     } else if (n) {
       app.innerHTML = H + `<div class="box" style="text-align:center"><p class="muted" style="margin:0">Find this QR on the board</p><div class="big">#${n}</div>
@@ -63,6 +78,7 @@ async function render() {
       app.innerHTML = H + `<div class="box" style="text-align:center"><div class="big">${score}</div><p>points out of ${r.cards.length * 100}</p>
         <p class="muted">All ${r.cards.length} sites done. Head back to the Station 5 laptop for your result.</p></div><div class="chips">${chips}</div>`;
     }
+    if (!viewScores) app.insertAdjacentHTML('afterbegin', '<a class="scores-link" href="phone.html?view=scores">My scores</a>');
     app.insertAdjacentHTML('beforeend', '<p id="unsent" class="muted" style="text-align:center"></p>');
   }
   S5.flush(r);   // resend any Verdict the laptop has not confirmed; keep the camera running during polls

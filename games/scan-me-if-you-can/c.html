@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="s5.css">
 <style>
   /* The Verdict bar: translucent so the site stays visible behind it */
-  .vbar{position:fixed;left:0;right:0;bottom:0;z-index:40;padding:8px 10px calc(10px + env(safe-area-inset-bottom));
+  .vbar{position:fixed;left:0;right:0;bottom:calc(56px + env(safe-area-inset-bottom));z-index:40;padding:8px 10px;
     background:rgba(23,22,22,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;gap:10px;align-items:center}
   .vbar button{flex:1;font:400 24px Anton,Impact,sans-serif;letter-spacing:1px;border:0;border-radius:12px;padding:12px 0;color:#fff;opacity:.92}
   .vbar .real{background:rgba(31,122,58,.9)}.vbar .fake{background:rgba(240,3,3,.9)}
@@ -22,6 +22,7 @@
 <script src="vendor/jsQR.js"></script>
 <script src="scanner.js"></script>
 </head><body>
+<nav class="game-scores" aria-label="Participant navigation"><a class="scores-link" href="phone.html?view=scores">My scores</a></nav>
 <main class="s5" id="app"></main>
 <div id="sim"></div>
 <script>
@@ -61,7 +62,7 @@ function play() {
     if (!ended || over) return;
     over = true; cleanup(); bar?.remove(); browser?.close();
     if (ended === 'gone' && current()) { try { localStorage.removeItem(S5.KEY); } catch {} }
-    say(`<div class="box">This round has ${ended === 'cancelled' ? 'been cancelled' : 'ended'} at the laptop. Ask the Game Master for a new Join QR.</div>`);
+    say(`<div class="box">This round has ${ended === 'cancelled' ? 'been cancelled' : 'ended'} at the laptop. You can still view your scores below. Ask the Game Master for a new Join QR to play again.</div>`);
   });
 
   function cleanup() {
@@ -87,7 +88,7 @@ function play() {
   function showSite() {
     if (over || !card) return;
     app.innerHTML = '';
-    browser = SimBrowser(sim, card, { bottomInset: 84, onReady: () => {
+    browser = SimBrowser(sim, card, { bottomInset: 140, onReady: () => {
       if (over) return;
       if (leftAt() <= 0) return verdict('timeout');
       bar.querySelectorAll('button').forEach(b => b.disabled = false);
@@ -142,7 +143,7 @@ function play() {
       <div class="box" style="text-align:center">
         <div class="big" style="color:${correct ? '#7CFC8A' : 'var(--red)'}">${correct ? '✓ +' + pts : v === 'timeout' ? "Time's up · 0" : '✗ ' + pts}</div>
         ${card ? `<p>It was <b style="color:${card.real ? '#7CFC8A' : 'var(--red)'}">${card.real ? 'REAL' : 'FAKE'}</b> · ${esc(card.brand)}</p><p class="muted" style="word-break:break-all">${esc(card.url)}</p>` : '<p>The site did not load before time ran out.</p>'}</div>
-      ${next ? '<div id="scanner"></div>' : '<div class="box">All done! Head back to the Station 5 laptop for your result.</div>'}
+      ${next ? '<div id="scanner"></div>' : '<div class="box">All done! Tap <b>My scores</b> to see your total and each QR result.</div>'}
       ${card ? `<div class="box"><b>${card.real ? 'Why it is genuine' : !correct ? 'What you missed' : 'The tells'}</b><ul class="tells">${(card.tells || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>` : ''}
       <p class="muted" id="sent" style="text-align:center">Saving…</p></main>`;
     document.body.appendChild(res);

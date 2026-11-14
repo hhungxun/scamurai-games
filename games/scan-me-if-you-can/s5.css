@@ -21,3 +21,11 @@ ul.tells{margin:6px 0 0;padding-left:20px}ul.tells li{margin:6px 0}
 .scanner-guide{position:absolute;inset:15%;border:3px solid var(--yellow);border-radius:14px;pointer-events:none}
 .scanner-status{min-height:2.8em;margin-bottom:0}.scanner-retry{margin-top:12px}
 .btn:disabled{opacity:.55;cursor:wait}[hidden]{display:none!important}
+.scores-link{display:block;text-align:center;text-decoration:none;color:var(--yellow);background:var(--surf);border:1px solid var(--dim);border-radius:10px;padding:10px 16px;min-height:44px;font-weight:600}
+.game-scores{position:fixed;left:0;right:0;bottom:0;z-index:60;padding:6px 12px calc(6px + env(safe-area-inset-bottom));background:var(--bg)}
+.game-scores .scores-link{max-width:488px;margin:auto;height:44px}
+body:has(.game-scores) .s5{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+.score-summary{text-align:center}.score-summary h2{margin:0;font-size:20px}
+.score-list{width:100%;border-collapse:collapse;font-size:14px}.score-list th,.score-list td{padding:10px 5px;text-align:left;border-bottom:1px solid var(--dim)}
+.score-list th:last-child,.score-list td:last-child{text-align:right}.score-list .correct{color:#7CFC8A}.score-list .wrong{color:#ff7474}
+a.btn{display:block;text-align:center;text-decoration:none}

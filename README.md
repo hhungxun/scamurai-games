@@ -65,6 +65,8 @@ Station 5 on the phone: scanning the Join QR opens an in-game camera scanner and
 
 Timer start times are saved on the phone, so reloading or going back resumes the existing clock automatically and never gives a fresh 12 seconds. A Verdict that cannot reach the laptop is kept on the phone and resent on the next scan or page open. Scanning a second Join QR while a Round is unfinished asks first. If two phones join one Round, the laptop tile says so in red. A Station 5 laptop deals from the cards that loaded and shows a red banner if any failed.
 
+**My scores** is available on the phone scanner, before and during each Site Card, and after every result, including the last one. It opens `phone.html?view=scores` with the current Round's total and results for each QR, without requesting camera access. **Continue playing** returns to scanning; **Resume QR** returns to an unfinished card with its original deadline. Opening scores does not pause or reset a running timer.
+
 Station 5 browser checks (local, throwaway data only):
 
 ```bash

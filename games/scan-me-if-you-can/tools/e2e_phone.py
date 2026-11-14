@@ -42,6 +42,7 @@ CAMERA = """() => {
   if (!navigator.mediaDevices) return; // about:blank has no camera API
   window.BarcodeDetector = undefined; // exercise the bundled decoder used on Safari/Firefox
   navigator.mediaDevices.getUserMedia = async constraints => {
+    localStorage.setItem('test.requests', String(+(localStorage.getItem('test.requests') || 0) + 1));
     localStorage.setItem('test.constraints', JSON.stringify(constraints));
     if (localStorage.getItem('test.permission') === 'deny') throw new DOMException('denied', 'NotAllowedError');
     const c = document.createElement('canvas'); c.width = 640; c.height = 640;
@@ -144,6 +145,19 @@ def run():
                 assert page.evaluate("+localStorage.getItem('test.stops')") >= 1
                 print('PASS: first scanned card waits for Start timer; result resumes scanning and rejects repeats')
 
+                requests = page.evaluate("+localStorage.getItem('test.requests')")
+                expected_score = page.evaluate('S5.total(Object.values(S5.get().done))')
+                page.get_by_role('link', name='My scores', exact=True).click()
+                page.wait_for_selector('#my-score')
+                assert int(page.inner_text('#my-score')) == expected_score
+                assert page.locator('.score-list tbody tr').count() == 8
+                assert page.locator('video').count() == 0
+                assert page.evaluate("+localStorage.getItem('test.requests')") == requests
+                page.screenshot(path='/tmp/scamurai-my-scores.png', full_page=True)
+                page.get_by_role('link', name='Continue playing', exact=True).click()
+                page.wait_for_selector('.scanner video')
+                print('PASS: result links to personal total and QR scores without opening the camera; Continue playing returns to scanning')
+
                 scan(GAME + 'c.html?n=2')
                 page.wait_for_url('**/c.html?n=2')
                 page.wait_for_function("document.querySelector('.vbar .real') && !document.querySelector('.vbar .real').disabled")
@@ -157,6 +171,15 @@ def run():
                 assert int(page.inner_text('.vbar .t b')) <= 11
                 assert page.get_by_role('button', name='Start timer', exact=True).count() == 0
                 print('PASS: later QR starts at detection; reload preserves the deadline without a Start button')
+
+                page.get_by_role('link', name='My scores', exact=True).click()
+                page.wait_for_selector('#my-score')
+                assert page.evaluate('S5.get().started[2]') == start
+                assert 'timer keeps running' in page.inner_text('main')
+                page.get_by_role('link', name='Resume QR #2', exact=True).click()
+                page.wait_for_function("document.querySelector('.vbar .real') && !document.querySelector('.vbar .real').disabled")
+                assert page.evaluate('S5.get().started[2]') == start
+                print('PASS: My scores is available during a timed site; resuming keeps its original deadline')
 
                 # Keep the third card's metadata requests pending, including the background warm-up.
                 pending = []
@@ -178,6 +201,22 @@ def run():
                         rt.continue_()
                     except Exception:
                         pass  # requests belonging to the prior page were cancelled by navigation
+                ctx.unroute('**/cards/' + slugs[2] + '.js*')
+                for n in range(4, 9):
+                    page.goto(GAME + f'c.html?n={n}')
+                    page.wait_for_function("document.querySelector('.vbar .real') && !document.querySelector('.vbar .real').disabled")
+                    page.click('.vbar .real')
+                    page.wait_for_selector('.res')
+                assert page.locator('.res .scanner').count() == 0
+                expected_score = page.evaluate('S5.total(Object.values(S5.get().done))')
+                api(f'/api/rounds/{rid}/finish', {'score': expected_score, 'maxScore': 800}, {'X-Pin': '5005'})
+                page.get_by_role('link', name='My scores', exact=True).click()
+                page.wait_for_selector('#my-score')
+                assert int(page.inner_text('#my-score')) == expected_score
+                assert '8 of 8 sites judged' in page.inner_text('main')
+                assert page.get_by_role('link', name='Continue playing', exact=True).count() == 0
+                assert page.locator('video').count() == 0
+                print('PASS: final result links to all eight QR scores after the round ends')
                 assert not errors, errors
                 browser.close()
                 print('PASS: no browser JavaScript errors')
