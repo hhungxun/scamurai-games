@@ -2,20 +2,21 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>Scamurai · Registration</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Lexend:wght@400;600&family=Permanent+Marker&display=swap">
 <link rel="stylesheet" href="style.css">
 <script src="vendor/qrcode.js"></script>
-</head><body><div class="wrap">
-<div class="top"><img src="assets/logo.jpg" alt=""><div><h1>Scam<em>urai</em></h1><p class="tag">Front desk · registration</p></div></div>
+<script src="/site.js" defer></script>
+</head><body data-site-nav data-page="register"><div class="wrap">
+<div class="top"><img src="assets/logo.jpg" alt=""><div><h1>THE <em>FRONT DESK.</em></h1><p class="tag">Front desk · registration</p></div></div>
 
 <div class="card" id="pinCard" hidden>
   <h2>Secretary sign-in</h2>
   <label for="pin">Staff PIN</label><input id="pin" type="password" inputmode="numeric" autocomplete="off">
-  <p class="err" id="pinErr"></p><button class="wide" id="pinGo">Unlock</button>
+  <p class="err" id="pinErr" role="alert"></p><button class="wide" id="pinGo">Unlock</button>
 </div>
 
+<p class="muted" id="deskConnection" role="status"></p><div class="registration-layout"><div>
 <form class="card" id="form" hidden autocomplete="off">
-  <h2>New participant</h2>
+  <p class="eyebrow">FRONT DESK / CHECK IN</p><h2>Register a participant</h2>
   <div class="chips" style="margin-top:8px">
     <label><input type="radio" name="kind" value="student" checked><span>XMUM student</span></label>
     <label><input type="radio" name="kind" value="guest"><span>Guest (no student ID)</span></label>
@@ -43,13 +44,13 @@
   </div>
   <label class="consent" style="margin-top:18px"><input type="checkbox" id="consent">
     <span>I agree that my answers and game scores are recorded for this event and the club's report. My name is shown on the leaderboard as first name + last 3 digits of my ID. Personal data is deleted within 30 days after 26 Nov 2026.</span></label>
-  <p class="err" id="err"></p>
+  <p class="err" id="err" role="alert"></p>
   <button class="wide" id="go" type="submit">Register</button>
   <p class="ok" id="ok"></p>
-</form>
+</form></div><aside>
 
 <section class="card" id="passCard" hidden>
-  <h2>Your participant page</h2><p id="passIdentity"></p>
+  <p class="eyebrow">READY TO PLAY</p><h2>Your participant page</h2><p id="passIdentity"></p>
   <div id="passQR" style="background:white;padding:16px;border-radius:12px;max-width:280px"></div>
   <p>Scan this personal QR with your phone. Keep the page open or bookmark it to check your name, ID, scores and progress throughout the event.</p>
   <p><a id="passLink" style="color:var(--yellow)" target="_blank" rel="noreferrer">Open participant page</a></p>
@@ -61,7 +62,7 @@
   <table><thead><tr><th>ID</th><th>Name</th><th>Stations</th><th>Status</th><th>Page</th></tr></thead><tbody id="rows"></tbody></table>
   <p class="muted" style="margin-top:14px"><a href="leaderboard.html" style="color:var(--yellow)">Leaderboard</a> ·
     <a href="#" id="lock" style="color:var(--grey)">Lock this device</a></p>
-</div>
+</div></aside></div>
 </div>
 <script>
 const $ = id => document.getElementById(id);
@@ -75,16 +76,23 @@ async function api(path, opt = {}) {
   if (!r.ok) { const e = new Error(j.error || r.statusText); e.status = r.status; throw e; }
   return j;
 }
-let list = [];
+let list = [], refreshTimer = null;
 async function unlock() {
+  if ($('pinGo').disabled) return;
+  $('pinGo').disabled = true;
   try {
     const a = await api('/api/auth', { method: 'POST' });
-    if (a.role === 'station') throw new Error('That is a Station PIN. Use the staff PIN.');
+    if (a.role === 'station') throw Object.assign(new Error('That is a Station PIN. Use the staff PIN.'), {status:403});
     $('pinCard').hidden = true; $('form').hidden = false; $('recent').hidden = false;
-    refresh(); setInterval(refresh, 10000); $('sid').focus();
-  } catch (e) { setPin(''); $('pinCard').hidden = false; $('pinErr').textContent = pin() || e.status !== 401 ? e.message : (e.message === 'Wrong PIN' && $('pin').value ? e.message : ''); }
+    refresh(); clearInterval(refreshTimer); refreshTimer = setInterval(refresh, 10000); $('sid').focus();
+  } catch (e) {
+    if (e.status === 401 || e.status === 403 || e.message.includes('Station PIN')) setPin('');
+    $('pinCard').hidden = false;
+    $('pinErr').textContent = e.status ? e.message : "Cannot connect. Check the Wi-Fi and try Unlock again. Your saved PIN is kept.";
+  } finally { $('pinGo').disabled = false; }
 }
-$('pinGo').onclick = () => { setPin($('pin').value.trim()); unlock(); };
+
+$('pinGo').onclick = () => { const entered = $('pin').value.trim(); if (entered || !pin()) setPin(entered); unlock(); };
 $('pin').onkeydown = e => { if (e.key === 'Enter') $('pinGo').click(); };
 $('lock').onclick = e => { e.preventDefault(); setPin(''); location.reload(); };
 
@@ -131,7 +139,7 @@ $('rows').onclick = async e => {
 };
 $('nextParticipant').onclick = () => { $('passCard').hidden = true; $('sid').focus(); };
 $('search').oninput = render;
-async function refresh() { try { list = await api('/api/participants'); render(); } catch (e) { if (e.status === 401) { setPin(''); location.reload(); } } }
+async function refresh() { try { list = await api('/api/participants'); render(); $('deskConnection').textContent = 'Registration desk connected'; } catch (e) { $('deskConnection').textContent = 'Cannot refresh the list. Trying again shortly.'; if (e.status === 401) { setPin(''); location.reload(); } } }
 if (pin()) unlock(); else $('pinCard').hidden = false;
 </script>
 </body></html>

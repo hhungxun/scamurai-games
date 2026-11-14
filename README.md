@@ -7,10 +7,12 @@ Anyone in the group can add a game. Every game lives in its own folder under `ga
 ## Play
 
 - **Event site:** https://scamurai.physicsxmum.my/ (registration desk, games, [leaderboard](https://scamurai.physicsxmum.my/leaderboard.html))
-- Game list on GitHub Pages: https://hhungxun.github.io/scamurai-games/ (no scores saved there)
+- GitHub Pages: https://hhungxun.github.io/scamurai-games/ (redirects to the event site)
 - **My participant page:** https://scamurai.physicsxmum.my/participant.html (scan your personal QR at registration once; this phone remembers you)
 
 Registration shows each Participant a personal QR for their own page. It displays the registered name, Student ID or Guest ID, total out of 500, best score and playing/completed status at all five Stations, and Exit Survey progress. It refreshes every 5 seconds. Keep it open or bookmark it throughout the event. The Secretary can re-show an existing Participant's QR from the registration list. Scores from active Rounds appear once the Game Master finishes them; the page labels those Stations as playing in the meantime.
+
+Tap **Start Scamming** on that page to scan station codes, your Game Master's Join QR or Game 5 board QRs with the built-in camera. Everything stays in the same browser. **My scores** / **My participant page** returns to the hub; **Scan another QR** continues to another station. Stations 1–4 currently show coming-soon placeholders. Staff can print the five public codes at [/stations.html](https://scamurai.physicsxmum.my/stations.html).
 
 ## Add your game
 

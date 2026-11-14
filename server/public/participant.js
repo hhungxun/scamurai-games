@@ -2,10 +2,17 @@
 (function () {
   const KEY = 'scamurai.participant.token';
   const ROUND_KEY = 'scamurai.s5.round';
+  let inMemoryToken = '';
   window.ScamuraiParticipant = {
-    token() { try { return localStorage.getItem(KEY) || ''; } catch { return ''; } },
-    remember(token) { if (!/^[a-f0-9]{64}$/.test(token)) return; try { localStorage.setItem(KEY, token); } catch {} },
-    round() { try { return JSON.parse(localStorage.getItem(ROUND_KEY)); } catch { return null; } },
+    token() { if (inMemoryToken) return inMemoryToken; try { return localStorage.getItem(KEY) || ''; } catch { return ''; } },
+    remember(token) { if (!/^[a-f0-9]{64}$/.test(token)) return; inMemoryToken = token; try { localStorage.setItem(KEY, token); } catch { try { localStorage.removeItem(KEY); } catch {} } },
+    persistent() { try { return !!this.token() && localStorage.getItem(KEY) === this.token(); } catch { return false; } },
+    round() {
+      try {
+        const r = JSON.parse(localStorage.getItem(ROUND_KEY));
+        return r && Number.isInteger(r.id) && typeof r.token === 'string' && Array.isArray(r.cards) && r.done && typeof r.done === 'object' && !Array.isArray(r.done) && r.deal ? r : null;
+      } catch { return null; }
+    },
     async rememberRound(r) {
       if (!r?.id || !r.token) return;
       const res = await fetch(`/api/rounds/${r.id}/participant`, { headers: { 'X-Round-Token': r.token } });
@@ -20,4 +27,5 @@
       return data;
     },
   };
+  addEventListener('storage', e => { if (e.key === KEY) inMemoryToken = ''; });
 })();

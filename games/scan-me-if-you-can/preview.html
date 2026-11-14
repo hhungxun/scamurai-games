@@ -2,6 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>Site Card preview</title>
+<link rel="stylesheet" href="/style.css">
 <style>
   body{margin:0;background:#171616;color:#fff;font-family:system-ui,sans-serif}
   .gal{display:flex;flex-wrap:wrap;gap:18px;padding:18px}
@@ -14,7 +15,7 @@
 <script src="cards/manifest.js"></script>
 <script src="sim-browser.js"></script>
 </head><body>
-<div id="root"></div>
+<header id="gallery-head" style="padding:25px;border-bottom:1px solid var(--dim)"><p class="eyebrow">STATION 5 / SITE CARD GALLERY</p><h1>All 25 sites</h1><p class="muted">Scroll to inspect each site and its answer.</p><a href="/">Scamurai home</a></header><div id="root"></div>
 <script>
 // preview.html            -> gallery of all 25 cards (dev only)
 // preview.html?c=<slug>   -> one card, full screen, answer shown at the bottom
@@ -24,6 +25,7 @@ if (!c) {
   root.className = 'gal';
   root.innerHTML = CARD_MANIFEST.map(m => `<div class="cell"><iframe loading="lazy" src="?c=${m.slug}"></iframe><p>#${m.id} · ${m.slug}</p></div>`).join('');
 } else {
+  document.getElementById('gallery-head').remove();
   SimCards.load(c).then(card => {
     SimBrowser(root, card, { bottomInset: 90 });
     const a = document.createElement('div'); a.className = 'ans';

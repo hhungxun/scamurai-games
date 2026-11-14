@@ -2,15 +2,16 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>Scan Me If You Can</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Lexend:wght@400;600&family=Permanent+Marker&display=swap">
 <link rel="stylesheet" href="s5.css">
 <script src="s5.js"></script>
 <script src="cards/manifest.js"></script>
 <script src="sim-browser.js"></script>
-<script src="vendor/jsQR.js"></script>
+<script src="/vendor/jsQR.js"></script>
+<script src="/qr-scanner.js"></script>
 <script src="scanner.js"></script>
 <script src="/participant.js"></script>
 </head><body>
+<div class="phone-home"><a href="/">← Scamurai home</a></div>
 <main class="s5" id="app"></main>
 <script>
 const app = document.getElementById('app');
@@ -31,7 +32,10 @@ async function join() {
   const d = await S5.fetchDeal(+id, token);
   if (d.error) { app.innerHTML = H + `<div class="box">${d.error}</div>`; return 'error'; }
   const cards = (d.order || Object.keys(d.deal)).map(Number);
-  S5.save({ id: +id, token, cards, deal: d.deal, done: {}, joinedAt: Date.now() });
+  if (!S5.save({ id: +id, token, cards, deal: d.deal, done: {}, joinedAt: Date.now() })) {
+    app.innerHTML = H + '<div class="box">This browser is blocking game storage. Allow site storage, then scan your Join QR again.</div>';
+    return 'error';
+  }
   ScamuraiParticipant.rememberRound(S5.get()).catch(() => {});
   S5.post(S5.get(), { t: 'join', ua: navigator.userAgent.slice(0, 80) });   // carries this phone's id, so the laptop sees a second phone
 }

@@ -9,8 +9,13 @@
 window.S5 = {
   KEY: 'scamurai.s5.round',
   SECS: 12,
-  get() { try { return JSON.parse(localStorage.getItem(this.KEY)) || null; } catch { return null; } },
-  save(r) { try { localStorage.setItem(this.KEY, JSON.stringify(r)); } catch {} },
+  get() {
+    try {
+      const r = JSON.parse(localStorage.getItem(this.KEY));
+      return r && Number.isInteger(r.id) && typeof r.token === 'string' && Array.isArray(r.cards) && r.done && typeof r.done === 'object' && !Array.isArray(r.done) && r.deal ? r : null;
+    } catch { return null; }
+  },
+  save(r) { try { localStorage.setItem(this.KEY, JSON.stringify(r)); return true; } catch { return false; } },
   // Right: 60 + up to 40 for speed. Wrong call: -100, so tapping FAKE on everything scores far below
   // reading carefully. Time ran out: 0. A Round's total never goes below 0 (S5.total).
   points(correct, ms, v) { return correct ? Math.round(60 + 40 * Math.max(0, Math.min(1, 1 - ms / (this.SECS * 1000)))) : v === 'timeout' ? 0 : -100; },
@@ -34,7 +39,7 @@ window.S5 = {
     r.firstCard = r.firstCard || Number(Object.keys(r.started || {}).sort((a, b) => r.started[a] - r.started[b])[0]) || Number(Object.keys(r.done)[0]) || n;
     if (n !== r.firstCard && !r.done[r.firstCard]) return `Finish QR #${r.firstCard} first.`;
     if (n !== r.firstCard) r.started = { ...(r.started || {}), [n]: (r.started || {})[n] || at };
-    this.save(r);
+    if (!this.save(r)) return 'This browser is blocking game storage. Allow site storage before playing.';
     return null;
   },
   // Warm the next requested site while the Participant is finding its QR.

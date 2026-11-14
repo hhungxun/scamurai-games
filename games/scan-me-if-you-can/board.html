@@ -2,10 +2,10 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>Station 5 · QR board (print)</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Lexend:wght@400;600&display=swap">
+<link rel="stylesheet" href="/style.css">
 <style>
   @page{size:A4;margin:10mm}
-  body{margin:0;font-family:Lexend,sans-serif;background:#fff;color:#171616}
+  body{color-scheme:light;margin:0;font-family:Lexend,sans-serif;background:#fff;color:#171616}
   .bar{padding:12px 16px;background:#171616;color:#fff;font-size:14px}
   .bar input{width:min(520px,90vw);font:inherit;padding:6px}
   .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8mm;padding:8mm}
@@ -16,18 +16,22 @@
   @media print{.bar{display:none}.grid{padding:0}}
 </style>
 <script src="cards/manifest.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="/vendor/qrcode.js"></script>
 </head><body>
-<div class="bar">Print this page (A4, 6 per page) and cut along the dashes. Codes point to:
-  <input id="base"> <button onclick="draw()">Redraw</button></div>
+<div class="bar"><a href="/" style="color:white">Scamurai home</a><p>Print this page (A4, 6 per page) and cut along the dashes. Codes point to:</p>
+  <input id="base" aria-label="Board QR destination"> <button onclick="draw()">Redraw codes</button><p id="qrError" role="alert" style="color:#ffaaa2"></p></div>
 <div class="grid" id="grid"></div>
 <script>
 // Each code opens c.html?n=<board number>. The card behind each number is dealt fresh every Round.
 const base = document.getElementById('base');
-base.value = (location.protocol === 'file:' ? 'https://scamurai.physicsxmum.my/games/scan-me-if-you-can/' : location.href.replace(/[^/]*([?#].*)?$/, '')) + 'c.html?n=';
+base.value = (location.protocol === 'file:' || ['localhost','127.0.0.1'].includes(location.hostname) ? 'https://scamurai.physicsxmum.my/games/scan-me-if-you-can/' : location.href.replace(/[^/]*([?#].*)?$/, '')) + 'c.html?n=';
 function draw() {
+  let destination;
+  try { destination = new URL(base.value); if (!['https:', 'http:'].includes(destination.protocol) || destination.pathname !== '/games/scan-me-if-you-can/c.html' || !destination.searchParams.has('n') || destination.searchParams.get('n') !== '') throw new Error(); }
+  catch { document.getElementById('qrError').textContent = 'Use a valid board address ending in /games/scan-me-if-you-can/c.html?n='; document.getElementById('grid').innerHTML = ''; return; }
+  document.getElementById('qrError').textContent = '';
   document.getElementById('grid').innerHTML = CARD_MANIFEST.map(m => {
-    const q = qrcode(0, 'M'); q.addData(base.value + m.id); q.make();
+    const q = qrcode(0, 'M'); destination.searchParams.set('n', m.id); q.addData(destination.href); q.make();
     return `<div class="q"><div class="n">#${m.id}</div>${q.createSvgTag({ cellSize: 6, margin: 1, scalable: true })}<small>Scamurai · Scan Me If You Can</small></div>`;
   }).join('');
 }

@@ -2,7 +2,6 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
 <title>Scamurai · My participant page</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Lexend:wght@400;600&family=Permanent+Marker&display=swap">
 <link rel="stylesheet" href="style.css">
 <style>
   .identity h2{font:600 25px Lexend,system-ui,sans-serif;text-transform:none;overflow-wrap:anywhere;margin:4px 0 12px}
@@ -15,10 +14,13 @@
   .meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}.meta p{margin:0}
 </style>
 <script src="participant.js"></script>
-</head><body><main class="wrap">
-<div class="top"><img src="assets/logo.jpg" alt=""><div><h1>Scam<em>urai</em></h1><p class="tag">My participant page</p></div></div>
+<script src="/vendor/jsQR.js"></script><script src="/qr-scanner.js"></script><script src="/games/scan-me-if-you-can/s5.js"></script>
+<script src="/site.js" defer></script>
+</head><body data-site-nav data-page="participant"><main class="wrap">
+<div class="top"><img src="assets/logo.jpg" alt=""><div><h1>YOUR <em>SCAM RADAR.</em></h1><p class="tag">My participant page</p></div></div>
 <p class="muted" id="connection" role="status">Opening your page…</p>
 <div id="profile"></div>
+<section id="scan-panel" hidden><div id="portal-scanner"></div><button class="ghost wide" id="back-participant">Back to my participant page</button></section>
 <div class="meta"><button class="ghost" id="refresh">Refresh scores</button><a href="leaderboard.html" style="color:var(--yellow)">Leaderboard</a></div>
 </main><script>
 const P = ScamuraiParticipant, root = document.getElementById('profile'), connection = document.getElementById('connection');
@@ -26,7 +28,8 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&
 // The pass travels in a fragment, is saved on this phone, then removed from the address bar.
 const incoming = location.hash.slice(1);
 if (incoming) { P.remember(incoming); history.replaceState(null, '', location.pathname + location.search); }
-let pending = false, lastToken = '';
+let pending = false, lastToken = '', profile = null, scanner = null;
+let wantsScan = new URLSearchParams(location.search).get('scan') === '1';
 let linkRound = !incoming && (new URLSearchParams(location.search).get('from') === 'station5' || !P.token()) ? P.round() : null;
 async function refresh() {
   if (pending) return; pending = true;
@@ -44,7 +47,8 @@ async function refresh() {
     const res = await fetch('/api/participant/me', { headers: { 'X-Participant-Token': token } });
     const p = await res.json();
     if (P.token() !== token) { root.innerHTML = ''; return; }
-    if (!res.ok) { if (res.status === 401) root.innerHTML = ''; throw new Error(p.error || 'Could not load your scores.'); }
+    if (!res.ok) { if (res.status === 401) root.innerHTML = ''; throw Object.assign(new Error(p.error || 'Could not load your scores.'), {status:res.status}); }
+    profile = p;
     const r = P.round(), ownRound = r && r.participantId === p.id;
     const next = ownRound && r.cards.find(n => !r.done[n]);
     const active = ownRound && r.cards.find(n => !r.done[n] && (r.started || {})[n]);
@@ -53,21 +57,66 @@ async function refresh() {
     const roundActions = ownRound ? `<section class="card actions"><h2>Your Game 5 round</h2>${next && p.stations.find(s => s.n === 5)?.openRoundId === r.id ? `<a class="btn" href="${resume}">${active ? `Resume QR #${active}` : 'Continue playing'}</a>${active ? '<p class="muted">Your site timer keeps running while you view this page.</p>' : ''}` : ''}<a class="btn ghost" href="/games/scan-me-if-you-can/phone.html?view=scores">Game 5 QR results</a></section>` : '';
     root.innerHTML = `<section class="card identity"><p class="muted">Registered name</p><h2 id="participant-name">${esc(p.name)}</h2><p>${esc(p.idKind)}: <strong id="participant-id">${esc(p.id)}</strong></p>
       <p class="muted">${p.checkedOut ? 'Checked out' : p.stations.some(s => s.status === 'playing') ? 'Playing now' : 'Registered · welcome to Scamurai'}</p></section>
+      <section class="card play-card"><p class="eyebrow">YOUR NEXT CHALLENGE</p><button class="btn wide" id="start-scamming">Start Scamming ↗</button><p class="muted">Scan station codes and Game Master Join QRs here. Everything stays in this browser.</p></section>
       ${next ? roundActions : ''}
       <section class="card total"><h2>Total score</h2><div class="number" id="event-total">${p.total}<span style="font-size:30px;color:var(--grey)"> / ${p.maxTotal}</span></div>
       <p>${p.stationsDone.length} of ${p.stations.length} stations completed</p><progress value="${p.stationsDone.length}" max="${p.stations.length}" aria-label="Stations completed"></progress><p class="muted">Your best finished round at each station counts.</p></section>
-      <section class="card"><h2>Your stations</h2>${p.stations.map(s => `<div class="station" data-station="${s.n}"><div><strong>${s.n}. ${esc(s.name)}</strong><p class="muted ${s.status}">${s.status === 'playing' ? 'Playing now · score updates when the round finishes' : s.status === 'completed' ? 'Completed' : 'Not played yet'}</p></div><span class="score">${s.score === null ? '—' : s.score + ' / 100'}</span></div>`).join('')}</section>
-      <section class="card"><h2>Visit progress</h2><p>Exit survey: <strong>${p.surveyDone ? 'Completed' : 'Not completed yet'}</strong></p><p>${p.eligible ? 'All five stations and the exit survey are complete. You qualify for the prize ranking.' : 'Complete all five stations and the exit survey to qualify for the prize ranking.'}</p>
+      <section class="card station-panel"><h2>Your stations</h2>${p.stations.map(s => `<div class="station" data-station="${s.n}"><div><strong>${s.n}. ${esc(s.name)}</strong><p class="muted ${s.status}">${s.status === 'playing' ? 'Playing now · score updates when the round finishes' : s.status === 'completed' ? 'Completed' : 'Not played yet'}</p></div><span class="score">${s.score === null ? '—' : s.score + ' / 100'}</span></div>`).join('')}</section>
+      <section class="card visit-panel"><h2>Visit progress</h2><p>Exit survey: <strong>${p.surveyDone ? 'Completed' : 'Not completed yet'}</strong></p><p>${p.eligible ? 'All five stations and the exit survey are complete. You qualify for the prize ranking.' : 'Complete all five stations and the exit survey to qualify for the prize ranking.'}</p>
       ${!p.surveyDone ? '<p class="muted">When you are ready to leave, ask a Game Master for the exit survey.</p>' : ''}</section>
       ${!next ? roundActions : ''}`;
-    connection.textContent = 'Up to date · refreshes automatically every 5 seconds';
-  } catch (e) { connection.textContent = e.message || 'Connection lost. Your last scores are shown; trying again shortly.'; }
+    connection.textContent = P.persistent() ? 'Up to date · refreshes automatically every 5 seconds' : 'Your browser is blocking site storage. You can view your info here; allow storage for this site to scan and play.';
+    if (wantsScan) { wantsScan = false; openScanner(); }
+  } catch (e) {
+    if (e.status === 401) { scanner?.stop(); scanner = null; profile = null; root.hidden = false; document.getElementById('scan-panel').hidden = true; }
+    connection.textContent = e.status === 401 || e.message.includes('Game 5') ? e.message : 'Cannot refresh right now. Showing the last update; trying again shortly.';
+  }
   finally { pending = false; if (lastToken && lastToken !== P.token()) queueMicrotask(refresh); }
 }
 document.getElementById('refresh').onclick = refresh;
+root.addEventListener('click', e => { if (e.target.closest('#start-scamming')) openScanner(); });
+function openScanner() {
+  if (!profile) return;
+  if (!P.persistent()) { connection.textContent = 'Allow storage for this site in your browser to scan and play. Your participant info is still available below.'; return; }
+  scanner?.stop(); root.hidden = true; document.getElementById('scan-panel').hidden = false;
+  scanner = ScamuraiScanner.mount(document.getElementById('portal-scanner'), {
+    title: 'Start Scamming', description: 'Point your camera at a station QR, a Game Master Join QR, or your next Game 5 board QR.',
+    async onCode(raw, at) {
+      let u; try { u = new URL(raw); } catch { return 'That is not a Scamurai QR. Try the code at your station.'; }
+      if (![location.origin, 'https://scamurai.physicsxmum.my'].includes(u.origin)) return 'That QR is not part of Scamurai. Scan a station code instead.';
+      if (u.pathname === '/station.html' && /^[1-5]$/.test(u.searchParams.get('n'))) return {navigate:'/station.html?n='+u.searchParams.get('n')};
+      if (u.pathname === '/games/scan-me-if-you-can/' || u.pathname === '/games/scan-me-if-you-can/index.html') return {navigate:'/station.html?n=5'};
+      if (u.pathname === '/games/scan-me-if-you-can/phone.html') {
+        const match = /^#(\d+)\.([A-Za-z0-9_-]+)$/.exec(u.hash);
+        if (!match) return 'Ask the Game Master to show your personal Join QR.';
+        try {
+          const res = await fetch(`/api/rounds/${match[1]}/participant`, {headers:{'X-Round-Token':match[2]}});
+          const joined = await res.json();
+          if (!res.ok) return 'That Join QR is no longer valid. Ask the Game Master for a new one.';
+          if (joined.id !== profile.id) return 'That Join QR belongs to someone else. Ask the Game Master to select your name.';
+          return {navigate:u.pathname+u.hash};
+        } catch { return 'Cannot check that Join QR right now. Check your connection and scan again.'; }
+      }
+      const n = S5.boardNumber(raw);
+      if (n) {
+        const r = S5.get();
+        if (!r || r.participantId !== profile.id) return 'Scan your Game Master Join QR before a Game 5 board QR.';
+        const error = S5.scan(r, n, at);
+        return error || {navigate:'/games/scan-me-if-you-can/c.html?n='+n};
+      }
+      return 'That code is not a station or game QR. Try the code shown by your Game Master.';
+    },
+  });
+  document.getElementById('back-participant').focus({preventScroll:true});
+  document.getElementById('scan-panel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+document.getElementById('back-participant').onclick = () => {
+  scanner?.stop(); scanner = null; root.hidden = false; document.getElementById('scan-panel').hidden = true;
+  history.replaceState(null,'',location.pathname); root.scrollIntoView({block:'start'}); document.getElementById('start-scamming')?.focus({preventScroll:true}); refresh();
+};
 setInterval(() => { if (!document.hidden) refresh(); }, 5000);
 addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
-addEventListener('storage', e => { if (e.key === 'scamurai.participant.token') { root.innerHTML = ''; refresh(); } });
+addEventListener('storage', e => { if (e.key === 'scamurai.participant.token') { scanner?.stop(); scanner = null; profile = null; root.hidden = false; document.getElementById('scan-panel').hidden = true; root.innerHTML = ''; refresh(); } });
 addEventListener('pageshow', e => { if (e.persisted) refresh(); });
 addEventListener('hashchange', () => location.reload());
 refresh();

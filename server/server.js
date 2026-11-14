@@ -113,7 +113,8 @@ function summarise(p, rounds, now = Date.now()) {
       continue;
     }
     last = Math.max(last, r.ended_at);
-    const pct = r.max_score > 0 ? Math.max(0, Math.min(100, (r.score / r.max_score) * 100)) : 0;
+    // Compare the same one-decimal Station Score that is displayed and added to totals.
+    const pct = r.max_score > 0 ? Math.round(Math.max(0, Math.min(100, (r.score / r.max_score) * 100)) * 10) / 10 : 0;
     const ms = r.ended_at - r.started_at;
     const b = best[r.station];
     if (!b || pct > b.pct || (pct === b.pct && ms < b.ms)) best[r.station] = { pct: Math.round(pct * 10) / 10, ms, roundId: r.id };
@@ -351,7 +352,8 @@ route('GET', '/api/rounds/:id/events', async (req, { id }) => {
     // guess, so it must not count towards the PIN lockout: every phone and laptop on campus Wi-Fi shares one IP.
     const pin = req.headers['x-pin'] || new URL(req.url, 'http://x').searchParams.get('pin');
     need(pin, 403, 'Bad round token');
-    auth(req, ['station']);
+    const who = auth(req, ['station']);
+    need(who.role === 'admin' || who.station === r.station, 403, 'Not your station\'s round');
   }
   const after = +new URL(req.url, 'http://x').searchParams.get('after') || 0;
   return { ended: r.ended_at != null, cancelled: !!r.cancelled, events: q.evs.all(r.id, after).map(e => ({ id: e.id, at: e.at, data: JSON.parse(e.data) })) };
@@ -419,7 +421,7 @@ route('GET', '/api/export/rounds.csv', async req => {
 // ---- static files ----
 const BUILD = Date.now().toString(36);        // new on every deploy (the service restarts)
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css', '.json': 'application/json',
-  '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.md': 'text/plain; charset=utf-8' };
+  '.jpg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.ttf': 'font/ttf', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.md': 'text/plain; charset=utf-8' };
 function serveStatic(req, res, pathname) {
   // /games/** comes from the repo (same files GitHub Pages serves); everything else from server/public.
   let base = PUBLIC, rel = pathname;
@@ -445,6 +447,10 @@ function serveStatic(req, res, pathname) {
     const html = fs.readFileSync(file, 'utf8').replace(/((?:src|href)=")((?:https:\/\/scamurai\.physicsxmum\.my)?[^"?#:]+\.(?:js|css))"/g, `$1$2?v=${BUILD}"`);
     res.writeHead(200, head); res.end(html); return true;
   }
+  if (path.extname(file) === '.css') {
+    const css = fs.readFileSync(file, 'utf8').replace(/(@import\s+url\(["'])([^"'?#]+\.css)(["']\))/g, `$1$2?v=${BUILD}$3`);
+    res.writeHead(200, head); res.end(css); return true;
+  }
   res.writeHead(200, head);
   fs.createReadStream(file).pipe(res);
   return true;
@@ -466,9 +472,9 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, out);
     }
     if (pathname.startsWith('/api/')) return send(res, 404, { error: 'Not found' });
-    if (pathname === '/') { res.writeHead(302, { Location: '/register.html' }); return res.end(); }
     if (req.method === 'GET' && serveStatic(req, res, pathname)) return;
-    res.writeHead(404, { 'Content-Type': 'text/plain' }); res.end('Not found');
+    res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+    res.end(fs.readFileSync(path.join(PUBLIC, '404.html'), 'utf8'));
   } catch (e) {
     if (e instanceof HttpError) return send(res, e.code, { error: e.message });
     if (e && e.code === 'SQLITE_CONSTRAINT_PRIMARYKEY') return send(res, 409, { error: 'Already exists' });

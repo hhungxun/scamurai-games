@@ -1,0 +1,19 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Scamurai · Station</title><link rel="stylesheet" href="/style.css"><script src="/site.js" defer></script><script src="/participant.js"></script></head><body data-site-nav><main class="wrap" id="main-content"><div class="top"><img src="/assets/logo.jpg" alt=""><div><h1>THE NEXT<br><em>CHALLENGE.</em></h1><p class="tag">One browser. Every station.</p></div></div><section class="card" id="station"><p>Loading station…</p></section><div class="actions"><a class="btn" href="/participant.html?scan=1">Scan another QR</a><a class="btn ghost" href="/participant.html">My participant page</a></div></main><script>
+const root=document.getElementById('station'), n=Number(new URLSearchParams(location.search).get('n'));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function load(){
+  if(!Number.isInteger(n)||n<1||n>5){root.innerHTML='<h2>Unknown station</h2><p>Scan one of the five station codes to continue.</p>';return;}
+  try{
+    const config=await fetch('/api/config').then(r=>{if(!r.ok)throw new Error();return r.json()});
+    const station=config.stations.find(s=>s.n===n);
+    if(!station)throw new Error();
+    let p=null;const token=ScamuraiParticipant.token();
+    if(token){const res=await fetch('/api/participant/me',{headers:{'X-Participant-Token':token}});if(res.ok)p=await res.json();}
+    const score=p?.stations.find(s=>s.n===n)?.score;
+    root.innerHTML=`<p class="eyebrow">STATION ${n} / ${n===5?'READY TO PLAY':'COMING SOON'}</p><h2>${esc(station.name)}</h2>
+      ${p?`<p>${esc(p.name)} · <strong>${esc(p.id)}</strong></p><p class="muted">Your best score: ${score===null||score===undefined?'Not played yet':score+' / 100'}</p>`:'<p>Open your personal QR from registration to connect your name and scores.</p>'}
+      ${n===5?'<img src="/assets/brand/mascot-leap.webp" width="210" height="210" alt="Scamurai mascot"><h3>Scan Me If You Can</h3><p>Ask the Game Master to choose your registered name and show your Join QR. Tap <b>Scan another QR</b> below and scan it here.</p><p class="muted">8 sites · 12 seconds each · only the first site has a Start timer button.</p>':'<h3>This game is on its way.</h3><p>The station page is ready. Its game will be added here when it is complete. You can scan another station or check your participant page.</p>'}`;
+  }catch{root.innerHTML='<h2>Cannot load this station</h2><p>Check your connection, then try again.</p><button id="retry">Try again</button>';document.getElementById('retry').onclick=load;}
+}
+load();
+</script></body></html>

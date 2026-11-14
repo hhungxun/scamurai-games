@@ -29,7 +29,7 @@
   const STATION = +me.dataset.station || 0;
   const TEST = me.dataset.test === '1';
   const PIN_KEY = 'scamurai.pin.' + STATION;
-  const C = { bg: '#171616', surf: '#2A2827', red: '#F00303', yellow: '#EEED15', grey: '#BDB9B6', dim: '#5C5A58', gold: '#E8A93A' };
+  const C = { bg: '#171616', surf: '#242221', red: '#e52521', yellow: '#edcf61', grey: '#c2bdb5', dim: '#6e6961', gold: '#edcf61' };
 
   let startCb = null, dashCb = null, pickRes = null, round = null, participant = null, config = null, list = [], pollT = null;
 
@@ -51,7 +51,7 @@
   // ---------- look ----------
   const fonts = document.createElement('link');
   fonts.rel = 'stylesheet';
-  fonts.href = 'https://fonts.googleapis.com/css2?family=Anton&family=Lexend:wght@400;600&family=Permanent+Marker&display=swap';
+  fonts.href = API + '/style.css' + new URL(me.src).search;
   document.head.appendChild(fonts);
   const css = document.createElement('style');
   css.textContent = `
@@ -91,13 +91,23 @@
   .scm .opts button.on{background:${C.yellow};color:#000}
   .scm .muted{color:${C.grey};font-size:14px}
   .scm hr{border:0;border-top:1px solid ${C.dim};margin:18px 0}`;
+  css.textContent += `
+    .scm{background:${C.bg} url(${API}/assets/brand/charcoal.webp) center/cover}
+    .scm-card{border:1px solid ${C.dim};border-top:5px solid ${C.red};border-radius:4px;padding:26px}
+    .scm-top{padding-bottom:22px;border-bottom:1px solid ${C.dim};margin-bottom:24px}.scm-top img{border:1px solid ${C.dim};border-radius:3px}
+    .scm .scm-home{display:inline-block;margin-bottom:18px;font-size:12px;color:${C.grey}}
+    .scm input,.scm textarea,.scm select,.scm button,.scm .list{border-radius:3px}.scm .go{min-height:48px}.scm .it{min-height:64px;align-items:center}.scm .it>div{min-width:0;overflow-wrap:anywhere}
+    .scm .row{flex-wrap:wrap}.scm .ghost{min-height:44px}.scm .pill{border-radius:2px;white-space:normal;font-size:11px;flex:none;max-width:120px}.scm .big{color:#f2eee6}.scm .opts button{min-height:48px}
+    .scm .dots span{border-radius:3px}.scm .scale button{min-height:48px}.scm .personal-qr svg{max-height:40vh}
+    @media(max-width:380px){.scm{padding:12px}.scm-card{padding:18px}.scm h1{font-size:30px}.scm .scale{gap:4px}.scm .it{padding:10px;gap:6px}}
+  `;
   document.head.appendChild(css);
 
   let root = null;
   function screen(html) {
     if (!root) { root = h('<div class="scm"></div>'); document.body.appendChild(root); }
     root.style.display = 'flex';
-    root.innerHTML = `<div class="scm-card"><div class="scm-top"><img src="${API}/assets/logo.jpg" alt="">
+    root.innerHTML = `<div class="scm-card"><a class="scm-home" href="${API}/">← Scamurai home</a><div class="scm-top"><img src="${API}/assets/logo.jpg" alt="">
       <div><h1>Scam<em>urai</em></h1><p class="tag">Forewarned is forearmed</p></div></div>${html}</div>`;
     return root.firstChild;
   }
