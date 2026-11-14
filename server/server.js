@@ -376,7 +376,7 @@ route('POST', '/api/checkout', async req => {
 
 // Leaderboard (public, masked)
 route('GET', '/api/leaderboard', () => {
-  const rows = allSummaries().map(({ s }) => s).filter(s => s.stationsDone.length)
+  const rows = allSummaries().map(({ s }) => s).filter(s => CONFIG.stations.every(st => s.stationsDone.includes(st.n)))
     .sort((a, b) => b.total - a.total || a.totalMs - b.totalMs);
   let prize = 0;
   return {

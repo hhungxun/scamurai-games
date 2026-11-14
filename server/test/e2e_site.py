@@ -194,9 +194,19 @@ def run():
                     req=urllib.request.Request(BASE+'/api/export/participants.csv',headers={'X-Pin':'9999'})
                     rows=list(csv.DictReader(io.StringIO(urllib.request.urlopen(req).read().decode('utf-8-sig'))))
                     row=next(r for r in rows if r['participant_id']==p['id']);assert cross_station_blocked and row['s1_best_secs']=='0', {'cross_station_blocked':cross_station_blocked,'best_secs':row['s1_best_secs']}
-                    c=ctx();page=c.new_page();page.goto(BASE+'/leaderboard.html');page.wait_for_function("document.getElementById('rows').textContent.includes('33.3')")
+                    c=ctx();page=c.new_page();page.goto(BASE+'/leaderboard.html');page.wait_for_function("document.getElementById('rows').textContent.includes('No one has finished all 5 games')")
+                    assert 'completed all 5 games' in page.inner_text('#qualification')
+                    assert page.locator('.lb th').count()==4 and page.locator('.dots').count()==0
+                    for n in [2,3,4,5]:
+                        r=api.ok('POST','/api/rounds',{'participantId':p['id']},pin=f'500{n}')
+                        api.ok('POST',f'/api/rounds/{r["roundId"]}/finish',{'score':0,'maxScore':100},pin=f'500{n}')
+                    page.wait_for_function("document.getElementById('rows').textContent.includes('33.3')")
+                    assert page.locator('#rows tr td').count()==4
                     assert 'TIE001' not in page.inner_text('#rows')
-                    page.screenshot(path=str(OUT/'leaderboard-desktop.png'),full_page=True);c.close()
+                    page.screenshot(path=str(OUT/'leaderboard-desktop.png'),full_page=True)
+                    page.set_viewport_size({'width':320,'height':880})
+                    assert page.evaluate("document.querySelector('.lb').scrollWidth <= document.querySelector('.table-scroll').clientWidth + 1")
+                    page.screenshot(path=str(OUT/'leaderboard-mobile.png'),full_page=True);c.close()
                 check('cross-station round access and equal fractional scores keep the fastest best round', api_edges)
                 assert not errors, errors
                 browser.close()

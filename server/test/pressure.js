@@ -95,10 +95,39 @@ async function main() {
     assert.equal(o.perStation.find(s => s.n === 5).players, PLAYERS);
   });
 
-  await check('leaderboard is sorted and masks names', async () => {
+  await check('participants with only one completed game are absent from the leaderboard', async () => {
     const lb = await ok(call('GET', '/api/leaderboard'));
-    for (let i = 1; i < lb.rows.length; i++) assert.ok(lb.rows[i - 1].total >= lb.rows[i].total);
-    assert.ok(lb.rows.every(r => !/PT\d{4}/.test(r.who)));
+    assert.deepEqual(lb.rows, []);
+    assert.equal(lb.registered, 0);
+  });
+
+  await check('leaderboard requires all five distinct finished games; zero scores qualify and the survey only gates prizes', async () => {
+    const register = id => ok(call('POST', '/api/participants', { pin: PINS.staff,
+      body: { id, name: `Finisher ${id}`, ageGroup: reg.ageGroup, pbbAccount: false, scamExposure: reg.scamExposure, consent: true } }));
+    const start = (id, n) => ok(call('POST', '/api/rounds', { pin: st(n), body: { participantId: id } }));
+    const finish = (r, n, score = 0) => ok(call('POST', `/api/rounds/${r.roundId}/finish`, { pin: st(n), body: { score, maxScore: 100 } }));
+    const board = () => ok(call('GET', '/api/leaderboard'));
+    await register('LB001');
+    for (const n of [1, 2, 3, 4]) await finish(await start('LB001', n), n);
+    await finish(await start('LB001', 1), 1, 50); // Five rounds at four games still do not qualify.
+    assert.deepEqual((await board()).rows, []);
+    const cancelled = await start('LB001', 5);
+    assert.deepEqual((await board()).rows, []); // An open final game is not completed.
+    await ok(call('POST', `/api/rounds/${cancelled.roundId}/cancel`, { pin: st(5) }));
+    assert.deepEqual((await board()).rows, []);
+    await finish(await start('LB001', 5), 5);
+    const first = await board();
+    assert.equal(first.rows.length, 1);
+    assert.equal(first.rows[0].total, 50);
+    assert.equal(first.rows[0].eligible, false);
+    assert.equal(first.rows[0].prize, null);
+    await register('LB002');
+    for (const n of [1, 2, 3, 4, 5]) await finish(await start('LB002', n), n);
+    const lb = await board();
+    assert.equal(lb.registered, 2);
+    assert.deepEqual(lb.rows.map(r => r.total), [50, 0]);
+    assert.deepEqual(lb.rows.map(r => r.rank), [1, 2]);
+    assert.ok(lb.rows.every(r => r.done === 5 && !r.who.includes('LB00')));
   });
 
   const [A, B, C] = ids;

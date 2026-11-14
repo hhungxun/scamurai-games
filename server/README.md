@@ -41,6 +41,8 @@ The Secretary hands each Participant their personal page QR after Registration; 
 
 The `participant_passes` table is added automatically without changing existing Participants or Rounds. Passes persist across service restarts. They allow read-only access to one Participant's own profile; no ID-only public lookup is available. The public leaderboard continues to mask names and IDs.
 
+The public leaderboard includes only Participants with a finished, non-cancelled Round at every one of the five Stations. Replays at the same Station do not replace a missing Station; zero scores still count as completion. The Exit Survey is required for a prize, not for appearing on the leaderboard. In-progress scores remain available on the personal participant page.
+
 | Route | Access | Purpose |
 |---|---|---|
 | `GET /api/participant/me` | `X-Participant-Token` | Own identity, Station Scores and progress |
