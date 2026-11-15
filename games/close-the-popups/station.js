@@ -34,7 +34,8 @@
   }
   function panelSummary() {
     $('station-header').dataset.phase=practice?'practice':state?.status||'idle';
-    $('participant-name').textContent=state?.participant.name || (practice ? (lang==='zh'?'工作人员练习':'Staff practice') : (lang==='zh'?'等待下一位参与者':'Ready for the next participant'));
+    $('participant-name').textContent=state ? `${state.participant.name} · ${state.participant.id}` : (practice ? (lang==='zh'?'工作人员练习':'Staff practice') : (lang==='zh'?'等待下一位参与者':'Ready for the next participant'));
+    $('next').textContent=state||practice ? (lang==='zh'?'下一位':'Next participant') : (lang==='zh'?'选择参与者 ID':'Select participant ID');
     const scored=state?.status==='saved';
     $('staff-scores').hidden=!scored;
     if(scored){$('staff-round-score').textContent=state.result.pct;$('staff-best-score').textContent=state.result.best;}
@@ -85,7 +86,8 @@
     $('retry').hidden = !ready || state?.status !== 'pending';
     $('retry').disabled = busy;
     $('resume').hidden = !ready || !(state?.localId || practice?.localId);
-    $('next').hidden = !ready || !(state && ['saved','cancelled'].includes(state.status) || practice && practice.status !== 'open');
+    $('next').hidden = !ready || damaged || !(state && ['saved','cancelled'].includes(state.status) || practice && practice.status !== 'open' || !state && !practice);
+    $('next').disabled = busy || picking;
     $('personal').hidden = !ready || !state;
     $('survey').hidden = !ready || state?.status !== 'saved' || !state.result?.surveyDue;
     $('leaving').hidden = !ready || !!state || !!practice || damaged || picking;
@@ -94,10 +96,11 @@
   }
   function showState() {
     if (practice) say(`Practice only — no event score${practice.status !== 'open' ? ' · '+practice.score+' / 100' : ''}`, `工作人员练习，不写入活动成绩${practice.status !== 'open' ? ' · '+practice.score+' / 100' : ''}`);
-    else if (!state) say('Choose a task. The Game Master selects a participant when you start.', '请选择任务。点击开始后，由工作人员选择参与者。');
+    else if (!state) say('Select the next participant ID, then choose a task. Starting a task also opens the ID picker if needed.', '请先选择下一位参与者 ID，再选任务。若直接开始任务，也会先要求选择 ID。');
     else if (state.status === 'saved') say('Score saved. Ready for the next participant.', '成绩已同步，可以交接下一位。');
     else if (state.status === 'cancelled') say('Round cancelled. No score recorded.', '本轮已作废，不计分。');
     else if (state.status === 'pending') say('Score awaiting confirmation. Retry saving before the next participant.', '成绩尚待确认。请重试保存后再交接下一位。');
+    else if (!state.localId) say(state.readyToStart ? 'Participant confirmed. Choose a task to start the 60-second challenge.' : 'An existing round is open. Resume in its original tab or cancel it here.', state.readyToStart ? '参与者已确认，请选任务。开始挑战后才进入 60 秒计时。' : '该参与者已有未完成轮次，请回原标签恢复，或在此作废。');
     else say('Challenge in progress. Return to the task to continue.', '挑战进行中，返回任务即可继续。');
     controls();
   }
@@ -108,6 +111,10 @@
     verifyChild(win);
     if (damaged) throw new Error('Station storage is damaged. Staff must resolve the open round before continuing.');
     if (picking || busy) throw new Error('A participant is already being selected.');
+    if (state?.status === 'open' && state.localId === null && state.readyToStart === true && mode === 'ads') {
+      ownedPreparation = true;
+      return true;
+    }
     if (state || practice) throw new Error('Finish, save or cancel the current round before starting another. / 请先完成或作废当前轮次。');
     // Check storage before opening a server Round.
     sessionStorage.setItem(KEY + ':probe', '1'); sessionStorage.removeItem(KEY + ':probe');
@@ -119,7 +126,7 @@
       if (!p) throw new Error('No participant selected.');
       ownedPreparation = !p.existing;
       state = {version:1, roundId:p.roundId, participant:{id:p.id,name:p.name}, localId:null,
-        status:'open', score:0, result:null, url:safeURL(win.location.href) || chooser()};
+        status:'open', readyToStart:!p.existing, score:0, result:null, url:safeURL(win.location.href) || chooser()};
       persist(); clearNotice(); showState();
       // Existing rounds are deliberately not given a new local 60-second clock.
       if (p.existing) throw new Error('This participant already has an open round. Resume it in the original tab, or use Cancel round before restarting. / 已有未完成轮次，请回原标签恢复，或先作废。');
@@ -132,7 +139,7 @@
       practice = {localId:round.id,status:'open',score:0,url:safeURL(win.BROWSE_BOOTH.entryURL(round))};
       sessionStorage.setItem(KEY+':practice',JSON.stringify(practice)); showState(); return;
     }
-    if (!state || state.status !== 'open' || state.localId !== null || !localID(round?.id) || round.mode !== 'ads') throw new Error('Cannot bind this game round.');
+    if (!state || state.status !== 'open' || state.localId !== null || state.readyToStart !== true || !localID(round?.id) || round.mode !== 'ads') throw new Error('Cannot bind this game round.');
     state.localId = round.id;
     state.url = safeURL(win.BROWSE_BOOTH.entryURL(round)) || state.url;
     persist(); ownedPreparation = false; showState();
@@ -188,10 +195,33 @@
       warn(`Cancellation not confirmed: ${error.message}. Keep this round open.`, `作废尚未确认：${error.message}。请保留本轮。`);
     } finally { busy = false; frame.inert = state?.status === 'cancelled'; controls(); }
   }
-  function next() {
-    if (!(state && ['saved','cancelled'].includes(state.status) || practice && practice.status !== 'open')) return false;
+  async function next() {
+    if (!ready || busy || picking || damaged || !(state && ['saved','cancelled'].includes(state.status) || practice && practice.status !== 'open' || !state && !practice)) return false;
+    // Clear state first, close panel, then immediately open ID picker
     state = null; practice = null; persist(); sessionStorage.removeItem(KEY+':practice'); $('personal-link').hidden = true; clearNotice(); closePanel();
-    frame.inert = false; frame.hidden = false; frame.src = chooser(); showState(); return true;
+    frame.inert = true; picking = true; showState();
+    await selectNext(); return true;
+  }
+  async function selectNext() {
+    try {
+      sessionStorage.setItem(KEY + ':probe', '1'); sessionStorage.removeItem(KEY + ':probe');
+      // Open ID picker and wait for selection BEFORE navigating to chooser
+      const p = await Scamurai.pick();
+      if (p) {
+        state = {version:1, roundId:p.roundId, participant:{id:p.id,name:p.name}, localId:null,
+          status:'open', readyToStart:!p.existing, score:0, result:null, url:chooser()};
+        persist();
+        // Only navigate to chooser after ID is confirmed
+        frame.hidden = false; frame.src = chooser(); showState();
+        if (p.existing) openPanel();
+      } else {
+        // User cancelled the picker - stay on current page
+        showState();
+      }
+    } catch (error) {
+      warn(`Participant selection failed: ${error.message}. Select the participant again.`, `参与者选择未完成：${error.message}。请重新选择 ID。`);
+      openPanel();
+    } finally { picking = false; frame.inert = state?.status === 'cancelled'; controls(); }
   }
   window.CLOSE_POPUPS_HOST = {prepare,bind,result,
     canNext(win) { verifyChild(win); return next(); },

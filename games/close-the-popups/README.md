@@ -17,10 +17,10 @@ Open **`http://127.0.0.1:3030/games/close-the-popups/`** (or the configured serv
 ## Play and scoring
 
 1. Authenticate the Game Master with the shared Station 2 SDK screen.
-2. Choose a task and read the brief. At **Start the challenge**, the Game Master selects an already registered Participant using the SDK.
+2. Use **Staff → Select participant ID** to find an already registered Participant by ID or name, confirm them in the SDK picker, then choose a task and read the brief. If no participant has been selected yet, **Start the challenge** also opens this picker before starting.
 3. The actual task page starts its existing absolute 60-second deadline once ready. Navigation, reloading, task reminders and advertiser tabs do not give extra time. Genuine downloads and saves work as before.
 4. Submit early, or let the original deadline expire. The original scoring function produces **task 40 + time 40 + resilience 20 = 100**. The host sends that exact total through `Scamurai.finishRound(roundId, {score: total, maxScore: 100})`. Staff judgement is a separate observation and does not change the score. See [full scoring rules](docs/SCORING.md).
-5. Wait for the small **Score saved to the event** confirmation beneath the result. Check and close the extra ad tabs, then use **Next participant** in the existing result handover or the **Staff** menu. The participant page shows the best completed score, and the normal event backend aggregates it with the other four Stations.
+5. Wait for the small **Score saved to the event** confirmation beneath the result. Check and close the extra ad tabs, then use **Next participant** in the existing result handover or the **Staff** menu. This closes the handover menu and immediately opens the SDK ID picker. Only after confirming the next participant does the game return to task selection; starting the chosen task reuses that participant's Round. Backing out of the picker leaves nobody selected. The participant page shows the best completed score, and the normal event backend aggregates it with the other four Stations.
 
 The staff no-ad difficulty test is explicitly **practice only**: no Participant is selected, no server Round is created and no event score is sent. This mode retains its own local result and refresh recovery. Free browsing and local review tools remain available.
 
@@ -41,7 +41,7 @@ The game fills the viewport. Station operations are collapsed behind a small **S
 
 Open the outer entry for scored play. Opening `browse/booth.html` directly cannot bind or submit event scores. Do not clear site storage during an open Round without checking the backend first.
 
-The leaderboard's tie-break duration is the server's time from participant selection to confirmed finish, including task loading/network time. The game's time points still use its original ready-to-submit/timeout duration. This follows the existing backend contract without changing shared server files.
+The leaderboard's tie-break duration is the server's time from participant confirmation to confirmed finish, including task selection, brief reading, loading and network time. The game's 60-second deadline and time points still use its original ready-to-submit/timeout duration. This follows the existing backend contract without changing shared server files.
 
 ## Source and assets
 
