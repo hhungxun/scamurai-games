@@ -172,6 +172,8 @@
         note.textContent = t('This round could not be prepared. Allow this site’s session storage, then try again. Your challenge has not started.', '未能准备本轮。请允许此网站的会话存储，再试一次。挑战尚未开始。');
         note.textContent = error?.message || note.textContent;
         note.classList.add('is-error');
+        note.setAttribute('role','alert');
+        note.scrollIntoView({block:'nearest'});
         status(note.textContent);
       }
     });

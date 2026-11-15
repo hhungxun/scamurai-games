@@ -111,7 +111,19 @@
   }
   async function prepare(win, mode, taskId) {
     verifyChild(win);
-    if (DEMO) return true;
+    if (DEMO) {
+      if (damaged) throw new Error('Demo storage is unavailable. Allow site storage and reload.');
+      if (practice?.status === 'open') {
+        openPanel();
+        throw new Error('A demo task is already running. Use Resume task in Staff to continue it. / 演示任务仍在进行，请在工作人员菜单中点击返回任务。');
+      }
+      // A completed rehearsal must not keep ownership of the next local Round.
+      // Starting another demo never creates, cancels or finishes an event Round.
+      if (practice) {
+        sessionStorage.removeItem(KEY+':practice'); practice = null; showState();
+      }
+      return true;
+    }
     if (mode === 'ads' && taskId && taskId !== state?.taskId) throw new Error('Use the assigned task. Return to Draw a task.');
     if (damaged) throw new Error('Station storage is damaged. Staff must resolve the open round before continuing.');
     if (picking || busy) throw new Error('A participant is already being selected.');
