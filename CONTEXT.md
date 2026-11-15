@@ -73,7 +73,16 @@ An unscored rehearsal separate from event Rounds and Participant records. Its di
 The ten messages assigned to a Station 1 Round: five Phishing and five Legitimate, with the same difficulty mix for both classifications, presented in a random order.
 
 **Case Notes**:
-Fictional, independently checked facts supplied before an Email Classification, separate from the message’s own claims. They describe the scenario’s known registrations, purchases or established account workflow.
+Fictional facts from a service record, revealed when a Participant chooses Independent Verification. They are separate from the message’s own claims.
+
+**Independent Verification**:
+A Participant consulting the established service’s record to check an email claim. Checking carries no score deduction and does not pause a Round.
+
+**Evidence Selection**:
+The specific sender, message, destination or verified fact a Participant cites to justify an Email Classification. A contextual detail can be true without being sufficient evidence.
+
+**Supported Judgement**:
+An Email Classification supported by decisive Evidence Selection for that case. A correct label without supported evidence is not a Supported Judgement.
 
 **Email Classification**:
 A Participant's Legitimate or Phishing call on one message in their Email Deal.

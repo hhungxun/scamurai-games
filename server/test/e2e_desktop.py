@@ -34,11 +34,16 @@ def run():
     def frame(p,id='booth-frame'):
      return p.locator('#'+id).element_handle().content_frame()
     def state(p,key=EMAIL_KEY):return p.evaluate('(key)=>JSON.parse(sessionStorage.getItem(key))',key)
-    def answer(p,correct=True,kind=None):
+    def answer(p,correct=True,kind=None,supported=True):
      f=frame(p);qid=f.locator('[data-question]').first.get_attribute('data-question')
      actual=f.evaluate('(id)=>EMAIL_BANK.find(e=>e.id===id).classification',qid)
      choice=kind or (actual if correct else 'phishing' if actual=='legitimate' else 'legitimate')
      f.locator(f'[data-answer="{choice}"]').click()
+     evidence=f.evaluate('(id)=>EMAIL_BANK.find(e=>e.id===id).acceptedEvidence[0]',qid) if supported else 'subject'
+     if evidence.startswith('verification:'):f.click('#verify-independent')
+     pick=f.locator(f'[data-evidence="{evidence}"]')
+     if evidence.startswith('destination:'):pick.evaluate("el=>el.closest('[data-link-inspector]').querySelector('.inspect-link').click()")
+     pick.click();f.click('#submit-judgement')
      f.wait_for_function('(old)=>document.querySelector("[data-question]")?.dataset.question!==old',arg=qid)
     a=laptop('phishing-fishing',1);b=laptop('phishing-fishing',1)
     select(a,'MAIL001');frame(a).wait_for_selector('#start-game');frame(a).click('#start-game')
@@ -48,6 +53,11 @@ def run():
     assert len(api.ok('GET','/api/rounds/open',pin='5001'))==2
     assert state(a)['participant']['id']=='MAIL001' and state(b)['participant']['id']=='MAIL002'
     print('PASS: two email laptops play independently; the same participant cannot start twice')
+    af=frame(a);qid=af.locator('[data-question]').first.get_attribute('data-question');label=af.evaluate('(id)=>EMAIL_BANK.find(e=>e.id===id).classification',qid)
+    af.locator(f'[data-answer="{label}"]').click();af.click('#verify-independent');af.locator('[data-evidence="subject"]').click();draft=state(a)['snapshot']
+    a.reload();frame(a).wait_for_selector('[data-question]');assert state(a)['snapshot']['draft']==draft['draft'] and state(a)['snapshot']['verified']==draft['verified']
+    assert frame(a).locator('.case-context').is_visible()
+    print('PASS: pending label, evidence and voluntary verification survive full reload')
     for _ in range(4):answer(a)
     before=state(a)['snapshot'];a.reload();frame(a).wait_for_selector('[data-question]')
     after=state(a)['snapshot'];assert before['startedAt']==after['startedAt'] and before['questionIds']==after['questionIds'] and before['answers']==after['answers']
@@ -71,9 +81,9 @@ def run():
     print('PASS: lost finish response retries idempotently, all correct saves 100, blind guessing saves 0, five-station total and survey handoff agree')
     b.click('#booth-next');select(b,'MAIL003');frame(b).wait_for_selector('#start-game')
     b.clock.install();frame(b).click('#start-game');answer(b)
-    b.clock.fast_forward(61000)
+    b.clock.fast_forward(121000)
     b.wait_for_function("JSON.parse(sessionStorage.getItem('scamurai.booth.1.event.v1')).status==='saved'")
-    timed=state(b);assert timed['score']==10 and timed['snapshot']['endedAt']-timed['snapshot']['startedAt']==60000
+    timed=state(b);assert timed['score']==10 and timed['snapshot']['endedAt']-timed['snapshot']['startedAt']==120000
     b.reload();frame(b).wait_for_selector('.score-circle');assert state(b)['score']==10
     print('PASS: scored email timeout retains partial credit, exact deadline and saved results through reload')
     b.click('#booth-next');select(b,'MAIL004');frame(b).wait_for_selector('#start-game')
@@ -85,7 +95,7 @@ def run():
     assert len(cancelled)==1
     assert api.ok('GET','/api/participant/me',participant=people['MAIL004']['participantToken'])['stations'][0]['score'] is None
     b.unroute('**/api/rounds/*/cancel');b.click('#booth-next');select(b,'MAIL005');frame(b).wait_for_selector('#start-game');frame(b).click('#start-game')
-    remote=state(b);api.ok('POST',f'/api/rounds/{remote["roundId"]}/cancel',pin='5001');b.clock.fast_forward(61000)
+    remote=state(b);api.ok('POST',f'/api/rounds/{remote["roundId"]}/cancel',pin='5001');b.clock.fast_forward(121000)
     b.wait_for_function("JSON.parse(sessionStorage.getItem('scamurai.booth.1.event.v1')).status==='cancelled'")
     assert b.locator('#booth-next').is_visible()
     print('PASS: cancellation on a different laptop releases the original email laptop without a score')
@@ -117,12 +127,24 @@ def run():
      p.goto(BASE+f'/games/{game}/?demo=1&lang=en');assert p.locator('.scm input[type=password]').count()==0
      f=frame(p,iframe)
      if game=='phishing-fishing':
-      f.wait_for_selector('#start-game');f.click('#start-game');assert f.locator('.email-progress li').count()==20
-      for _ in range(20):answer(p)
+      f.wait_for_selector('#start-game');f.click('#start-game');assert f.locator('.email-progress li').count()==32
+      for _ in range(32):answer(p)
       p.wait_for_function("JSON.parse(sessionStorage.getItem('scamurai.booth.1.demo.v1')).status==='saved'")
      else:
       f.wait_for_selector('[data-booth-task]');f.locator('[data-booth-task="minute2-movie-animation"]').click();f.click('#booth-start');f.wait_for_selector('[data-booth-submit]');f.locator('[data-booth-submit]').click(force=True);f.wait_for_selector('.booth-score')
      assert not writes,writes;c.close()
+    legacy=browser.new_context();lp=legacy.new_page();legacy_writes=[]
+    lp.on('request',lambda r:legacy_writes.append(r.url) if r.method=='POST' and '/api/' in r.url else None)
+    lp.add_init_script("""
+      if(window===top&&!sessionStorage.getItem('legacy-seeded')) {
+      sessionStorage.setItem('legacy-seeded','1');
+      sessionStorage.setItem('scamurai.booth.1.demo.v1',JSON.stringify({version:1,status:'open',roundId:null,participant:null,snapshot:{version:1,status:'playing'}}));
+      }
+    """)
+    lp.goto(BASE+'/games/phishing-fishing/?demo=1');frame(lp).wait_for_selector('#start-game');frame(lp).click('#start-game')
+    assert lp.evaluate("sessionStorage.getItem('legacy-seeded')")=='1'
+    assert state(lp,'scamurai.booth.1.demo.v1')['snapshot']['version']==2 and not legacy_writes
+    legacy.close();print('PASS: an earlier-format demo restarts safely into the new exercise without event writes')
     assert not api.ok('GET','/api/rounds/open',pin='5001') and not api.ok('GET','/api/rounds/open',pin='5002')
     print('PASS: both public demos bypass PIN/identity, allow practice and write no event data')
     assert not errors,errors

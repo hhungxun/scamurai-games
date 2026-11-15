@@ -91,6 +91,7 @@
   }
   window.ScamuraiBooth = {
     demo,
+    restartDemo(win) { verify(win); if (!demo || busy) return; state = null; persist(); pick(); },
     snapshot(win) { verify(win); return state.snapshot && JSON.parse(JSON.stringify(state.snapshot)); },
     update(win, snapshot) { verify(win); if (state.status !== 'open') throw new Error('This Round has already ended.'); state.snapshot = snapshot; persist(); },
     finish(win, snapshot, score) {

@@ -93,7 +93,7 @@ Both use Python Playwright with Chromium installed; the camera-feed test also ne
 | Game | Folder | Made by | How to play |
 |---|---|---|---|
 | *(template)* | `games/_template/` | — | Copy this to start |
-| Phishing Fishing (Station 1) | `games/phishing-fishing/` | ZYH | Classify 10 balanced emails in 60 seconds on a booth laptop; +10 correct, −10 wrong, 0 unanswered, minimum 0 |
+| Phishing Fishing (Station 1) | `games/phishing-fishing/` | ZYH | Investigate 10 balanced emails in 120 seconds; classify and cite evidence; +10 supported correct, 0 unsupported correct, −10 wrong, minimum 0 |
 | Close the Popups (Station 2) | `games/close-the-popups/` | Gary | A randomly assigned desktop task in 60 seconds, with misleading popups; shared participant selection, best score and exit survey |
 | Scan Me If You Can (Station 5) | `games/scan-me-if-you-can/` | Hung Xun | Game Master runs many players at once from one laptop; each scans a Join QR, then 8 of the 25 numbered board QRs (a fresh deal every round) and judges each site REAL or FAKE in 12 s using the in-game QR scanner |
 
@@ -105,4 +105,4 @@ Run `python3 server/test/e2e_popup.py` for the local Station 2 browser regressio
 
 Stations 1 and 2 support two or more laptops at the same Station. Staff enter the matching Station PIN once per browser; Participants then select their registered name or Student/Guest ID on each laptop. Different Participants play concurrently, while duplicate active Rounds for the same Participant at one Station are blocked. Each laptop restores its own identity, evidence and deadline after refresh. Saved scores use the existing best-Round, personal-page, leaderboard and Exit Survey systems.
 
-Try unscored demos with no PIN or registration: [Close the Popups](https://scamurai.physicsxmum.my/games/close-the-popups/?demo=1&lang=en) and [Phishing Fishing](https://scamurai.physicsxmum.my/games/phishing-fishing/?demo=1). The popup demo allows task choice and includes simulated ads; the email demo uses all 20 messages. Demo data is separate from event play and never submits an event score. Run `python3 server/test/e2e_desktop.py` to check two-laptop play, recovery and demos on temporary local data.
+Try unscored demos with no PIN or registration: [Close the Popups](https://scamurai.physicsxmum.my/games/close-the-popups/?demo=1&lang=en) and [Phishing Fishing](https://scamurai.physicsxmum.my/games/phishing-fishing/?demo=1). The popup demo allows task choice and includes simulated ads; the email demo uses the full 32-case practice bank. Demo data is separate from event play and never submits an event score. Run `python3 server/test/e2e_desktop.py` to check two-laptop play, recovery and demos on temporary local data.

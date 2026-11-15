@@ -1,48 +1,48 @@
-# Phishing Fishing — operator question guide
+# Phishing Fishing — operator case guide
 
-Scored Rounds draw 10 messages: 5 Phishing and 5 Legitimate, with 2 Easy, 2 Medium and 1 Hard in each class. One shared 60-second timer; +10 correct, −10 wrong, unanswered 0, final minimum 0. Demo/practice uses all 20 with +5/−5 practice points and never submits an event score.
+Scored rounds: 10 balanced emails, 120 seconds. +10 only for a correct label with supported evidence; unsupported correct labels 0; wrong labels −10; unanswered 0; final minimum 0. Verification is voluntary and has no deduction. The full 32-case demo is unscored for the event.
 
-## Full question table
-
-| Subject | Classification | Difficulty | Learning objective |
+| Case | Label | Difficulty | Decisive evidence accepted |
 |---|---|---|---|
-| Action on device review MB-841209 | phishing | Easy | Recognise a request for banking secrets, rather than relying on urgency alone. |
-| Mailbox retention report IT-Q-1022 — review available | phishing | Medium | Check the sender and destination of a plausible university storage notice. |
-| Delivery exception PP-MY-804219: unit number incomplete | phishing | Medium | Inspect the destination before paying a small, believable delivery charge. |
-| Receipt SL-583102 — document access updated | phishing | Hard | Recognise a deceptive receipt attachment and excessive account permissions, even with a familiar sender. |
-| Refund advice EF-2026-184207 is available | phishing | Hard | Compare displayed link text with the destination and recognise a brand name embedded in an unrelated domain. |
-| Account recovery case SEC-730184: confirmation required | phishing | Easy | Recognise OTP theft by email reply; phishing does not need a link. |
-| Revision-week study rooms: bookings close Friday | legitimate | Easy | Distinguish a normal university booking deadline from pressure to disclose information. |
-| Please review a card transaction — RM 840.00 | legitimate | Medium | Respond safely to an urgent bank alert without treating urgency or an amount as proof of fraud. |
-| Collect parcel PP-MY-612483 by Friday | legitimate | Medium | Check consistent delivery details and a link destination; collection deadlines can be normal. |
-| Payment received — order SL-582714 | legitimate | Easy | Check itemised amounts and the account workflow instead of treating money-related emails as scams. |
-| First Aid Workshop: confirm your reserved place by Friday | legitimate | Hard | Distinguish a genuine registration deposit and deadline from an unexpected off-site payment. |
-| Before Friday: review your account recovery number | legitimate | Hard | Evaluate an account-maintenance request using its scope, destination and independent verification route. |
-| Placement CS-26104: onboarding reservation | phishing | Medium | Recognise advance-fee recruitment fraud and pressure to bypass university checks, even with a familiar sender. |
-| SCH-26118: assessment comments shared with you | phishing | Hard | Recognise a shared-document lure that asks you to disable protections and run macros rather than disclose credentials. |
-| Interview booking for your internship application CS-26104 | legitimate | Medium | Verify recruitment through a recorded application, scoped interview request and independently accessible career service. |
-| Scholarship SCH-26118 — income evidence clarification | legitimate | Hard | Evaluate a sensitive scholarship-document request using its purpose, limited scope and established submission route. |
-| Collection locker update PP-MY-441208 | phishing | Easy | Recognise payment-card theft hidden behind a believable collection-locker QR update. |
-| Attendance reconciliation: review before Friday | phishing | Easy | Identify an executable disguised as a routine attendance PDF and refuse elevated permissions. |
-| Wallet migration WLT-184207: backup verification | phishing | Easy | Recognise wallet recovery-phrase theft disguised as a protective backup migration. |
-| Subscription receipt SL-SUB-184207 — RM 299.00 | phishing | Easy | Recognise callback and remote-access refund fraud behind a realistic subscription receipt. |
+| Action on device review MB-841209 (bank-verification) | phishing | Easy | body:4, sender, destination:3 |
+| Mailbox retention report IT-Q-1022 — review available (campus-storage) | phishing | Medium | destination:3 |
+| Delivery exception PP-MY-804219: unit number incomplete (parcel-fee) | phishing | Medium | destination:3, sender |
+| Receipt SL-583102 — document access updated (shopping-document) | phishing | Hard | body:3 |
+| Refund advice EF-2026-184207 is available (tax-rebate) | phishing | Hard | destination:2, body:3 |
+| Account recovery case SEC-730184: confirmation required (security-reply) | phishing | Easy | body:3 |
+| Revision-week study rooms: bookings close Friday (library-hours) | legitimate | Easy | body:3, verification:0 |
+| Please review a card transaction — RM 840.00 (bank-notification) | legitimate | Medium | body:3, verification:1 |
+| Collect parcel PP-MY-612483 by Friday (parcel-update) | legitimate | Medium | body:4, verification:1 |
+| Payment received — order SL-582714 (shopping-receipt) | legitimate | Easy | verification:0, verification:1 |
+| First Aid Workshop: confirm your reserved place by Friday (event-registration) | legitimate | Hard | verification:0, verification:1 |
+| Before Friday: review your account recovery number (security-change) | legitimate | Hard | verification:0, body:4 |
+| Placement CS-26104: onboarding reservation (internship-reservation) | phishing | Medium | body:2, verification:1 |
+| SCH-26118: assessment comments shared with you (scholarship-document) | phishing | Hard | body:3 |
+| Interview booking for your internship application CS-26104 (internship-shortlist) | legitimate | Medium | verification:1, body:3 |
+| Scholarship SCH-26118 — income evidence clarification (scholarship-review) | legitimate | Hard | verification:1, body:3 |
+| Collection locker update PP-MY-441208 (penguin-qr) | phishing | Easy | body:3 |
+| Attendance reconciliation: review before Friday (lecture-clone) | phishing | Easy | body:2, body:3 |
+| Wallet migration WLT-184207: backup verification (alien-wallet) | phishing | Easy | body:3, destination:2 |
+| Subscription receipt SL-SUB-184207 — RM 299.00 (monday-refund) | phishing | Easy | body:3, verification:1 |
+| Student Wi-Fi profile NF-26116 (wifi-profile) | phishing | Easy | body:3, body:4 |
+| Student Wi-Fi maintenance NF-26116 (wifi-maintenance) | legitimate | Easy | body:3, verification:0 |
+| Parcel PP-MY-663814: recipient confirmation (parcel-otp) | phishing | Easy | body:3 |
+| Parcel PP-MY-663814: collection PIN (parcel-access) | legitimate | Easy | body:3, verification:1 |
+| Library balance LB-20418: payment reminder (library-payment) | phishing | Medium | destination:3, verification:1 |
+| Library balance LB-20418: payment reminder (library-fine) | legitimate | Medium | verification:0, verification:1, body:4 |
+| Payee review PY-4821 (bank-beneficiary) | phishing | Medium | body:3, verification:1 |
+| Payee review PY-4821 (bank-payee) | legitimate | Medium | body:3, verification:1 |
+| Shared: AG1-2 activity budget (cloud-share) | phishing | Hard | body:4, verification:1 |
+| Shared: AG1-2 activity budget (cloud-share-record) | legitimate | Hard | body:4, verification:1 |
+| Allowance AL-26118: receiving account review (payroll-update) | phishing | Hard | destination:3, body:4, verification:1 |
+| Allowance AL-26118: receiving account review (payroll-confirm) | legitimate | Hard | verification:1, body:4 |
 
-## Deceptive message design
+## Teaching and review
 
-All 12 phishing messages now use plausible institutional wording, case references and ordinary administrative contexts. The four former joke scenarios are a collection-locker QR update, an attendance report disguised as a PDF executable, a wallet-backup verification request and an unexpected subscription refund. Stable internal scenario IDs preserve saved Round compatibility.
+Do not coach participants to look for one writing pattern. Both labels contain ordinary deadlines, fees, familiar senders and independent-channel language. The paired cloud-share cases even have the same URL but different permission requests. Verify the controlling host, requested privileges/secrets/payment and case-specific purpose.
 
-Teach the decisive request, not the tone. A familiar sender can be spoofed or compromised; a request not to share a password may still solicit an authorisation code or excessive mailbox permissions. Inspect the controlling domain, rather than recognising a brand embedded in its prefix. Delayed portal records, refund promises and duplicate-enquiry warnings are pretexts to verify independently, not evidence of legitimacy.
+All ordinary fields are selectable. Accepted evidence keys identify a sender, body block, actual destination or verified record fact. True but weak facts may earn 0 if selected without a decisive basis. The review labels weak/contextual highlights separately and explains the safe next action. If a Participant presents another genuinely decisive detail, review the content mapping rather than dismissing their reasoning merely because of the key list.
 
-The eight legitimate messages remain to prevent an “everything is fake” strategy. Legitimate messages can also contain deadlines, fees or attachments. A matching domain, polished formatting or HTTPS is not proof by itself. The .example ending belongs to every message and is not a warning sign.
+Verification records are supplied only after the learner chooses to check; revealing a mismatch after deliberate verification teaches the habit and has no deduction. The classification itself and supported evidence are never revealed during play. Case classifications, explanations and keys stay in this staff guide and post-Round review.
 
-Review highlights cite exact visible sender/body/destination text. “How to verify” does not reveal answers and its timer continues. Links only inspect destinations; QR codes and attachments remain inert labels, and no callable number or executable content is supplied.
-
-## Validation — 15 November 2026
-
-The core checks validate all 20 messages and their exact indicators, reserved-domain destinations, balanced difficulty-matched deals, score combinations and saved snapshots. The browser suite renders all 20 scenarios, checks keyboard/touch inspection and review, and covers five viewport sizes. See README.md for commands.
-
-## Case-based classification
-
-Case Notes are supplied before answering and are explicitly separate from email content. They make the legitimate/fake decision assessable from shared scenario facts. Both kinds can have genuine-looking case references and matching senders. For example, a real receipt in the shopping account does not justify a request to read/send campus mail; a known scholarship application can justify a limited upload through the verified application portal.
-
-Reviews explain the decisive evidence, the counterargument to the other label and the safe next action. “Legitimate” means the proposed action fits the provided case and known workflow; it is not a claim that sender text or HTTPS proves cryptographic email authenticity. The bank validator rejects missing case notes or reasoning fields. The browser suite verifies context is shown before classification and all 20 reviews contain the structured rationale.
+The bank has 18 Phishing and 14 Legitimate cases. Legitimate difficulty buckets are 4 Easy/5 Medium/5 Hard, removing the previously fixed easy pair. Scored deals remain 5/5 with equal difficulty mixes.

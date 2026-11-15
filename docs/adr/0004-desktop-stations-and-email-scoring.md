@@ -1,6 +1,6 @@
 # Desktop station ownership and email scoring
 
-Status: Accepted, 15 November 2026.
+Status: Accepted, 15 November 2026. Station 1 timing/scoring/content are superseded by ADR 0005; desktop ownership and recovery remain applicable.
 
 ## Context
 

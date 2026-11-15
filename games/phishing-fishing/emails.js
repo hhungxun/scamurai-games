@@ -1,10 +1,5 @@
-/* Fictional training messages and independent case notes.
- * Case notes are given facts outside the email, never claims made by its sender.
- * Reserved .example addresses and inert attachments only; stable IDs preserve recovery.
- */
-(function(root){
-  "use strict";
-  const emails = [
+/* Fictional investigation cases. All links and attachments are inert. */
+(function(root){"use strict";const emails=[
   {
     "id": "bank-verification",
     "institution": "bank",
@@ -39,7 +34,7 @@
       },
       {
         "type": "paragraph",
-        "text": "Digital Banking Operations\nMeridian Bank"
+        "text": "Digital Banking Operations\nMeridian Bank\nFor questions, use your usual service channel and quote this reference."
       }
     ],
     "explanation": "Phishing: it hijacks a plausible device-review event to collect authentication factors at an unrelated destination.",
@@ -71,7 +66,12 @@
       "evidence": "A real device review does not justify sending a banking password and authorisation code to meridian-bank-secure.example. That destination is separate from meridian-bank.example.",
       "contrast": "The case reference and genuine device alert make the story plausible, but do not authorise the emailed site to collect authentication secrets. The deadline is not the reason for the verdict.",
       "nextStep": "Open the bank app yourself and remove or report the device there; do not enter credentials through this email."
-    }
+    },
+    "acceptedEvidence": [
+      "body:4",
+      "sender",
+      "destination:3"
+    ]
   },
   {
     "id": "campus-storage",
@@ -107,7 +107,7 @@
       },
       {
         "type": "paragraph",
-        "text": "IT Service Desk · Student Systems"
+        "text": "IT Service Desk · Student Systems\nFor questions, use your usual service channel and quote this reference."
       }
     ],
     "explanation": "Phishing: the genuine-looking quota detail masks a campus-credential request at an unrelated host.",
@@ -139,7 +139,10 @@
       "evidence": "The inspected host ends in account-review.example, not xmum.example. It asks for a campus sign-in despite being outside the university service.",
       "contrast": "The correct storage figure and university-looking sender are not sufficient: a phisher can reuse known details or spoof a sender. A routine tone does not validate the destination.",
       "nextStep": "Check the report under IT Services in the bookmarked portal or confirm the ticket at the IT counter."
-    }
+    },
+    "acceptedEvidence": [
+      "destination:3"
+    ]
   },
   {
     "id": "parcel-fee",
@@ -175,7 +178,7 @@
       },
       {
         "type": "paragraph",
-        "text": "Delivery Exceptions Team\nParcelPath"
+        "text": "Delivery Exceptions Team\nParcelPath\nFor questions, use your usual service channel and quote this reference."
       }
     ],
     "explanation": "Phishing: it turns a plausible address problem into payment-card collection outside the courier service.",
@@ -207,7 +210,11 @@
       "evidence": "The link belongs to delivery-case.example, not parcelpath.example, yet asks for card details. A genuine parcel problem does not verify this payment destination.",
       "contrast": "Neither an expected parcel nor a small RM 2.40 fee makes an emailed card form trustworthy. The problem could be real while the payment instruction is fraudulent.",
       "nextStep": "Correct the address in the courier app and check whether any fee is actually due before paying."
-    }
+    },
+    "acceptedEvidence": [
+      "destination:3",
+      "sender"
+    ]
   },
   {
     "id": "shopping-document",
@@ -238,7 +245,7 @@
       },
       {
         "type": "paragraph",
-        "text": "Order SL-583102\nShopLane Purchase Documents"
+        "text": "Order SL-583102\nShopLane Purchase Documents\nFor questions, use your usual service channel and quote this reference."
       }
     ],
     "explanation": "Phishing: the purchase is plausible, but the requested mailbox access is unrelated and excessive.",
@@ -270,7 +277,10 @@
       "evidence": "The attachment ends in .html and asks for permission to read and send campus mail. Neither permission is needed to display this shopping receipt.",
       "contrast": "The matching order, amount and sender do not make excessive mailbox permissions legitimate. An attacker can misuse granted access without learning a password.",
       "nextStep": "Decline the permission request and use the receipt already available in My Purchases."
-    }
+    },
+    "acceptedEvidence": [
+      "body:3"
+    ]
   },
   {
     "id": "tax-rebate",
@@ -334,7 +344,11 @@
       "evidence": "The visible MyTax link actually opens refund-desk.example. The page is presented as a partner but asks for a bank login.",
       "contrast": "A correct refund reference and amount are not enough to trust a new destination. Receiving a refund does not require disclosing bank credentials to that site.",
       "nextStep": "Open the saved tax portal yourself and review the advice there; do not supply a bank login through the emailed link."
-    }
+    },
+    "acceptedEvidence": [
+      "destination:2",
+      "body:3"
+    ]
   },
   {
     "id": "security-reply",
@@ -397,7 +411,10 @@
       "evidence": "The email asks you to reply with a verification code. Such a code can approve an account action; it is not a safe way for an analyst to place a hold.",
       "contrast": "A real pending change and a familiar sender do not justify sharing the code. “Do not send your password” does not make the separate code request safe.",
       "nextStep": "Cancel or report the change in the independently opened identity portal and contact IT through a known channel."
-    }
+    },
+    "acceptedEvidence": [
+      "body:3"
+    ]
   },
   {
     "id": "library-hours",
@@ -456,7 +473,11 @@
       "evidence": "The email matches the independently checked notice and asks you to use the existing library booking service. It requests no new payment, credentials by reply or additional software.",
       "contrast": "A deadline is normal for room bookings. Nothing in this request diverts you away from the known service; the sender address alone is not what makes it legitimate.",
       "nextStep": "Open the usual student portal and make the booking under Library → Study Rooms."
-    }
+    },
+    "acceptedEvidence": [
+      "body:3",
+      "verification:0"
+    ]
   },
   {
     "id": "bank-notification",
@@ -515,7 +536,11 @@
       "evidence": "The merchant, amount and pending review agree with your own bank app. The email directs you to open that app yourself or use the number on your card.",
       "contrast": "An alarming transaction amount is not itself phishing. This message does not collect a code, password or card details and supplies no replacement support number or login link.",
       "nextStep": "Review or dispute the transaction within Cards → Activity in the independently opened app."
-    }
+    },
+    "acceptedEvidence": [
+      "body:3",
+      "verification:1"
+    ]
   },
   {
     "id": "parcel-update",
@@ -547,7 +572,7 @@
       },
       {
         "type": "paragraph",
-        "text": "Bring your student card and quote the tracking reference at the counter. The collection details are also in the ParcelPath app.\nParcelPath Delivery Team"
+        "text": "Bring your student card and quote PP-MY-612483 at the staffed collection counter. No additional collection payment is due.\nParcelPath Delivery Team"
       }
     ],
     "explanation": "Legitimate for this case: the collection details are corroborated and there is no new payment or secret to disclose.",
@@ -561,11 +586,6 @@
         "target": "body",
         "text": "RM 4.50, paid with order BN-22814",
         "explanation": "The fee is tied to an order and recorded as paid, rather than routed to an unexpected new payment site."
-      },
-      {
-        "target": "body",
-        "text": "also in the ParcelPath app",
-        "explanation": "You can check the claim independently before collecting the parcel."
       }
     ],
     "context": {
@@ -579,7 +599,11 @@
       "evidence": "The tracking reference, collection point and already-paid fee agree with your independent records. The link is under parcelpath.example and the only collection requirement is a student card.",
       "contrast": "A collection deadline and mention of a fee are not suspicious by themselves. This request matches the order and does not ask for a new off-site payment.",
       "nextStep": "Confirm the collection instructions in the courier app, then bring your student card to the staffed counter."
-    }
+    },
+    "acceptedEvidence": [
+      "body:4",
+      "verification:1"
+    ]
   },
   {
     "id": "shopping-receipt",
@@ -610,7 +634,7 @@
       },
       {
         "type": "paragraph",
-        "text": "A copy of this receipt is stored in My Purchases in your ShopLane account. For address changes or payment queries, use the order's Help option in the app.\nShopLane Orders Team"
+        "text": "The order will be packed tomorrow. Address changes close when packing begins.\nShopLane Orders Team"
       }
     ],
     "explanation": "Legitimate for this case: it matches a recorded purchase and keeps any account change inside the known app.",
@@ -619,16 +643,6 @@
         "target": "body",
         "text": "Total paid: RM 22.50",
         "explanation": "The RM 18.00 item plus RM 4.50 delivery matches the total."
-      },
-      {
-        "target": "body",
-        "text": "stored in My Purchases",
-        "explanation": "The same receipt is available without opening the emailed attachment."
-      },
-      {
-        "target": "body",
-        "text": "order's Help option in the app",
-        "explanation": "Queries stay inside the shopping account's established workflow."
       }
     ],
     "context": {
@@ -639,10 +653,14 @@
       ]
     },
     "reasoning": {
-      "evidence": "The order, itemised total and card suffix agree with your independently opened account. The email asks for address changes through that account’s Help workflow.",
+      "evidence": "The order, itemised total and card suffix agree with the independently opened My Purchases record. The proposed address review concerns that known order, without a new payment or unrelated permission.",
       "contrast": "A PDF attachment and correct arithmetic do not prove safety. Here, the matching account record and proportionate in-app action support the verdict; you do not need to open the attachment.",
       "nextStep": "Use My Purchases to view the receipt or change the address; leave the attachment unopened if uncertain."
-    }
+    },
+    "acceptedEvidence": [
+      "verification:0",
+      "verification:1"
+    ]
   },
   {
     "id": "event-registration",
@@ -674,7 +692,7 @@
       },
       {
         "type": "paragraph",
-        "text": "You can also open your usual student portal and choose Events → My Registrations. The same reference and deposit appear there. Questions can be checked at the Student Activities counter.\nXMUM Student Activities"
+        "text": "Deposit FA-1124 is refundable after attendance. Your place remains provisional until Friday, 5:00 pm.\nXMUM Student Activities"
       }
     ],
     "explanation": "Legitimate for this case: the fee is tied to your verified registration and the request uses the established event-payment workflow.",
@@ -683,11 +701,6 @@
         "target": "body",
         "text": "https://events.xmum.example/registrations/FA-1124",
         "explanation": "events.xmum.example is a subdomain of the reference university domain, and the reference matches."
-      },
-      {
-        "target": "body",
-        "text": "Events → My Registrations",
-        "explanation": "Check the same fee and registration in your independently opened student portal."
       },
       {
         "target": "body",
@@ -706,7 +719,11 @@
       "evidence": "The registration reference and deposit were independently confirmed in your Events record. Payment is through that existing registration, not an unrelated payee or personal account.",
       "contrast": "A fee and a deadline can be legitimate. The distinguishing evidence is your prior registration and the same fee in the trusted workflow, not simply the university-looking URL.",
       "nextStep": "Open Events → My Registrations yourself and confirm the deposit and refund terms there before paying."
-    }
+    },
+    "acceptedEvidence": [
+      "verification:0",
+      "verification:1"
+    ]
   },
   {
     "id": "security-change",
@@ -738,7 +755,7 @@
       },
       {
         "type": "paragraph",
-        "text": "Alternatively, open your usual student portal and go to Account → Security → Recovery. Review the number inside your account; the IT service counter can confirm the maintenance reference.\nCampus ID Service Team"
+        "text": "Review the recovery number under Account → Security → Recovery in your existing account. Do not send the number, a password or a code by reply.\nCampus ID Service Team"
       }
     ],
     "explanation": "Legitimate for this case: a published maintenance notice supports a limited review within your usual account settings.",
@@ -752,11 +769,6 @@
         "target": "body",
         "text": "Account → Security → Recovery",
         "explanation": "The request is limited to a normal setting in the service you already use."
-      },
-      {
-        "target": "body",
-        "text": "IT service counter can confirm the maintenance reference",
-        "explanation": "A known campus contact can independently verify the maintenance claim."
       }
     ],
     "context": {
@@ -770,7 +782,11 @@
       "evidence": "The maintenance reference is corroborated, and the request is limited to reviewing your own recovery setting inside the existing identity service.",
       "contrast": "A security deadline or a sign-in can also appear in real maintenance. Here there is no request to send a code or password to another person and no unrelated destination.",
       "nextStep": "Use your normal portal bookmark, review the recovery number and ask the IT counter about anything unexpected."
-    }
+    },
+    "acceptedEvidence": [
+      "verification:0",
+      "body:4"
+    ]
   },
   {
     "id": "internship-reservation",
@@ -833,7 +849,11 @@
       "evidence": "The email advances the application to onboarding and requests a transfer to a coordinator’s personal account. Your actual application has neither the offer nor the fee.",
       "contrast": "A familiar sender and a refund promise cannot resolve the mismatch with the recorded application. The issue is the unsupported payment demand, not the fact that an internship is paid.",
       "nextStep": "Do not transfer money. Ask the career office to check CS-26104 using the contact in the existing portal."
-    }
+    },
+    "acceptedEvidence": [
+      "body:2",
+      "verification:1"
+    ]
   },
   {
     "id": "scholarship-document",
@@ -864,7 +884,7 @@
       },
       {
         "type": "paragraph",
-        "text": "Please bring the completed comments sheet to your next appointment.\nScholarships Assessment Team"
+        "text": "Please bring the completed comments sheet to your next appointment.\nScholarships Assessment Team\nFor questions, use your usual service channel and quote this reference."
       }
     ],
     "explanation": "Phishing: the requested macro/protection change is unnecessary for the verified comments workflow.",
@@ -896,7 +916,10 @@
       "evidence": "The email replaces an available PDF preview with a .docm attachment and tells you to enable active content or turn off Protected View.",
       "contrast": "A genuine application and matching office address do not justify running document code to read comments. The independently available preview removes the claimed need for this step.",
       "nextStep": "Use the PDF preview in Financial Aid and verify any unexpected document instruction with the scholarship counter."
-    }
+    },
+    "acceptedEvidence": [
+      "body:3"
+    ]
   },
   {
     "id": "internship-shortlist",
@@ -924,7 +947,7 @@
       },
       {
         "type": "paragraph",
-        "text": "You can also open your usual student portal and choose Careers → My Applications. The employer details and interview invitation are recorded there. No reservation payment or kit purchase is required."
+        "text": "Interview selection is available under Careers → My Applications. The interview covers duties and allowances; no reservation payment or equipment purchase is required."
       },
       {
         "type": "paragraph",
@@ -960,7 +983,11 @@
       "evidence": "The reference, shortlist and interview slots agree with your existing application. The request is to book an interview in that portal; no fee or equipment purchase is required.",
       "contrast": "A recruitment email is not automatically a scam. Unlike an advance-fee offer, this message matches your application and asks for a normal, limited next step.",
       "nextStep": "Open Careers → My Applications from your usual portal and choose a recorded interview slot."
-    }
+    },
+    "acceptedEvidence": [
+      "verification:1",
+      "body:3"
+    ]
   },
   {
     "id": "scholarship-review",
@@ -988,7 +1015,7 @@
       },
       {
         "type": "paragraph",
-        "text": "Alternatively, open your usual student portal and choose Financial Aid → My Applications. Upload only the income evidence listed there, with unrelated account numbers and transactions redacted. Please do not send financial documents by email reply."
+        "text": "Upload only the evidence listed under Financial Aid → My Applications, with unrelated account numbers and transactions redacted. Please do not send financial documents by email reply."
       },
       {
         "type": "paragraph",
@@ -1024,7 +1051,11 @@
       "evidence": "The application and requested evidence match the independently checked checklist. Upload is through the usual portal, limited to listed documents, with unrelated information redacted.",
       "contrast": "Financial documents are sensitive, but asking for them is not automatically phishing. The known application, verified need, restricted scope and established upload channel distinguish this request.",
       "nextStep": "Open Financial Aid → My Applications yourself, confirm the checklist and upload only the required redacted evidence."
-    }
+    },
+    "acceptedEvidence": [
+      "verification:1",
+      "body:3"
+    ]
   },
   {
     "id": "penguin-qr",
@@ -1087,7 +1118,10 @@
       "evidence": "The email switches to an attached QR and asks for the card number, expiry and CVV to release a locker. Those payment credentials do not establish collection authority.",
       "contrast": "An expected parcel or a matching sender does not justify the new card-verification step. A QR code is only a way to encode a destination, not a trust signal.",
       "nextStep": "Use the collection PIN in the courier app or ask the staffed parcel desk to verify any change."
-    }
+    },
+    "acceptedEvidence": [
+      "body:3"
+    ]
   },
   {
     "id": "lecture-clone",
@@ -1150,7 +1184,11 @@
       "evidence": "The attachment’s final extension is .exe, and the email asks you to allow changes to the computer. The verified attendance process is a browser form, not an executable.",
       "contrast": "A real correction can make the pretext convincing, but it does not justify installing an unsolicited program. The misleading file type and requested privileges decide the classification.",
       "nextStep": "Use the attendance form in the independently opened student portal and report the attachment to teaching support."
-    }
+    },
+    "acceptedEvidence": [
+      "body:2",
+      "body:3"
+    ]
   },
   {
     "id": "alien-wallet",
@@ -1182,7 +1220,7 @@
       },
       {
         "type": "paragraph",
-        "text": "Wallet Recovery Operations\nReference WLT-184207"
+        "text": "Wallet Recovery Operations\nReference WLT-184207\nFor questions, use your usual service channel and quote this reference."
       }
     ],
     "explanation": "Phishing: it turns a plausible backup notice into recovery-phrase theft at an unrelated site.",
@@ -1214,7 +1252,11 @@
       "evidence": "The email asks for the wallet’s 12-word recovery phrase at a host under backup-check.example. That phrase can restore control of the wallet.",
       "contrast": "A genuine service notice does not authorise an external site to collect the recovery phrase. “No transfer” and “no bank password” do not make disclosure of the wallet secret safe.",
       "nextStep": "Do not enter the phrase. Follow any migration instructions only inside the established wallet app."
-    }
+    },
+    "acceptedEvidence": [
+      "body:3",
+      "destination:2"
+    ]
   },
   {
     "id": "monday-refund",
@@ -1277,8 +1319,693 @@
       "evidence": "The receipt describes an unrecorded subscription and directs you to a callback that requires remote-control software and an access code.",
       "contrast": "A sender address or a claim that records are delayed does not establish that a charge exists. Even a genuine disputed charge would not require an unknown agent to control your computer.",
       "nextStep": "Do not grant remote access or reply for a callback. Check payment records and contact support through the existing app."
-    }
+    },
+    "acceptedEvidence": [
+      "body:3",
+      "verification:1"
+    ]
+  },
+  {
+    "id": "wifi-profile",
+    "institution": "university",
+    "classification": "phishing",
+    "difficulty": "Easy",
+    "objective": "The “PDF” ends in .exe and the request asks for administrator permission and bypassing a security warning.",
+    "senderName": "XMUM Network Services",
+    "senderEmail": "network@xmum.example",
+    "recipient": "student@xmum.example",
+    "subject": "Student Wi-Fi profile NF-26116",
+    "body": [
+      {
+        "type": "paragraph",
+        "text": "Hi Aisha,"
+      },
+      {
+        "type": "paragraph",
+        "text": "A certificate update is available for your student Wi-Fi profile. The new profile keeps the current network name and password."
+      },
+      {
+        "type": "detail",
+        "text": "Profile NF-26116 · Student network\nInstallation window: before Friday"
+      },
+      {
+        "type": "attachment",
+        "text": "Student-WiFi-Profile.pdf.exe · 112 KB"
+      },
+      {
+        "type": "paragraph",
+        "text": "Run the attachment as administrator. If the security warning appears, choose Run anyway so the installer can change the network settings. You can contact the IT counter about this notice."
+      }
+    ],
+    "context": {
+      "source": "Independently opened service record",
+      "facts": [
+        "The network noticeboard lists routine maintenance.",
+        "IT distributes profiles through Device Setup in the portal."
+      ]
+    },
+    "explanation": "Phishing: The “PDF” ends in .exe and the request asks for administrator permission and bypassing a security warning.",
+    "reasoning": {
+      "evidence": "The “PDF” ends in .exe and the request asks for administrator permission and bypassing a security warning.",
+      "contrast": "A matching university sender and an invitation to contact IT do not make the executable safe.",
+      "nextStep": "Use Device Setup in the known portal and ask IT to confirm the approved profile."
+    },
+    "indicators": [
+      {
+        "target": "body",
+        "text": "Student-WiFi-Profile.pdf.exe · 112 KB",
+        "explanation": "The “PDF” ends in .exe and the request asks for administrator permission and bypassing a security warning."
+      },
+      {
+        "target": "body",
+        "text": "Run the attachment as administrator. If the security warning appears, choose Run anyway so the installer can change the network settings. You can contact the IT counter about this notice.",
+        "explanation": "The “PDF” ends in .exe and the request asks for administrator permission and bypassing a security warning."
+      }
+    ],
+    "acceptedEvidence": [
+      "body:3",
+      "body:4"
+    ]
+  },
+  {
+    "id": "wifi-maintenance",
+    "institution": "university",
+    "classification": "legitimate",
+    "difficulty": "Easy",
+    "objective": "The notice matches the published maintenance record and requests no installer, secret or security override.",
+    "senderName": "XMUM Network Services",
+    "senderEmail": "network@xmum.example",
+    "recipient": "student@xmum.example",
+    "subject": "Student Wi-Fi maintenance NF-26116",
+    "body": [
+      {
+        "type": "paragraph",
+        "text": "Hi Aisha,"
+      },
+      {
+        "type": "paragraph",
+        "text": "Student Wi-Fi may disconnect briefly during Friday’s certificate update. Existing registered devices reconnect automatically after maintenance."
+      },
+      {
+        "type": "detail",
+        "text": "Window: Friday, 6:00–6:30 pm\nReference NF-26116"
+      },
+      {
+        "type": "paragraph",
+        "text": "No installation or password change is required. If a device does not reconnect, leave its current settings in place and bring it to the IT service counter."
+      }
+    ],
+    "context": {
+      "source": "Independently opened service record",
+      "facts": [
+        "IT’s published notice lists NF-26116 at 6:00 pm Friday.",
+        "Registered devices are set to reconnect automatically."
+      ]
+    },
+    "explanation": "Legitimate for this case: The notice matches the published maintenance record and requests no installer, secret or security override.",
+    "reasoning": {
+      "evidence": "The notice matches the published maintenance record and requests no installer, secret or security override.",
+      "contrast": "A technical notice or brief service interruption is not itself phishing. The action is limited and corroborated.",
+      "nextStep": "Leave the current profile intact; use the staffed IT counter if reconnection fails."
+    },
+    "indicators": [
+      {
+        "target": "body",
+        "text": "No installation or password change is required. If a device does not reconnect, leave its current settings in place and bring it to the IT service counter.",
+        "explanation": "The notice matches the published maintenance record and requests no installer, secret or security override."
+      }
+    ],
+    "acceptedEvidence": [
+      "body:3",
+      "verification:0"
+    ]
+  },
+  {
+    "id": "parcel-otp",
+    "institution": "parcel",
+    "classification": "phishing",
+    "difficulty": "Easy",
+    "objective": "A bank authentication code has no legitimate role in parcel collection.",
+    "senderName": "ParcelPath Campus Delivery",
+    "senderEmail": "collection@parcelpath.example",
+    "recipient": "student@xmum.example",
+    "subject": "Parcel PP-MY-663814: recipient confirmation",
+    "body": [
+      {
+        "type": "paragraph",
+        "text": "Hi Aisha,"
+      },
+      {
+        "type": "paragraph",
+        "text": "Your parcel is ready for collection. A recipient check is needed because the sender used a shortened name on the label."
+      },
+      {
+        "type": "detail",
+        "text": "Parcel PP-MY-663814\nCounter collection: 10:00 am–6:00 pm"
+      },
+      {
+        "type": "paragraph",
+        "text": "Reply with the one-time code from your bank’s SMS to link your identity to the parcel. Do not send your password. Quote the parcel number if you check with the counter."
+      }
+    ],
+    "context": {
+      "source": "Independently opened service record",
+      "facts": [
+        "You are expecting PP-MY-663814.",
+        "The courier app provides its own collection PIN."
+      ]
+    },
+    "explanation": "Phishing: A bank authentication code has no legitimate role in parcel collection.",
+    "reasoning": {
+      "evidence": "A bank authentication code has no legitimate role in parcel collection.",
+      "contrast": "An expected parcel and a request not to send a password do not justify sharing a bank code.",
+      "nextStep": "Use the courier’s collection PIN at the staffed counter and keep bank codes private."
+    },
+    "indicators": [
+      {
+        "target": "body",
+        "text": "Reply with the one-time code from your bank’s SMS to link your identity to the parcel. Do not send your password. Quote the parcel number if you check with the counter.",
+        "explanation": "A bank authentication code has no legitimate role in parcel collection."
+      }
+    ],
+    "acceptedEvidence": [
+      "body:3"
+    ]
+  },
+  {
+    "id": "parcel-access",
+    "institution": "parcel",
+    "classification": "legitimate",
+    "difficulty": "Easy",
+    "objective": "The request uses the matching courier-issued pickup PIN at the verified collection counter, not an authentication code for another service.",
+    "senderName": "ParcelPath Campus Delivery",
+    "senderEmail": "collection@parcelpath.example",
+    "recipient": "student@xmum.example",
+    "subject": "Parcel PP-MY-663814: collection PIN",
+    "body": [
+      {
+        "type": "paragraph",
+        "text": "Hi Aisha,"
+      },
+      {
+        "type": "paragraph",
+        "text": "Your parcel is ready at the campus counter. Bring your student card and show the collection PIN already displayed in your ParcelPath app."
+      },
+      {
+        "type": "detail",
+        "text": "Parcel PP-MY-663814\nCounter collection: 10:00 am–6:00 pm"
+      },
+      {
+        "type": "paragraph",
+        "text": "Show the courier-issued pickup PIN to the counter staff when collecting the parcel. We do not need a banking code or an email reply."
+      }
+    ],
+    "context": {
+      "source": "Independently opened service record",
+      "facts": [
+        "PP-MY-663814 is marked ready at the campus counter.",
+        "The courier app has a pickup PIN for this parcel."
+      ]
+    },
+    "explanation": "Legitimate for this case: The request uses the matching courier-issued pickup PIN at the verified collection counter, not an authentication code for another service.",
+    "reasoning": {
+      "evidence": "The request uses the matching courier-issued pickup PIN at the verified collection counter, not an authentication code for another service.",
+      "contrast": "Not every code is a bank OTP. Its issuer, purpose and where it is used distinguish this legitimate collection step.",
+      "nextStep": "Confirm the parcel in the courier app and show its pickup PIN only during collection."
+    },
+    "indicators": [
+      {
+        "target": "body",
+        "text": "Show the courier-issued pickup PIN to the counter staff when collecting the parcel. We do not need a banking code or an email reply.",
+        "explanation": "The request uses the matching courier-issued pickup PIN at the verified collection counter, not an authentication code for another service."
+      }
+    ],
+    "acceptedEvidence": [
+      "body:3",
+      "verification:1"
+    ]
+  },
+  {
+    "id": "library-payment",
+    "institution": "university",
+    "classification": "phishing",
+    "difficulty": "Medium",
+    "objective": "The real balance does not validate a card-payment page hosted under payments-help.example rather than xmum.example.",
+    "senderName": "XMUM Library Accounts",
+    "senderEmail": "library@xmum.example",
+    "recipient": "student@xmum.example",
+    "subject": "Library balance LB-20418: payment reminder",
+    "body": [
+      {
+        "type": "paragraph",
+        "text": "Hi Aisha,"
+      },
+      {
+        "type": "paragraph",
+        "text": "A library balance of RM 8.00 is outstanding. Clearing it before Friday keeps your next room booking available."
+      },
+      {
+        "type": "detail",
+        "text": "Account LB-20418\nBalance RM 8.00"
+      },
+      {
+        "type": "link",
+        "text": "Pay library balance",
+        "url": "https://library.xmum.example.payments-help.example/LB-20418"
+      },
+      {
+        "type": "paragraph",
+        "text": "Use the payment page to enter your card details. The library counter can answer balance queries; keep this reference for your receipt."
+      }
+    ],
+    "context": {
+      "source": "Independently opened service record",
+      "facts": [
+        "Your library account shows an RM 8.00 fine.",
+        "The account’s Pay balance control is inside the university portal."
+      ]
+    },
+    "explanation": "Phishing: The real balance does not validate a card-payment page hosted under payments-help.example rather than xmum.example.",
+    "reasoning": {
+      "evidence": "The real balance does not validate a card-payment page hosted under payments-help.example rather than xmum.example.",
+      "contrast": "Neither the low fee nor accurate balance details establishes ownership of the inspected destination.",
+      "nextStep": "Pay only through the balance control in the independently opened library account."
+    },
+    "indicators": [
+      {
+        "target": "body",
+        "text": "https://library.xmum.example.payments-help.example/LB-20418",
+        "explanation": "The real balance does not validate a card-payment page hosted under payments-help.example rather than xmum.example."
+      }
+    ],
+    "acceptedEvidence": [
+      "destination:3",
+      "verification:1"
+    ]
+  },
+  {
+    "id": "library-fine",
+    "institution": "university",
+    "classification": "legitimate",
+    "difficulty": "Medium",
+    "objective": "The amount and reference match the independently checked account, and the payment stays in its established balance workflow.",
+    "senderName": "XMUM Library Accounts",
+    "senderEmail": "library@xmum.example",
+    "recipient": "student@xmum.example",
+    "subject": "Library balance LB-20418: payment reminder",
+    "body": [
+      {
+        "type": "paragraph",
+        "text": "Hi Aisha,"
+      },
+      {
+        "type": "paragraph",
+        "text": "A library balance of RM 8.00 is outstanding. Clearing it before Friday keeps your next room booking available."
+      },
+      {
+        "type": "detail",
+        "text": "Account LB-20418\nBalance RM 8.00"
+      },
+      {
+        "type": "link",
+        "text": "View library balance",
+        "url": "https://library.xmum.example/accounts/LB-20418"
+      },
+      {
+        "type": "paragraph",
+        "text": "Review the balance under Library → My Account. Payment uses that account’s Pay balance control and produces a portal receipt."
+      }
+    ],
+    "context": {
+      "source": "Independently opened service record",
+      "facts": [
+        "Your library account shows an RM 8.00 fine.",
+        "Its Pay balance control accepts payment and issues a portal receipt."
+      ]
+    },
+    "explanation": "Legitimate for this case: The amount and reference match the independently checked account, and the payment stays in its established balance workflow.",
+    "reasoning": {
+      "evidence": "The amount and reference match the independently checked account, and the payment stays in its established balance workflow.",
+      "contrast": "A fine and a deadline are not enough to label a message phishing. Here the record and payment scope support the request.",
+      "nextStep": "Use the known library account to review and pay the recorded fine."
+    },
+    "indicators": [
+      {
+        "target": "body",
+        "text": "Review the balance under Library → My Account. Payment uses that account’s Pay balance control and produces a portal receipt.",
+        "explanation": "The amount and reference match the independently checked account, and the payment stays in its established balance workflow."
+      }
+    ],
+    "acceptedEvidence": [
+      "verification:0",
+      "verification:1",
+      "body:4"
+    ]
+  },
+  {
+    "id": "bank-beneficiary",
+    "institution": "bank",
+    "classification": "phishing",
+    "difficulty": "Medium",
+    "objective": "Transferring money to a holding account is not a necessary step for deleting a payee; the existing app provides removal directly.",
+    "senderName": "Meridian Bank Payee Services",
+    "senderEmail": "payees@meridian-bank.example",
+    "recipient": "student@xmum.example",
+    "subject": "Payee review PY-4821",
+    "body": [
+      {
+        "type": "paragraph",
+        "text": "Hi Aisha,"
+      },
+      {
+        "type": "paragraph",
+        "text": "A payee named Campus Rent was added to card-linked transfers. Review the payee before the next standing-payment run."
+      },
+      {
+        "type": "detail",
+        "text": "Review PY-4821\nPayee: Campus Rent"
+      },
+      {
+        "type": "paragraph",
+        "text": "To secure the account, approve a RM 500 transfer to our holding account in your app. The money will be returned after the payee is removed. You may confirm this case with bank support."
+      }
+    ],
+    "context": {
+      "source": "Independently opened service record",
+      "facts": [
+        "Your bank app shows an unfamiliar payee.",
+        "The app lets you remove a payee without making a transfer."
+      ]
+    },
+    "explanation": "Phishing: Transferring money to a holding account is not a necessary step for deleting a payee; the existing app provides removal directly.",
+    "reasoning": {
+      "evidence": "Transferring money to a holding account is not a necessary step for deleting a payee; the existing app provides removal directly.",
+      "contrast": "A real unfamiliar payee and an accurate case reference do not make a “safe account” transfer legitimate.",
+      "nextStep": "Remove or report the payee in the app and contact the number on your card."
+    },
+    "indicators": [
+      {
+        "target": "body",
+        "text": "To secure the account, approve a RM 500 transfer to our holding account in your app. The money will be returned after the payee is removed. You may confirm this case with bank support.",
+        "explanation": "Transferring money to a holding account is not a necessary step for deleting a payee; the existing app provides removal directly."
+      }
+    ],
+    "acceptedEvidence": [
+      "body:3",
+      "verification:1"
+    ]
+  },
+  {
+    "id": "bank-payee",
+    "institution": "bank",
+    "classification": "legitimate",
+    "difficulty": "Medium",
+    "objective": "The notice matches the account record and limits action to the app’s existing remove/report controls.",
+    "senderName": "Meridian Bank Payee Services",
+    "senderEmail": "payees@meridian-bank.example",
+    "recipient": "student@xmum.example",
+    "subject": "Payee review PY-4821",
+    "body": [
+      {
+        "type": "paragraph",
+        "text": "Hi Aisha,"
+      },
+      {
+        "type": "paragraph",
+        "text": "A payee named Campus Rent was added to your saved transfer list. Review it before the next standing-payment run."
+      },
+      {
+        "type": "detail",
+        "text": "Review PY-4821\nPayee: Campus Rent"
+      },
+      {
+        "type": "paragraph",
+        "text": "Open Payees in your existing bank app. If the payee is unfamiliar, use Remove payee or contact card support. No transfer is needed to remove it."
+      }
+    ],
+    "context": {
+      "source": "Independently opened service record",
+      "facts": [
+        "Your bank app shows the same Campus Rent payee.",
+        "Remove payee is available in the app without a transfer."
+      ]
+    },
+    "explanation": "Legitimate for this case: The notice matches the account record and limits action to the app’s existing remove/report controls.",
+    "reasoning": {
+      "evidence": "The notice matches the account record and limits action to the app’s existing remove/report controls.",
+      "contrast": "A security-related request is not automatically fake. It does not ask for money, credentials by reply or a new support contact.",
+      "nextStep": "Review the payee inside the bank app and remove/report it if unfamiliar."
+    },
+    "indicators": [
+      {
+        "target": "body",
+        "text": "Open Payees in your existing bank app. If the payee is unfamiliar, use Remove payee or contact card support. No transfer is needed to remove it.",
+        "explanation": "The notice matches the account record and limits action to the app’s existing remove/report controls."
+      }
+    ],
+    "acceptedEvidence": [
+      "body:3",
+      "verification:1"
+    ]
+  },
+  {
+    "id": "cloud-share",
+    "institution": "university",
+    "classification": "phishing",
+    "difficulty": "Hard",
+    "objective": "A view-only budget does not require permission to read and send all mailbox messages, even at a familiar-looking file service.",
+    "senderName": "XMUM Project Files",
+    "senderEmail": "projects@xmum.example",
+    "recipient": "student@xmum.example",
+    "subject": "Shared: AG1-2 activity budget",
+    "body": [
+      {
+        "type": "paragraph",
+        "text": "Hi Aisha,"
+      },
+      {
+        "type": "paragraph",
+        "text": "The AG1-2 activity budget is ready for review. The project lead has moved the worksheet to a shared document viewer."
+      },
+      {
+        "type": "detail",
+        "text": "Project AG1-2\nDocument: activity-budget"
+      },
+      {
+        "type": "link",
+        "text": "Open shared budget",
+        "url": "https://files.xmum.example/view/activity-budget"
+      },
+      {
+        "type": "paragraph",
+        "text": "When the viewer requests permission, allow it to read and send all of your mail. This lets collaborators receive document updates automatically."
+      }
+    ],
+    "context": {
+      "source": "Independently opened service record",
+      "facts": [
+        "You are assigned to AG1-2.",
+        "The project’s budget is a view-only worksheet in the shared folder."
+      ]
+    },
+    "explanation": "Phishing: A view-only budget does not require permission to read and send all mailbox messages, even at a familiar-looking file service.",
+    "reasoning": {
+      "evidence": "A view-only budget does not require permission to read and send all mailbox messages, even at a familiar-looking file service.",
+      "contrast": "A real project and a university-domain link cannot justify unrelated, excessive permission scope.",
+      "nextStep": "Decline the mailbox grant and open the known shared folder or ask the project lead."
+    },
+    "indicators": [
+      {
+        "target": "body",
+        "text": "When the viewer requests permission, allow it to read and send all of your mail. This lets collaborators receive document updates automatically.",
+        "explanation": "A view-only budget does not require permission to read and send all mailbox messages, even at a familiar-looking file service."
+      }
+    ],
+    "acceptedEvidence": [
+      "body:4",
+      "verification:1"
+    ]
+  },
+  {
+    "id": "cloud-share-record",
+    "institution": "university",
+    "classification": "legitimate",
+    "difficulty": "Hard",
+    "objective": "The share is independently recorded and the requested permission is limited to viewing the named project file.",
+    "senderName": "XMUM Project Files",
+    "senderEmail": "projects@xmum.example",
+    "recipient": "student@xmum.example",
+    "subject": "Shared: AG1-2 activity budget",
+    "body": [
+      {
+        "type": "paragraph",
+        "text": "Hi Aisha,"
+      },
+      {
+        "type": "paragraph",
+        "text": "The AG1-2 activity budget is ready for review. The project lead has placed the worksheet in the shared project folder."
+      },
+      {
+        "type": "detail",
+        "text": "Project AG1-2\nDocument: activity-budget"
+      },
+      {
+        "type": "link",
+        "text": "Open shared budget",
+        "url": "https://files.xmum.example/view/activity-budget"
+      },
+      {
+        "type": "paragraph",
+        "text": "The viewer requests access only to the selected budget file. It does not request mailbox access or permission to edit other files."
+      }
+    ],
+    "context": {
+      "source": "Independently opened service record",
+      "facts": [
+        "The project lead shared activity-budget with AG1-2.",
+        "The folder’s access record lists view-only permission for that file."
+      ]
+    },
+    "explanation": "Legitimate for this case: The share is independently recorded and the requested permission is limited to viewing the named project file.",
+    "reasoning": {
+      "evidence": "The share is independently recorded and the requested permission is limited to viewing the named project file.",
+      "contrast": "A permission prompt is not automatically malicious. Its limited scope and the verified share distinguish it from mailbox-consent abuse.",
+      "nextStep": "Check the share in the known project folder and keep the permission limited to the selected file."
+    },
+    "indicators": [
+      {
+        "target": "body",
+        "text": "The viewer requests access only to the selected budget file. It does not request mailbox access or permission to edit other files.",
+        "explanation": "The share is independently recorded and the requested permission is limited to viewing the named project file."
+      }
+    ],
+    "acceptedEvidence": [
+      "body:4",
+      "verification:1"
+    ]
+  },
+  {
+    "id": "payroll-update",
+    "institution": "university",
+    "classification": "phishing",
+    "difficulty": "Hard",
+    "objective": "The actual host belongs to account-confirm.example and requests a bank login and authorisation code for a receiving-account review.",
+    "senderName": "XMUM Allowance Office",
+    "senderEmail": "allowances@xmum.example",
+    "recipient": "student@xmum.example",
+    "subject": "Allowance AL-26118: receiving account review",
+    "body": [
+      {
+        "type": "paragraph",
+        "text": "Hi Aisha,"
+      },
+      {
+        "type": "paragraph",
+        "text": "Your placement allowance is scheduled for the next batch. Check the receiving account before Friday so the payment is not delayed."
+      },
+      {
+        "type": "detail",
+        "text": "Allowance AL-26118\nPlacement CS-26104"
+      },
+      {
+        "type": "link",
+        "text": "https://finance.xmum.example/allowances/AL-26118",
+        "url": "https://finance.xmum.example.account-confirm.example/AL-26118"
+      },
+      {
+        "type": "paragraph",
+        "text": "The review asks for your bank login and the SMS authorisation code to validate the receiving account. No payment will be taken. The allowance office can confirm the batch reference."
+      }
+    ],
+    "context": {
+      "source": "Independently opened service record",
+      "facts": [
+        "AL-26118 is a scheduled placement allowance.",
+        "The finance portal records the receiving account number, never a bank login or OTP."
+      ]
+    },
+    "explanation": "Phishing: The actual host belongs to account-confirm.example and requests a bank login and authorisation code for a receiving-account review.",
+    "reasoning": {
+      "evidence": "The actual host belongs to account-confirm.example and requests a bank login and authorisation code for a receiving-account review.",
+      "contrast": "A genuine allowance and familiar sender do not justify disclosing bank authentication factors. Receiving money needs no bank sign-in at that site.",
+      "nextStep": "Check the receiving account through the usual finance portal and never supply the bank login or code."
+    },
+    "indicators": [
+      {
+        "target": "body",
+        "text": "https://finance.xmum.example.account-confirm.example/AL-26118",
+        "explanation": "The actual host belongs to account-confirm.example and requests a bank login and authorisation code for a receiving-account review."
+      },
+      {
+        "target": "body",
+        "text": "The review asks for your bank login and the SMS authorisation code to validate the receiving account. No payment will be taken. The allowance office can confirm the batch reference.",
+        "explanation": "The actual host belongs to account-confirm.example and requests a bank login and authorisation code for a receiving-account review."
+      }
+    ],
+    "acceptedEvidence": [
+      "destination:3",
+      "body:4",
+      "verification:1"
+    ]
+  },
+  {
+    "id": "payroll-confirm",
+    "institution": "university",
+    "classification": "legitimate",
+    "difficulty": "Hard",
+    "objective": "The allowance and review form are independently recorded, and the requested details are limited to receiving-payment information.",
+    "senderName": "XMUM Allowance Office",
+    "senderEmail": "allowances@xmum.example",
+    "recipient": "student@xmum.example",
+    "subject": "Allowance AL-26118: receiving account review",
+    "body": [
+      {
+        "type": "paragraph",
+        "text": "Hi Aisha,"
+      },
+      {
+        "type": "paragraph",
+        "text": "Your placement allowance is scheduled for the next batch. Check the receiving account before Friday so the payment is not delayed."
+      },
+      {
+        "type": "detail",
+        "text": "Allowance AL-26118\nPlacement CS-26104"
+      },
+      {
+        "type": "link",
+        "text": "Review receiving account",
+        "url": "https://finance.xmum.example/allowances/AL-26118"
+      },
+      {
+        "type": "paragraph",
+        "text": "Review the account holder name and receiving account number in the finance portal. The form does not ask for a bank password, banking login or one-time code."
+      }
+    ],
+    "context": {
+      "source": "Independently opened service record",
+      "facts": [
+        "AL-26118 is listed in your placement allowance record.",
+        "The finance portal asks only for account holder name and receiving account number."
+      ]
+    },
+    "explanation": "Legitimate for this case: The allowance and review form are independently recorded, and the requested details are limited to receiving-payment information.",
+    "reasoning": {
+      "evidence": "The allowance and review form are independently recorded, and the requested details are limited to receiving-payment information.",
+      "contrast": "Financial details require care but are not all authentication secrets. The verified purpose, channel and limited fields support this request.",
+      "nextStep": "Open the established finance portal yourself and confirm only the receiving-payment details requested there."
+    },
+    "indicators": [
+      {
+        "target": "body",
+        "text": "Review the account holder name and receiving account number in the finance portal. The form does not ask for a bank password, banking login or one-time code.",
+        "explanation": "The allowance and review form are independently recorded, and the requested details are limited to receiving-payment information."
+      }
+    ],
+    "acceptedEvidence": [
+      "verification:1",
+      "body:4"
+    ]
   }
 ];
-  if(typeof module!=="undefined"&&module.exports)module.exports=emails;else root.EMAIL_BANK=emails;
+if(typeof module!=="undefined"&&module.exports)module.exports=emails;else root.EMAIL_BANK=emails;
 })(typeof window!=="undefined"?window:globalThis);

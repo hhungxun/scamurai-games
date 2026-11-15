@@ -13,3 +13,9 @@ Passed:
 Visual QA inspected desktop screenshots of both demos and the integrated email inbox. The compact email play header reserves space for message reading and keeps answer controls visible at 1366×768. Integrated host/demo layouts were checked at widths 360, 768 and 1440. The email’s offline suite covers 1366×768, 1024×768, 768×1024, 390×844 and 360×800. Fonts/assets are served locally.
 
 Sixty seconds for ten messages is an accepted game rule, not a measured reading-speed benchmark. Physical laptop checks and participant playtesting remain useful for event preparation. These checks establish correctness and score submission, not equal score distributions among Stations.
+
+## Investigation revision
+
+The earlier binary-scoring figures above describe the first integration. ADR 0005 replaces Station 1 with ten messages in 120 seconds, classification plus selected evidence, +10 supported /0 unsupported /−10 wrong and an expanded 32-case bank. The current pure suite checks 1,000 balanced deals without a fixed Easy legitimate pair, all scored label/evidence combinations, verification gating and version 2 draft restoration. The updated browser suite covers all 32 cases, label-only submission refusal, unsupported correct labels scoring 0, hidden optional verification, neutral contextual highlights and five viewports. Updated desktop integration covers evidence drafts, verification and old-demo migration in addition to multi-laptop, retry, cancellation and survey flows.
+
+`server/test/e2e_popup_draw.py` reproduces the Draw route after browser Back and an abandoned demo’s expired deadline. Explicit Start now replaces the unscored rehearsal; reload/Resume retain an existing deadline. The live no-write check passed for this path.

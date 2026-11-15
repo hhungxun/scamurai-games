@@ -1,39 +1,40 @@
 'use strict';
 const assert=require('node:assert/strict');
 const bank=require('../emails.js'),config=require('../config.js');
-const {Round,selectQuestions,validateBank}=require('../game-core.js');
-let now=1000, seed=7314;
-const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
-validateBank(bank,config);
-assert.equal(bank.length,20);
-const original=bank.map(e=>e.id),orders=new Set();
+const {Round,selectQuestions,validateBank,evidenceChoices}=require('../game-core.js');
+validateBank(bank,config);assert.equal(bank.length,32);assert.equal(config.roundSeconds,120);
+let seed=7314;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
+const orders=new Set(),seen=new Set(),easyLegit=new Set();
 for(let i=0;i<1000;i++){
  const deal=selectQuestions(bank,config,random);assert.equal(deal.length,10);assert.equal(new Set(deal.map(e=>e.id)).size,10);
- for(const kind of ['phishing','legitimate']){
-  const chosen=deal.filter(e=>e.classification===kind);assert.equal(chosen.length,5);
-  for(const [difficulty,n] of [['Easy',2],['Medium',2],['Hard',1]])assert.equal(chosen.filter(e=>e.difficulty===difficulty).length,n);
+ for(const kind of ['phishing','legitimate'])for(const [difficulty,n] of [['Easy',2],['Medium',2],['Hard',1]])assert.equal(deal.filter(e=>e.classification===kind&&e.difficulty===difficulty).length,n);
+ deal.forEach(e=>{seen.add(e.id);if(e.classification==='legitimate'&&e.difficulty==='Easy')easyLegit.add(e.id)});orders.add(deal.map(e=>e.id).join(','));
+}
+assert.equal(orders.size,1000);assert.equal(seen.size,32);assert.ok(easyLegit.size>2);
+console.log('PASS: 32 cases, 1,000 balanced difficulty-matched deals, no fixed easy legitimate pair');
+function evidence(r,q,supported){const id=supported?q.acceptedEvidence[0]:'subject';if(id.startsWith('verification:'))assert.ok(r.verify(q.id));return id}
+function play(a,c,j,settings=config){
+ let now=1000;const r=new Round(bank,settings,{now:()=>now,random});r.start();
+ for(let i=0;i<a;i++){
+  now+=300;const q=r.questions[r.index],kind=i<c?q.classification:q.classification==='phishing'?'legitimate':'phishing';
+  assert.equal(r.answer(q.id,kind),false,'label alone never submits');
+  const id=evidence(r,q,i<j);assert.equal(r.answer(q.id,kind,id),true);assert.equal(r.answer(q.id,kind,id),false);
  }
- orders.add(deal.map(e=>e.id).join(','));
+ if(r.status!=='finished'){now=121010;r.expire()}
+ const out=r.results();assert.equal(out.correct,c);assert.equal(out.justified,j);assert.equal(out.unsupported,c-j);assert.equal(out.incorrect,a-c);
+ assert.equal(out.score,Math.round(Math.max(0,(j-(a-c))*100/settings.roundQuestions)*10)/10);
+ assert.deepEqual(Round.restore(bank,settings,r.snapshot(),{now:()=>now}).results(),out);return out;
 }
-assert.equal(orders.size,1000);assert.deepEqual(bank.map(e=>e.id),original);
-console.log('PASS: 1,000 unique balanced deals with equal difficulty mixes and no duplicate/mutated emails');
-function play(answered,correct,settings=config){
- now=1000;const r=new Round(bank,settings,{now:()=>now,random});assert.throws(()=>r.results());assert.equal(r.start(),true);assert.equal(r.start(),false);
- for(let i=0;i<answered;i++){now+=500;const q=r.questions[r.index];assert.equal(r.answer(q.id,i<correct?q.classification:q.classification==='phishing'?'legitimate':'phishing'),true);assert.equal(r.answer(q.id,q.classification),false)}
- if(r.status!=='finished'){now=61000;r.expire()}
- const results=r.results();now+=100000;assert.deepEqual(r.results(),results);return results;
-}
-for(const total of [10,20])for(let a=0;a<=total;a++)for(let c=0;c<=a;c++){
- const r=play(a,c,{...config,roundQuestions:total});assert.equal(r.score,Math.max(0,(2*c-a)*100/total));assert.equal(r.unanswered,total-a);assert.equal(r.incorrect,a-c);assert.equal(r.maximum,100);
-}
-assert.equal(play(0,0).score,0);assert.equal(play(10,0).score,0);assert.equal(play(10,5).score,0);assert.equal(play(10,10).score,100);assert.equal(play(8,7).score,60);
-console.log('PASS: all 297 scored/practice answer combinations, zero participation credit, wrong-answer deductions and frozen results');
-now=1000;let r=new Round(bank,config,{now:()=>now,random});r.start();now=2000;r.answer(r.questions[0].id,'phishing');const saved=r.snapshot();
-let restored=Round.restore(bank,config,saved,{now:()=>now});assert.deepEqual(restored.snapshot(),saved);now=61000;assert.equal(restored.answer(restored.questions[restored.index].id,'phishing'),false);assert.equal(restored.results().timeUsed,60);assert.equal(restored.endedAt,61000);
+for(let a=0;a<=10;a++)for(let c=0;c<=a;c++)for(let j=0;j<=c;j++)play(a,c,j);
+for(let a=0;a<=32;a++)for(const c of new Set([0,Math.floor(a/2),a]))for(const j of new Set([0,c]))play(a,c,j,{...config,roundQuestions:32});
+assert.equal(play(10,10,0).score,0);assert.equal(play(10,10,10).score,100);assert.equal(play(10,5,5).score,0);assert.equal(play(8,7,6).score,50);
+console.log('PASS: label/evidence grading combinations, unsupported correct labels score zero, wrong labels deduct, full support100 and blind-label0');
+let now=1000,r=new Round(bank,config,{now:()=>now});r.start();const q=r.questions[0];
+assert.equal(r.choose(q.id,{evidenceId:'verification:0'}),false);r.verify(q.id);r.choose(q.id,{classification:q.classification,evidenceId:'verification:0'});
+const saved=r.snapshot();now=2000;const restored=Round.restore(bank,config,saved,{now:()=>now});assert.deepEqual(restored.draft,saved.draft);assert.equal(restored.verified[0],true);assert.equal(restored.startedAt,1000);
+now=121010;assert.equal(restored.answer(q.id),false);assert.equal(restored.results().timeUsed,120);assert.equal(restored.endedAt,121000);assert.equal(restored.snapshot().lastElapsed,120000);
 assert.deepEqual(Round.restore(bank,config,restored.snapshot(),{now:()=>now}).results(),restored.results());
-for(const mutate of [d=>d.questionIds[1]=d.questionIds[0],d=>d.answers[2]='legitimate',d=>d.startedAt=null,d=>d.status='oops',d=>d.index=8,d=>d.lastElapsed=-1]){const d=structuredClone(saved);mutate(d);assert.throws(()=>Round.restore(bank,config,d))}
-now=1000;r=new Round(bank,config,{now:()=>now});r.start();now=60999;assert.equal(r.remainingMs(),1);now=2000;assert.equal(r.remainingMs(),1);now=500000;r.expire();assert.equal(r.results().timeUsed,60);assert.equal(r.endedAt,61000);assert.deepEqual(Round.restore(bank,config,r.snapshot()).results(),r.results());
-console.log('PASS: refresh restores exact deal/answers/deadline, expiry wins over late answers, invalid snapshots fail closed and clock reversal cannot restore time');
-for(const settings of [{roundQuestions:0},{roundQuestions:11},{roundSeconds:0}])assert.throws(()=>validateBank(bank,{...config,...settings}));
-for(const mutate of [b=>b[1].id=b[0].id,b=>b[0].classification='other',b=>b[0].difficulty='Extreme',b=>b.find(e=>e.classification==='legitimate').senderEmail='staff@wrong.example',b=>b[0].body.find(e=>e.type==='link').url='https://external.invalid/',b=>b[0].indicators[0].text='missing clue',b=>delete b[0].context,b=>b[0].reasoning.evidence='' ]){const b=structuredClone(bank);mutate(b);assert.throws(()=>validateBank(b,config))}
-console.log('PASS: content, fictional domains, indicators, settings and sender-validation checks');
+for(const mutate of [d=>d.version=1,d=>d.questionIds[1]=d.questionIds[0],d=>d.answers[2]={classification:'phishing',evidenceId:'subject'},d=>d.verified[0]=false,d=>d.draft.evidenceId='missing',d=>d.lastElapsed=-1]){const d=structuredClone(saved);mutate(d);assert.throws(()=>Round.restore(bank,config,d))}
+console.log('PASS: verification/draft/deadline persist; hidden verification evidence cannot submit; late clicks rejected; old and corrupt snapshots fail closed');
+for(const mutate of [b=>b[1].id=b[0].id,b=>delete b[0].context,b=>b[0].reasoning.evidence='',b=>b[0].acceptedEvidence=['body:999'],b=>b[0].body.find(x=>x.type==='link').url='https://external.invalid/',b=>b[0].indicators[0].text='missing clue']){const b=structuredClone(bank);mutate(b);assert.throws(()=>validateBank(b,config))}
+console.log('PASS: exact evidence keys, rationale, reserved domains and content validation');

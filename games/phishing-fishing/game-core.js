@@ -11,12 +11,15 @@
     }
     return result;
   }
+  function evidenceChoices(email) {
+    return ['sender','subject',...email.body.flatMap((block,i)=>block.type==='link'?[`body:${i}`,`destination:${i}`]:[`body:${i}`]),...email.context.facts.map((_,i)=>`verification:${i}`)];
+  }
   function validateBank(bank, settings) {
     if (!Number.isFinite(settings.roundSeconds) || settings.roundSeconds <= 0) throw new Error("roundSeconds must be positive.");
     if (!Array.isArray(bank) || !bank.length || new Set(bank.map(email => email.id)).size !== bank.length)
       throw new Error("The bank must contain emails with unique IDs.");
-    if (![10,20].includes(settings.roundQuestions) || settings.roundQuestions > bank.length)
-      throw new Error("roundQuestions must be 10 or 20 and fit the bank.");
+    if (![10,bank.length].includes(settings.roundQuestions) || settings.roundQuestions > bank.length)
+      throw new Error("roundQuestions must be 10 or the full practice bank.");
     if (settings.roundQuestions === 10 && ["phishing","legitimate"].some(kind => bank.filter(e => e.classification === kind).length < 5))
       throw new Error("A scored deal needs five messages of each classification.");
     for (const email of bank) {
@@ -39,6 +42,7 @@
           if (email.classification === "legitimate" && !belongsTo(new URL(block.url).hostname, institution.domain)) throw new Error("A legitimate destination must use its reference institution's domain.");
         }
       }
+      if (!Array.isArray(email.acceptedEvidence) || !email.acceptedEvidence.length || email.acceptedEvidence.some(id=>!evidenceChoices(email).includes(id))) throw new Error("Evidence keys must identify selectable details in the message or verification record.");
       for (const clue of email.indicators) {
         const text = clue.target === "sender" ? email.senderEmail : clue.target === "subject" ? email.subject : clue.target === "body" ? email.body.map(block => `${block.text} ${block.url || ""}`).join("\n") : "";
         if (!clue.text || !clue.explanation || !text.includes(clue.text)) throw new Error("Each indicator must match text available in its email.");
@@ -47,7 +51,7 @@
   }
   function selectQuestions(bank, settings, random = Math.random) {
     validateBank(bank, settings);
-    if (settings.roundQuestions === 20) return shuffle(bank, random);
+    if (settings.roundQuestions === bank.length) return shuffle(bank, random);
     const groups = ["phishing","legitimate"].map(kind => {
       const candidates = bank.filter(e => e.classification === kind);
       // Equal difficulty mix for both classifications: 2 Easy, 2 Medium, 1 Hard.
@@ -67,6 +71,8 @@
       this.questions = selectQuestions(bank, settings, options.random || Math.random);
       this.answers = new Array(this.questions.length).fill(null);
       this.index = 0;
+      this.verified = new Array(this.questions.length).fill(false);
+      this.draft = {classification:null,evidenceId:null};
       this.status = "ready";
       this.startedAt = null;
       this.endedAt = null;
@@ -90,13 +96,24 @@
       if (this.status === "playing" && this.remainingMs() <= 0) this.finish("timeout");
       return this.status === "finished";
     }
-    answer(questionId, classification) {
-      if (this.status !== "playing" || this.expire()) return false;
-      if (!["legitimate", "phishing"].includes(classification)) return false;
-      if (this.questions[this.index]?.id !== questionId || this.answers[this.index] !== null) return false;
-      this.answers[this.index] = classification;
-      this.index++;
-      if (this.index === this.questions.length) this.finish("completed");
+    current(questionId) { return this.status==='playing'&&!this.expire()&&this.questions[this.index]?.id===questionId; }
+    verify(questionId) {
+      if(!this.current(questionId))return false;
+      this.verified[this.index]=true;return true;
+    }
+    choose(questionId, patch) {
+      if(!this.current(questionId))return false;
+      const q=this.questions[this.index];
+      if(patch.classification!==undefined&&!['phishing','legitimate'].includes(patch.classification))return false;
+      if(patch.evidenceId!==undefined&&(!evidenceChoices(q).includes(patch.evidenceId)||patch.evidenceId.startsWith('verification:')&&!this.verified[this.index]))return false;
+      this.draft={...this.draft,...patch};return true;
+    }
+    answer(questionId, classification=this.draft.classification, evidenceId=this.draft.evidenceId) {
+      if(!this.current(questionId)||!['phishing','legitimate'].includes(classification))return false;
+      const q=this.questions[this.index];
+      if(!evidenceChoices(q).includes(evidenceId)||evidenceId.startsWith('verification:')&&!this.verified[this.index])return false;
+      this.answers[this.index]={classification,evidenceId};this.index++;this.draft={classification:null,evidenceId:null};
+      if(this.index===this.questions.length)this.finish('completed');
       return true;
     }
     finish(reason) {
@@ -106,42 +123,42 @@
       this.endReason = reason;
     }
     snapshot() {
-      return {version:1, questionIds:this.questions.map(q=>q.id), answers:[...this.answers], index:this.index,
+      return {version:2, roundSeconds:this.settings.roundSeconds, verified:[...this.verified], draft:{...this.draft}, questionIds:this.questions.map(q=>q.id), answers:this.answers.map(a=>a&&{...a}), index:this.index,
         status:this.status, startedAt:this.startedAt, endedAt:this.endedAt, endReason:this.endReason, lastElapsed:this.lastElapsed};
     }
     static restore(bank, settings, data, options={}) {
       validateBank(bank, settings);
-      if (data?.version !== 1 || !Array.isArray(data.questionIds) || data.questionIds.length !== settings.roundQuestions || new Set(data.questionIds).size !== data.questionIds.length || !Array.isArray(data.answers) || data.answers.length !== data.questionIds.length || !["ready","playing","finished"].includes(data.status)) throw new Error("Saved inbox is damaged. Ask the Game Master to cancel this Round.");
+      if (data?.version !== 2 || data.roundSeconds !== settings.roundSeconds || !Array.isArray(data.questionIds) || data.questionIds.length !== settings.roundQuestions || new Set(data.questionIds).size !== data.questionIds.length || !Array.isArray(data.answers) || data.answers.length !== data.questionIds.length || !["ready","playing","finished"].includes(data.status)) throw new Error("Saved inbox uses a different exercise version or is damaged. Ask the Game Master to cancel this Round.");
       const questions=data.questionIds.map(id=>bank.find(q=>q.id===id));
       if (questions.some(q=>!q) || (settings.roundQuestions===10 && questions.filter(q=>q.classification==='phishing').length!==5)) throw new Error("Invalid saved email deal.");
       const count=data.answers.filter(a=>a!==null).length;
-      if (data.index!==count || data.answers.some((a,i)=> i<count ? !['phishing','legitimate'].includes(a) : a!==null)) throw new Error("Invalid saved answers.");
+      if (data.index!==count || data.answers.some((a,i)=> i<count ? (!a||!['phishing','legitimate'].includes(a.classification)||!evidenceChoices(questions[i]).includes(a.evidenceId)) : a!==null)) throw new Error("Invalid saved answers.");
+      if(!Array.isArray(data.verified)||data.verified.length!==questions.length||data.verified.some(v=>typeof v!=='boolean')||data.answers.some((a,i)=>a?.evidenceId?.startsWith('verification:')&&!data.verified[i]))throw new Error('Invalid verification record.');
+      const draft=data.draft;
+      if(!draft||![null,'phishing','legitimate'].includes(draft.classification)||!(draft.evidenceId===null||count<questions.length&&evidenceChoices(questions[count]).includes(draft.evidenceId))||draft.evidenceId?.startsWith('verification:')&&!data.verified[count])throw new Error('Invalid saved evidence selection.');
       const finite=v=>Number.isFinite(v)&&v>=0;
       if (!finite(data.lastElapsed) || data.lastElapsed>settings.roundSeconds*1000 || (data.status==='ready' ? data.startedAt!==null||data.endedAt!==null||count!==0 : !finite(data.startedAt)) || (data.status==='playing' && (data.endedAt!==null||data.endReason!==null||count===questions.length)) || (data.status==='finished' && (!finite(data.endedAt)||data.endedAt<data.startedAt||data.endedAt>data.startedAt+settings.roundSeconds*1000||!['timeout','completed'].includes(data.endReason)||data.endReason==='completed'&&count!==questions.length||data.endReason==='timeout'&&data.endedAt!==data.startedAt+settings.roundSeconds*1000))) throw new Error("Invalid saved timer.");
       const round=Object.create(Round.prototype);
-      Object.assign(round,{settings,now:options.now||(()=>Date.now()),questions,answers:[...data.answers],index:data.index,status:data.status,startedAt:data.startedAt,endedAt:data.endedAt,endReason:data.endReason,lastElapsed:data.lastElapsed});
+      Object.assign(round,{settings,now:options.now||(()=>Date.now()),questions,answers:data.answers.map(a=>a&&{...a}),verified:[...data.verified],draft:{...draft},index:data.index,status:data.status,startedAt:data.startedAt,endedAt:data.endedAt,endReason:data.endReason,lastElapsed:data.lastElapsed});
       return round;
     }
     results() {
       if (this.status !== "finished") throw new Error("Results are available only after the round.");
-      const reviews = this.questions.map((email, i) => ({ email, answer: this.answers[i], correct: email.classification === this.answers[i] }));
-      const correct = reviews.filter(r => r.correct).length;
-      const unanswered = this.answers.filter(a => a === null).length;
-      const answered = this.questions.length - unanswered;
-      const accuracy = answered ? correct / answered : 0;
-      const pointsPerEmail = 100 / this.questions.length;
-      const rawScore = (correct - (answered - correct)) * pointsPerEmail;
-      return {
-        endReason: this.endReason,
-        score: Math.round(Math.max(0, rawScore) * 10) / 10,
-        maximum: 100,
-        correct, incorrect: answered - correct, answered, unanswered,
-        accuracy, pointsPerEmail, rawScore,
-        timeUsed: this.elapsedMs() / 1000, reviews
-      };
+      const reviews=this.questions.map((email,i)=>{
+        const submitted=this.answers[i],answer=submitted?.classification||null;
+        const labelCorrect=answer===email.classification;
+        const evidenceCorrect=!!submitted&&email.acceptedEvidence.includes(submitted.evidenceId);
+        return {email,answer,evidenceId:submitted?.evidenceId||null,verified:this.verified[i],labelCorrect,evidenceCorrect,correct:labelCorrect&&evidenceCorrect};
+      });
+      const answered=this.answers.filter(Boolean).length,correct=reviews.filter(r=>r.labelCorrect).length;
+      const justified=reviews.filter(r=>r.correct).length,incorrect=answered-correct,unsupported=correct-justified;
+      const pointsPerEmail=100/this.questions.length,rawScore=(justified-incorrect)*pointsPerEmail;
+      return {endReason:this.endReason,score:Math.round(Math.max(0,rawScore)*10)/10,maximum:100,
+        correct,justified,unsupported,incorrect,answered,unanswered:this.questions.length-answered,
+        accuracy:answered?correct/answered:0,pointsPerEmail,rawScore,timeUsed:this.elapsedMs()/1000,reviews};
     }
   }
-  const api = { shuffle, validateBank, selectQuestions, Round };
+  const api = { evidenceChoices, shuffle, validateBank, selectQuestions, Round };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.GameCore = api;
 })(typeof window !== "undefined" ? window : globalThis);
