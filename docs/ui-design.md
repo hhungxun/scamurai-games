@@ -9,7 +9,7 @@ The supplied `designer-20261114T125952Z-1-001` references were reviewed as a set
 1. The Secretary registers the Participant and displays their personal QR.
 2. The phone opens `/participant.html`, showing the registered identity, Station Scores and visit progress.
 3. **Start Scamming** opens the camera inside that page. It accepts `/station.html?n=1…5`, the matching Participant's Station 5 Join QR, and their Station 5 board QRs.
-4. Stations 1–4 display a **Coming soon** placeholder until their games are built. Station 5 explains the Join QR; its game runs on the same origin and returns through **My scores**.
+4. Stations 1, 3 and 4 display a **Coming soon** placeholder until their games are built. Station 2 directs Participants to Close the Popups on the Game Master laptop. Station 5 explains the Join QR; its game runs on the same origin and returns through **My scores**.
 5. **Back to my participant page** stops the camera. **Scan another QR** reopens it without leaving the browser.
 
 The shared `qr-scanner.js` implements camera lifecycle and QR decoding; Station 5's `scanner.js` is an adapter for board-number validation and scan-time deadlines. A different Participant's Join QR and unrelated URLs are rejected. Leaving or cancelling an asynchronous lookup cannot navigate the page later. Native QR detection falls back to bundled jsQR.

@@ -12,7 +12,7 @@ Anyone in the group can add a game. Every game lives in its own folder under `ga
 
 Registration shows each Participant a personal QR for their own page. It displays the registered name, Student ID or Guest ID, total out of 500, best score and playing/completed status at all five Stations, and Exit Survey progress. It refreshes every 5 seconds. Keep it open or bookmark it throughout the event. The Secretary can re-show an existing Participant's QR from the registration list. Scores from active Rounds appear once the Game Master finishes them; the page labels those Stations as playing in the meantime.
 
-Tap **Start Scamming** on that page to scan station codes, your Game Master's Join QR or Game 5 board QRs with the built-in camera. Everything stays in the same browser. **My scores** / **My participant page** returns to the hub; **Scan another QR** continues to another station. Stations 1–4 currently show coming-soon placeholders. Staff can print the five public codes at [/stations.html](https://scamurai.physicsxmum.my/stations.html).
+Tap **Start Scamming** on that page to scan station codes, your Game Master's Join QR or Game 5 board QRs with the built-in camera. Everything stays in the same browser. **My scores** / **My participant page** returns to the hub; **Scan another QR** continues to another station. Station 2 directs participants to the Close the Popups laptop. Stations 1, 3 and 4 show coming-soon placeholders. Staff can print the five public codes at [/stations.html](https://scamurai.physicsxmum.my/stations.html).
 
 ## Add your game
 
@@ -93,4 +93,9 @@ Both use Python Playwright with Chromium installed; the camera-feed test also ne
 | Game | Folder | Made by | How to play |
 |---|---|---|---|
 | *(template)* | `games/_template/` | — | Copy this to start |
+| Close the Popups (Station 2) | `games/close-the-popups/` | Gary | A randomly assigned desktop task in 60 seconds, with misleading popups; shared participant selection, best score and exit survey |
 | Scan Me If You Can (Station 5) | `games/scan-me-if-you-can/` | Hung Xun | Game Master runs many players at once from one laptop; each scans a Join QR, then 8 of the 25 numbered board QRs (a fresh deal every round) and judges each site REAL or FAKE in 12 s using the in-game QR scanner |
+
+Station 2 scoring: task evidence up to 60, speed up to 20 weighted by evidence completion, and safe interaction up to 20 weighted by completion minus 5 per misleading-ad click (including blocked tabs, counted once). No completed evidence earns zero. A complete, safe Round earns 100 through 30 seconds and 80 at timeout. Every scored Round draws one persistent assignment from all 13 tasks; practice allows free choice and never submits. See [the rules](games/close-the-popups/docs/SCORING.md).
+
+Run `python3 server/test/e2e_popup.py` for the local Station 2 browser regression (Python Playwright + Chromium). It uses temporary data and includes a real 60-second timeout. `cd server && npm test` includes the scoring calibration assertions.

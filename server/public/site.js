@@ -18,7 +18,7 @@
   document.addEventListener('click', e => { if (!header.contains(e.target)) close(); });
   if (body.dataset.siteFooter !== 'off') {
     const footer = document.createElement('footer'); footer.className = 'site-footer';
-    footer.innerHTML = `<div><a class="wordmark" href="/"><span>SCAM<em>URAI</em></span></a><p>Spot it. Stop it. Report it.</p><p>XMUM · Community Service · 26 November 2026</p></div><nav aria-label="Staff tools"><a href="/register.html">Registration desk</a><a href="/games/scan-me-if-you-can/">Station 5 console</a><a href="/stations.html">Station QR codes</a><a href="/admin.html">Admin</a></nav>`;
+    footer.innerHTML = `<div><a class="wordmark" href="/"><span>SCAM<em>URAI</em></span></a><p>Spot it. Stop it. Report it.</p><p>XMUM · Community Service · 26 November 2026</p></div><nav aria-label="Staff tools"><a href="/register.html">Registration desk</a><a href="/games/close-the-popups/">Station 2 console</a><a href="/games/scan-me-if-you-can/">Station 5 console</a><a href="/stations.html">Station QR codes</a><a href="/admin.html">Admin</a></nav>`;
     body.appendChild(footer);
   }
   document.querySelectorAll('table').forEach(table => {

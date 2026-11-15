@@ -5,9 +5,10 @@
       { "id": "s1q1", "type": "scale", "text": "Station 1 helped me understand its scam type. (1 = not at all, 5 = a lot)" },
       { "id": "s1q2", "type": "text", "text": "One thing you learnt at Station 1:" }
     ]},
-    { "n": 2, "name": "Station 2", "questions": [
-      { "id": "s2q1", "type": "scale", "text": "Station 2 helped me understand its scam type. (1 = not at all, 5 = a lot)" },
-      { "id": "s2q2", "type": "text", "text": "One thing you learnt at Station 2:" }
+    { "n": 2, "name": "Close the Popups", "questions": [
+      {"id": "s2q1", "type": "choice", "text": "What helped you avoid misleading popups?", "options": ["Checking where buttons and links lead", "Finding the genuine close button", "Ignoring urgency and prize claims", "Staying focused on the original task"]},
+      {"id": "s2q2", "type": "scale", "text": "How likely are you to check a popup before clicking it? (1 = unlikely, 5 = always)"},
+      {"id": "s2q3", "type": "text", "text": "One popup warning sign you will remember:"}
     ]},
     { "n": 3, "name": "Station 3", "questions": [
       { "id": "s3q1", "type": "scale", "text": "Station 3 helped me understand its scam type. (1 = not at all, 5 = a lot)" },

@@ -12,9 +12,10 @@ Live: https://scamurai.physicsxmum.my (labvps, via the existing Cloudflare tunne
 | `/games/<name>/` | Game Master laptops (station PIN, entered once per laptop) |
 | `/leaderboard.html` | Public screen |
 | `/admin.html` | Overview + `participants.csv` / `rounds.csv` (admin PIN) |
+| `/games/close-the-popups/` | Station 2 Game Master laptop, participant picker and scored desktop challenge |
 | `/games/scan-me-if-you-can/board.html` | Print the 25 Station 5 QR codes |
 | `/stations.html` | Print the five public station QR codes |
-| `/station.html?n=1…5` | Participant station screen (1–4 coming soon; 5 explains the Join QR) |
+| `/station.html?n=1…5` | Participant station screen (2 directs to the laptop; 5 explains the Join QR; 1, 3 and 4 coming soon) |
 
 ## Run locally
 
@@ -37,7 +38,7 @@ cd server && npm test            # PLAYERS=300 npm test for a bigger crowd
 
 The Secretary hands each Participant their personal page QR after Registration; **Personal QR** in the registration list shows it again. Existing registrations receive a pass on demand. The page stores the pass on the phone and removes it from the URL fragment, refreshes every 5 seconds, and shows best completed Station Scores out of 100 (500 total). Active Rounds are labelled playing. It never returns registration survey answers or staff credentials.
 
-**Start Scamming** opens the shared camera scanner inside the participant page. Station codes lead to the correct station screen; Station 5 Join QRs are checked against the registered identity before opening the game. Its board codes use the same scan-time timer rules as the game scanner. Every station/game has a way back to the participant page. Stations 1–4 remain placeholders. See `docs/ui-design.md` for design provenance and the full local test commands, including `python3 server/test/e2e_site.py`.
+**Start Scamming** opens the shared camera scanner inside the participant page. Station codes lead to the correct station screen; Station 5 Join QRs are checked against the registered identity before opening the game. Its board codes use the same scan-time timer rules as the game scanner. Every station/game has a way back to the participant page. Station 2 runs Close the Popups on the Game Master laptop; Stations 1, 3 and 4 remain placeholders. See `docs/ui-design.md` for design provenance and the full local test commands, including `python3 server/test/e2e_site.py`.
 
 The `participant_passes` table is added automatically without changing existing Participants or Rounds. Passes persist across service restarts. They allow read-only access to one Participant's own profile; no ID-only public lookup is available. The public leaderboard continues to mask names and IDs.
 

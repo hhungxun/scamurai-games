@@ -3,7 +3,7 @@
   "private": true,
   "description": "Scamurai backbone: registration, rounds, exit survey, leaderboard",
   "main": "server.js",
-  "scripts": { "start": "node server.js", "test": "node test/pressure.js" },
+  "scripts": { "start": "node server.js", "test": "node test/popup-score.js && node test/pressure.js" },
   "engines": { "node": ">=20" },
   "dependencies": { "better-sqlite3": "^12.4.1" }
 }

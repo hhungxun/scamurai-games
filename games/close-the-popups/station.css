@@ -1,0 +1,57 @@
+html,body{margin:0!important;padding:0!important;width:100%;height:100%;max-width:none!important;background:#fff9e6;color:#151512;font-family:Lexend,"Microsoft YaHei",sans-serif}
+body{display:flex;flex-direction:column;overflow:hidden}
+#game{display:block;flex:1;min-height:0;width:100%;border:0;background:#fff9e6}
+#station-header,#cancel-dialog{--ink:#151512;--paper:#fff9e6;--accent:#ffdf00;--line:#d8d1b9;box-sizing:border-box;color:var(--ink);background:var(--paper);font:14px/1.6 Lexend,"Microsoft YaHei",sans-serif;border:2px solid var(--ink);border-radius:0;margin:auto;padding:0;max-height:calc(100vh - 64px);max-width:calc(100vw - 48px);box-shadow:7px 7px 0 var(--ink);overflow:auto}
+#station-header{width:480px}
+#station-header:not([open]),#cancel-dialog:not([open]){display:none}
+#station-header[open],#cancel-dialog[open]{animation:station-enter .16s ease-out both}
+#station-header::backdrop,#cancel-dialog::backdrop{background:#17160f70;backdrop-filter:blur(2px)}
+.station-panel-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin:0;padding:22px 26px 24px;background:var(--ink);color:var(--paper);border-bottom:5px solid var(--accent)}
+#station-header .station-eyebrow{display:block;margin:0 0 8px;color:var(--accent);font:700 10px/1.3 Lexend,"Microsoft YaHei",sans-serif;letter-spacing:.13em}
+#station-header #staff-title{margin:0;font:800 28px/1.2 Lexend,"Microsoft YaHei",sans-serif;letter-spacing:-.04em;color:var(--paper)}
+.station-panel-body{padding:25px 26px 26px}
+.station-person{margin:0 0 20px}
+#station-header .station-label{display:block;font:650 11px/1.4 Lexend,"Microsoft YaHei",sans-serif;letter-spacing:.06em;color:#716d5e}
+#station-header #participant-name{display:block;overflow-wrap:anywhere;margin:6px 0 0;font:750 21px/1.35 Lexend,"Microsoft YaHei",sans-serif;letter-spacing:-.025em}
+.station-score-grid{display:grid;grid-template-columns:1fr 1fr;border:2px solid var(--ink);background:#fffdf6;margin-bottom:18px}
+.station-score-grid>div{padding:14px 17px 12px}
+.station-score-grid>div+div{border-left:2px solid var(--ink);background:#f3edda}
+#station-header .station-score-grid p{display:flex;align-items:baseline;gap:8px;margin:8px 0 0;line-height:1}
+#station-header .station-score-grid strong{font:850 38px/1 Lexend,"Microsoft YaHei",sans-serif;letter-spacing:-.06em;font-variant-numeric:tabular-nums}
+#station-header .station-score-grid small{font:600 12px/1.2 Lexend,"Microsoft YaHei",sans-serif;color:#716d5e;white-space:nowrap}
+#station-header .station-status-row{display:flex;gap:9px;align-items:flex-start;margin:0 0 22px;font:400 13px/1.65 Lexend,"Microsoft YaHei",sans-serif;color:#686253}
+.station-status-dot{flex:0 0 7px;width:7px;height:7px;background:#99917c;margin-top:7px}
+#station-header[data-phase="saved"] .station-status-dot{background:#24734b}
+#station-header[data-phase="saved"] .station-status-row{color:#326247}
+#station-header[data-phase="pending"] .station-status-dot{background:#c67b13}
+#station-status{overflow-wrap:anywhere}
+#station-header nav{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0}
+#staff-toggle,#station-header button,#cancel-dialog button,#station-notice button{box-sizing:border-box;font:650 13px/1.4 Lexend,"Microsoft YaHei",sans-serif!important;text-transform:none!important;letter-spacing:normal!important;margin:0;border:2px solid #151512;border-radius:0;background:#fffdf6;color:#151512;cursor:pointer;box-shadow:none;transition:background .12s,transform .12s}
+#station-header nav button{min-height:44px;padding:10px 14px}
+#station-header nav button:hover{background:#f0ead6}
+#station-header nav #next,#station-header nav #retry{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;min-height:50px;background:var(--accent);padding:12px 17px;font-size:15px!important;box-shadow:3px 3px 0 var(--ink);margin:0 3px 4px 0}
+#station-header nav #next::after,#station-header nav #retry::after{content:"→";font-size:23px;line-height:1;font-weight:500}
+#station-header nav #next:hover,#station-header nav #retry:hover{background:#ffe931;transform:translateY(-1px)}
+#station-header nav #void,#station-header nav #leaving{grid-column:1/-1;min-height:32px;border:0;border-top:1px solid var(--line);padding:14px 0 0;margin-top:4px;text-align:left;background:transparent;font-size:12px!important;color:#796b57}
+#station-header nav #void{color:#9d342b}
+#station-header nav #void:hover,#station-header nav #leaving:hover{text-decoration:underline}
+#station-header #staff-close{display:grid;place-items:center;flex:none;width:32px;height:32px;min-height:32px;border:1px solid #777465;padding:0;background:transparent;color:var(--paper);font:400 23px/1 Lexend,sans-serif!important}
+#station-header #staff-close:hover{background:var(--accent);border-color:var(--accent);color:var(--ink)}
+#staff-toggle{position:fixed;bottom:10px;left:10px;z-index:20;display:flex;align-items:center;gap:7px;padding:5px 10px 5px 5px;min-height:30px;font-size:11px!important;background:#fff9e6;color:#4d493e;box-shadow:2px 2px 0 #151512}
+#staff-toggle::before{content:"↗";display:grid;place-items:center;width:18px;height:18px;background:#ffdf00;color:#151512;font-size:15px}
+#staff-toggle:hover{background:#ffdf00}
+#staff-toggle:focus-visible,#station-header button:focus-visible,#cancel-dialog button:focus-visible{outline:3px solid #d09a00;outline-offset:3px}
+#station-header button:disabled{opacity:.45;cursor:wait;transform:none}
+#personal-link{margin:18px 0 0;padding-top:14px;border-top:1px solid var(--line);overflow-wrap:anywhere;font:500 13px/1.6 Lexend,"Microsoft YaHei",sans-serif}
+#personal-link a{color:#151512;text-decoration:underline;text-underline-offset:3px}
+#station-notice{position:fixed;bottom:10px;right:12px;z-index:21;max-width:min(450px,calc(100vw - 120px));padding:12px 14px;border:2px solid #151512;border-left:7px solid #ffdf00;border-radius:0;background:#fff9e6;color:#514a32;font:13px/1.6 Lexend,"Microsoft YaHei",sans-serif;box-shadow:3px 3px 0 #151512}
+#station-notice button{margin-left:10px;padding:5px 9px;background:#ffdf00;font-size:12px!important}
+#cancel-dialog{width:440px;padding:26px;border-top:8px solid #151512}
+#cancel-dialog h2{margin:0 0 12px;font:800 25px/1.3 Lexend,"Microsoft YaHei",sans-serif;letter-spacing:-.04em;color:#151512}
+#cancel-dialog p{font:400 14px/1.75 Lexend,"Microsoft YaHei",sans-serif;color:#686253;margin:0 0 24px}
+#cancel-dialog button{padding:10px 15px;min-height:44px}
+#cancel-dialog #keep-playing{background:#ffdf00;margin-left:8px}
+#cancel-dialog #confirm-void{color:#9d342b}
+[hidden],#game[hidden],#station-header [hidden]{display:none!important}
+@keyframes station-enter{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){#station-header[open],#cancel-dialog[open]{animation:none}#station-header button,#staff-toggle{transition:none}}

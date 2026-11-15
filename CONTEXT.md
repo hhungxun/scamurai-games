@@ -61,6 +61,20 @@ A Participant with no Registration or Round end in the last 15 minutes and no Ch
 **Leaderboard**:
 The live ranking of Participants by total Station Score, ties broken by the shortest total time of the best Rounds. It shows first name and the last 3 digits of the Participant ID. The top 3 who completed all five Stations and the Exit Survey win the prize.
 
+### Station 2: Close the Popups
+
+**Task**:
+A practical desktop objective assigned to a Participant during a Station 2 Round, completed while simulated advertisements compete for attention.
+
+**Task Evidence**:
+The observable actions that establish how much of a Task a Participant completed. Submitting a Round alone is not evidence of completion.
+
+**Safe Interaction Score**:
+The Station 2 component that rewards task progress without misleading-ad clicks. Genuine popup closes cannot erase a misleading-ad click.
+
+**Staff Practice**:
+An unscored rehearsal of a Station 2 Task, separate from a Participant’s event Rounds.
+
 ### Station 5: Scan Me If You Can
 
 **Board Number**:

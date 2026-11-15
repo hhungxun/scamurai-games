@@ -1,0 +1,512 @@
+/* A durable, explicit 60-second booth round. Ordinary website visits stay untimed. */
+(() => {
+  'use strict';
+  const VERSION = 'ending3', PREFIX = 'br-booth-v1:', INDEX = 'br-booth-index-v1', LIMIT = 12, DURATION = 60000;
+  const RULES = {
+    'minute4-penang-indoor': {scene:'events',file:'events.html',target:'penang-state-gallery',key:'bp-outings-saved'},
+    'minute3-courier-redelivery': {scene:'courier',file:'courier.html',target:'TM24081301',key:'courier-completed'},
+    'minute3-search-official': {scene:'search',file:'search.html',target:'pixelpress',key:'search-official-downloads',checks:[{key:'search-official-visits',items:['pixelpress'],label:['Official Pixelpress page opened','已打开 Pixelpress 官方页']}]},
+    'minute-wall-aurora': {scene:'wallpapers',file:'wallpaper.html',target:'orbital-aurora',key:'wall-saved',exportKind:'wallpaper'},
+    'minute-recipe-lunch': {scene:'recipes',file:'recipe.html',target:'chickpea-salad',key:'bp-recipes-saved'},
+    'minute-tool-webp': {scene:'tools',file:'tools.html',target:'city',exportKind:'tool'},
+    'minute-movie-steel': {scene:'movies',file:'movie.html',target:'steel',key:'frame-watchlist'},
+    'minute-outing-museum': {scene:'events',file:'events.html',target:'museum-four-galleries',key:'bp-outings-saved'},
+    'minute-book-alice': {scene:'books',file:'book.html',target:'alice',key:'culture-reading-list',exportKind:'book'},
+    'minute-museum-wave': {scene:'museum',file:'museum.html',target:'56353',key:'culture-exhibition'},
+    'minute-nature-cardinal': {scene:'nature',file:'nature.html',target:'cardinal',key:'nature-sightings'},
+    'minute-travel-klcc': {scene:'travel',file:'travel.html',target:'klcc',trip:{from:'sentral-kj',to:'klcc',time:'10:00',changes:0}},
+    'minute-market-starter': {scene:'market',file:'market.html',target:'canon-good',key:'loop-saved'},
+    'minute2-wall-earthrise': {scene:'wallpapers',file:'wallpaper.html',target:'earthrise-1972',exportKind:'wallpaper',checks:[
+      {key:'wall-compare',items:['earthrise-1968','earthrise-1972'],label:['Both Earthrise photographs are in Compare','两张「地出」照片均已加入对比']}
+    ]},
+    'minute2-recipe-budget': {scene:'recipes',file:'recipe.html',target:'red-lentil-soup',key:'bp-recipes-saved',checks:[
+      {key:'bp-recipe-servings-red-lentil-soup',value:6,label:['Six servings selected','已设为六人份']},
+      {key:'bp-recipe-ingredients-red-lentil-soup',items:[0],label:['Red lentils ticked in the ingredient list','已在食材清单勾选红扁豆']}
+    ]},
+    'minute2-tool-webp': {scene:'tools',file:'tools.html',target:'sunroom',exportKind:'tool'},
+    'minute2-movie-animation': {scene:'movies',file:'movie.html',target:'sintel',key:'frame-watchlist',checks:[
+      {key:'frame-watchlist',items:['elephants-dream'],count:2,label:['Elephants Dream is on the two-film watchlist','双片片单中包含《大象之梦》']}
+    ]},
+    'minute2-outing-craft': {scene:'events',file:'events.html',target:'market-craft',key:'bp-outings-saved',checks:[
+      {key:'bp-outing-checks-market-craft',items:[1,2],label:['Return plan and weather checks ticked','已勾选返程安排和天气方案']}
+    ]},
+    'minute2-book-verne': {scene:'books',file:'book.html',target:'around-world-fr',key:'culture-reading-list',exportKind:'book',checks:[
+      {key:'culture-reading-list',items:['around-world'],label:['English edition saved','已收藏英文版']}
+    ]},
+    'minute2-museum-manet': {scene:'museum',file:'museum.html',target:'436965',key:'culture-exhibition',checks:[
+      {key:'culture-comparison',items:['436947','436965'],label:['Both Manet works are in Compare','两幅马奈作品均已加入对比']}
+    ]},
+    'minute2-nature-woodpeckers': {scene:'nature',file:'nature.html',target:'downy',key:'nature-sightings',checks:[
+      {key:'nature-compare',items:['downy','red-bellied'],label:['Both woodpeckers are in Compare','两种啄木鸟均已加入对比']}
+    ]},
+    'minute2-travel-interchange': {scene:'travel',file:'travel.html',target:'bukit-kg',trip:{from:'klcc',to:'bukit-kg',time:'17:20',pref:'walking',changes:1}},
+    'minute2-market-lens': {scene:'market',file:'market.html',target:'canon-excellent',key:'loop-saved',checks:[
+      {key:'loop-compare',items:['canon-good','canon-excellent'],label:['Both Canon listings are in Compare','两条佳能刊登均已加入对比']}
+    ]}
+  };
+  // Optional, append-only condition facts share the existing boolean checks array.
+  // Missing facts in older frozen rounds stay unknown; they are never fabricated.
+  const DETAIL_CHECKS = {'minute2-movie-animation':1,'minute2-travel-interchange':4,'minute3-courier-redelivery':2,'minute3-search-official':1};
+  const FILES = new Set(Object.values(RULES).map(r => r.file));
+  const isObject = v => v !== null && typeof v === 'object' && !Array.isArray(v);
+  const finite = v => typeof v === 'number' && Number.isFinite(v);
+  const time = v => finite(v) && v > 0 && v < 9000000000000000;
+  const idOK = v => typeof v === 'string' && /^r_[a-f0-9]{24}$/.test(v);
+  const seedOK = v => typeof v === 'string' && /^m_[a-f0-9]{24}$/.test(v);
+  const taskData = id => (window.BROWSE_BOOTH_TASKS || []).find(t => t.id === id) || (window.BROWSE_BOOTH_LEGACY_TASKS || []).find(t => t.id === id);
+  const clone = v => JSON.parse(JSON.stringify(v));
+  const escape = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const emptyEvidence = taskId => {
+    const rule = RULES[taskId];
+    return {targetId:rule.target,saved:false,found:false,servings:null,trip:null,exports:[],capturedAt:0,
+      ...(rule.checks || DETAIL_CHECKS[taskId] ? {checks:(rule.checks || []).map(() => false)} : {})};
+  };
+  const validDate = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v+'T00:00:00Z')) && new Date(v+'T00:00:00Z').toISOString().slice(0,10) === v;
+  const validTrip = (v, trip) => isObject(v) && v.from === trip.from && v.to === trip.to && v.time === trip.time
+    && validDate(v.date) && (trip.pref ? v.pref === trip.pref : ['fastest','changes','walking'].includes(v.pref));
+  const tripEvidence = (v, trip) => ({from:v.from,to:v.to,date:v.date,time:v.time,pref:v.pref,changes:trip.changes});
+  const exportValue = value => {
+    if (!isObject(value) || !['wallpaper','tool','book'].includes(value.kind) || !Number.isInteger(value.bytes) || value.bytes < 1 || value.bytes > 200000000) return null;
+    if (value.kind === 'book') return typeof value.id === 'string' && /^[a-z0-9-]{1,70}$/.test(value.id) && value.format === 'text/plain' ? {kind:'book',id:value.id,format:'text/plain',bytes:value.bytes} : null;
+    if (!Number.isInteger(value.width) || value.width < 1 || value.width > 20000 || !Number.isInteger(value.height) || value.height < 1 || value.height > 20000) return null;
+    if (value.kind === 'wallpaper') return typeof value.id === 'string' && /^[a-z0-9-]{1,70}$/.test(value.id) && value.format === 'image/jpeg' ? {kind:'wallpaper',id:value.id,width:value.width,height:value.height,format:value.format,bytes:value.bytes} : null;
+    if (!['image/jpeg','image/png','image/webp'].includes(value.format) || typeof value.sample !== 'string' || !/^[a-z0-9-]{1,70}$/.test(value.sample) || !(value.quality === null || Number.isInteger(value.quality) && value.quality >= 1 && value.quality <= 100)) return null;
+    return {kind:'tool',sample:value.sample,width:value.width,height:value.height,format:value.format,quality:value.quality,bytes:value.bytes};
+  };
+  const normalizeEvidence = (v, record) => {
+    const e = emptyEvidence(record.taskId);
+    if (!isObject(v) || v.targetId !== e.targetId) return e;
+    const through=record.endedAt || record.updatedAt;
+    e.capturedAt = finite(v.capturedAt) && v.capturedAt >= record.startedAt && v.capturedAt < record.deadline && v.capturedAt <= through ? v.capturedAt : 0;
+    if(e.capturedAt) {
+      e.saved = v.saved === true;
+      e.found = v.found === true;
+      e.servings = record.taskId === 'minute-recipe-lunch' && [1,2,4,6].includes(v.servings) ? v.servings : null;
+      const rule = RULES[record.taskId];
+      if (rule.trip && validTrip(v.trip,rule.trip)) e.trip = tripEvidence(v.trip,rule.trip);
+      if ((rule.checks || DETAIL_CHECKS[record.taskId]) && Array.isArray(v.checks)) {
+        const base=rule.checks?.length || 0;
+        e.checks=(rule.checks || []).map((_,index) => v.checks[index] === true);
+        for(let i=0;i<(DETAIL_CHECKS[record.taskId] || 0);i++) {
+          const value=v.checks[base+i];if(typeof value!=='boolean')break;e.checks.push(value);
+        }
+      }
+    }
+    if (Array.isArray(v.exports)) e.exports = v.exports.slice(-12).map(x => {
+      const out = exportValue(x);
+      return out && time(x.at) && x.at >= record.startedAt && x.at < record.deadline && x.at <= through ? {...out,at:x.at} : null;
+    }).filter(Boolean);
+    return e;
+  };
+  const normalize = (v, requestedId) => {
+    if (!isObject(v) || v.version !== 1 || !idOK(v.id) || v.id !== requestedId || !seedOK(v.seed) || !Object.hasOwn(RULES,v.taskId) || !['clean','ads'].includes(v.mode) || !['en','zh'].includes(v.lang) || !['armed','running','ended','void'].includes(v.status) || !time(v.createdAt) || !time(v.updatedAt) || v.updatedAt < v.createdAt || !['complete','partial','incomplete','unreviewed'].includes(v.judgement)) return null;
+    const latest=Date.now()+1000;
+    if(v.createdAt>latest||v.updatedAt>latest||v.startedAt>latest||v.endedAt>latest)return null;
+    if (v.status === 'armed') {
+      if (v.startedAt !== 0 || v.deadline !== 0 || v.endedAt !== 0 || v.reason !== null) return null;
+    } else {
+      if (!time(v.startedAt) || v.startedAt < v.createdAt || v.deadline !== v.startedAt + DURATION) return null;
+      if (v.status === 'running' && (v.endedAt !== 0 || v.reason !== null)) return null;
+      if (v.status === 'ended' && (!time(v.endedAt) || v.endedAt < v.startedAt || v.endedAt > v.deadline || !['timeout','submitted'].includes(v.reason) || v.reason === 'timeout' && v.endedAt !== v.deadline)) return null;
+      if (v.status === 'void' && (!time(v.endedAt) || v.endedAt < v.startedAt || v.endedAt > v.deadline || v.reason !== 'void')) return null;
+    }
+    const out = {version:1,id:v.id,taskId:v.taskId,seed:v.seed,mode:v.mode,lang:v.lang,status:v.status,createdAt:v.createdAt,updatedAt:v.updatedAt,startedAt:v.startedAt,deadline:v.deadline,endedAt:v.endedAt,reason:v.reason,judgement:v.judgement};
+    if (typeof v.usedSecondHint === 'boolean') out.usedSecondHint = v.usedSecondHint;
+    out.evidence = v.status === 'armed' ? emptyEvidence(v.taskId) : normalizeEvidence(v.evidence,out);
+    return out;
+  };
+  const readRecord = id => {
+    if (!idOK(id)) return null;
+    try { const text = sessionStorage.getItem(PREFIX+id); return text && text.length <= 16000 ? normalize(JSON.parse(text),id) : null; } catch { return null; }
+  };
+  const store = record => {
+    try {
+      // A cached renderer may still hold a record from before the hint was used.
+      const authoritative=readRecord(record.id);
+      if(authoritative?.usedSecondHint===true)record.usedSecondHint=true;
+      sessionStorage.setItem(PREFIX+record.id,JSON.stringify(record)); return true;
+    } catch { return false; }
+  };
+  const readIndex = () => {
+    try { const raw = JSON.parse(sessionStorage.getItem(INDEX) || '[]'); return Array.isArray(raw) ? [...new Set(raw.filter(idOK))].slice(0,LIMIT) : []; } catch { return []; }
+  };
+  const finalize = (record, reason, now) => {
+    const current = readRecord(record.id);
+    if (!current || current.status !== 'running') return current;
+    const expired = now >= current.deadline;
+    current.status = reason === 'void' && !expired ? 'void' : 'ended';
+    current.reason = expired ? 'timeout' : reason;
+    current.endedAt = expired ? current.deadline : Math.max(current.startedAt,now);
+    current.updatedAt = Math.max(current.updatedAt,now);
+    return store(current) ? current : null;
+  };
+  const get = id => {
+    let record = readRecord(id);
+    if (record?.status === 'running' && Date.now() >= record.deadline) record = finalize(record,'timeout',Date.now());
+    return record ? clone(record) : null;
+  };
+  const makeToken = prefix => { const n = new Uint8Array(12); crypto.getRandomValues(n); return prefix + Array.from(n,v => v.toString(16).padStart(2,'0')).join(''); };
+  const create = (taskId, mode, lang) => {
+    if (!Object.hasOwn(RULES,taskId) || !taskData(taskId) || !['clean','ads'].includes(mode) || !['en','zh'].includes(lang)) return null;
+    let id,seed; try { id=makeToken('r_');seed=makeToken('m_'); } catch { return null; }
+    const now = Date.now(), record = {version:1,id,taskId,seed,mode,lang,status:'armed',createdAt:now,updatedAt:now,startedAt:0,deadline:0,endedAt:0,reason:null,judgement:'unreviewed',evidence:emptyEvidence(taskId)};
+    if (!store(record)) return null;
+    const previous=readIndex(),next=[id,...previous].slice(0,LIMIT);
+    try { sessionStorage.setItem(INDEX,JSON.stringify(next)); } catch { try { sessionStorage.removeItem(PREFIX+id); } catch {} return null; }
+    for (const old of previous) if (!next.includes(old)) { try { sessionStorage.removeItem(PREFIX+old); } catch {} }
+    return clone(record);
+  };
+  const list = () => readIndex().map(get).filter(Boolean).sort((a,b) => b.createdAt-a.createdAt);
+  const judge = (id, value) => {
+    if (!['complete','partial','incomplete','unreviewed'].includes(value)) return null;
+    const record=get(id);
+    if (!record || !['ended','void'].includes(record.status)) return null;
+    record.judgement=value;record.updatedAt=Math.max(record.updatedAt,Date.now());
+    return store(record) ? clone(record) : null;
+  };
+  const pageURL = (file, record, extra={}) => {
+    const u=new URL(file,location.href);
+    u.searchParams.set('lang',record?.lang || 'zh');u.searchParams.set('v',VERSION);
+    if (record) {u.searchParams.set('round',record.id);u.searchParams.set('mode',record.mode);}
+    for (const [k,v] of Object.entries(extra)) u.searchParams.set(k,String(v));
+    return u.href;
+  };
+  const entryURL = r => r && Object.hasOwn(RULES,r.taskId) ? pageURL(RULES[r.taskId].file,r,{seed:r.seed}) : pageURL('booth.html',null);
+  const resultURL = r => r && idOK(r.id) ? pageURL('booth.html',r,{view:'result'}) : pageURL('booth.html',null);
+  const reviewURL = r => r && idOK(r.id) && seedOK(r.seed) ? pageURL('review.html',r,{seed:r.seed}) : pageURL('booth.html',null);
+  const assess = input => {
+    const record = input && idOK(input.id) ? normalize(input,input.id) : null;
+    if (!record) return {checks:[],allMet:false};
+    const e=record.evidence,checks=[], add=(en,zh,met,detail='')=>checks.push({label:[en,zh],met:Boolean(met),detail});
+    const saved=(en,zh)=>add(en,zh,e.saved,e.saved?'✓':'—');
+    switch (record.taskId) {
+      case 'minute3-courier-redelivery':saved('Free redelivery saved for tomorrow afternoon at the existing address','已保存明天下午、原地址的免费改约');break;
+      case 'minute3-search-official':saved('Official getting-started TXT download dispatched','已从官方页发起入门说明 TXT 下载');break;
+      case 'minute-wall-aurora': saved('Required photograph saved','符合题目的照片已收藏'); add('2560 × 1440 JPG download dispatched','2560 × 1440 JPG 已发起下载',e.exports.some(x=>x.kind==='wallpaper'&&x.id==='orbital-aurora'&&x.width===2560&&x.height===1440&&x.format==='image/jpeg'),e.exports.filter(x=>x.kind==='wallpaper').map(x=>`${x.width} × ${x.height} · JPG · ${x.bytes} B`).join('; ')); break;
+      case 'minute-recipe-lunch': saved('Correct chickpea salad saved','正确的鹰嘴豆沙拉已收藏');add('Recipe set to four servings','食谱设为4人份',e.servings===4,e.servings===null?'—':`${e.servings} · ${e.servings*120} g chickpeas / 鹰嘴豆`);break;
+      case 'minute-tool-webp': {const out=e.exports.filter(x=>x.kind==='tool'),target=out.some(x=>x.sample==='city');add('Chinatown after dark example exported','已导出“唐人街入夜”示例',target,target?'✓':'—');add('WebP, width 1280, quality 75% download dispatched','WebP、宽1280、质量75%已发起下载',out.some(x=>x.sample==='city'&&x.width===1280&&x.height===853&&x.format==='image/webp'&&x.quality===75),out.map(x=>`${x.width} × ${x.height} · ${x.format} · ${x.quality}% · ${x.bytes} B`).join('; '));break;}
+      case 'minute-movie-steel':saved('Required film added to watchlist','符合题目的电影已加入想看片单');break;
+      case 'minute-outing-museum':saved('Required route added to weekend plan','符合题目的路线已加入周末计划');break;
+      case 'minute-book-alice':saved('Required book added to reading list','符合题目的书籍已加入阅读清单');add('Required opening excerpt TXT download dispatched','所需开篇片段TXT已发起下载',e.exports.some(x=>x.kind==='book'&&x.id==='alice'&&x.format==='text/plain'),e.exports.filter(x=>x.kind==='book').map(x=>`TXT · ${x.bytes} B`).join('; '));break;
+      case 'minute-museum-wave':saved('Required artwork added to My exhibition','符合题目的作品已加入我的展览');break;
+      case 'minute-nature-cardinal':saved('Required bird added to observation list','符合题目的鸟类已加入观察清单');break;
+      case 'minute-travel-klcc':add('Saved KL Sentral (KJ) → KLCC at 10:00','已保存KL Sentral（KJ）→ KLCC、10:00的行程',e.saved&&Boolean(e.trip),e.trip?`${e.trip.from} → ${e.trip.to} · ${e.trip.date} ${e.trip.time}`:'—');add('Direct route: zero changes','直达路线：0次换乘',Boolean(e.trip)&&e.trip.changes===0,e.trip?'0':'—');break;
+      case 'minute-market-starter':saved('Required listing saved','符合题目的刊登已收藏');break;
+      case 'minute2-wall-earthrise':add('1972 Earthrise photograph exported as a 3840 × 2160 JPG','已发起 1972 年地出照片的 3840 × 2160 JPG 下载',e.exports.some(x=>x.kind==='wallpaper'&&x.id===e.targetId&&x.width===3840&&x.height===2160));break;
+      case 'minute2-recipe-budget':saved('Red lentil and tomato soup saved','已收藏红扁豆番茄汤');break;
+      case 'minute2-tool-webp': {
+        const exports=e.exports.filter(x=>x.kind==='tool'&&x.sample===e.targetId);
+        add('Reading-space example exported','已导出阅读空间示例',exports.length>0);
+        add('800 px WebP at 70% quality downloaded','已发起宽 800 px、画质 70% 的 WebP 下载',exports.some(x=>x.width===800&&x.height===1052&&x.format==='image/webp'&&x.quality===70),
+          exports.map(x=>`${x.width} × ${x.height} · ${x.format} · ${x.quality}%`).join('; '));
+        break;
+      }
+      case 'minute2-movie-animation':saved('Sintel is on the watchlist','《辛特尔》已加入想看片单');break;
+      case 'minute4-penang-indoor':saved('Two-hour indoor Penang gallery saved within RM30','已保存RM30以内的槟城室内两小时美术馆指南');break;
+      case 'minute2-outing-craft':saved('Central Market craft outing saved','已保存中央艺术坊手作行程');break;
+      case 'minute2-book-verne':
+        saved('French edition saved','已收藏法文版');
+        add('French opening excerpt TXT downloaded','已发起法文开篇 TXT 下载',e.exports.some(x=>x.kind==='book'&&x.id===e.targetId&&x.format==='text/plain'));
+        break;
+      case 'minute2-museum-manet':saved('Narrower canvas added to My Exhibition','较窄的作品已加入我的展览');break;
+      case 'minute2-nature-woodpeckers':saved('Smaller woodpecker added to the observation list','较小的啄木鸟已加入观察清单');break;
+      case 'minute2-travel-interchange':add('17:20 KLCC (KJ) → Bukit Bintang (KG) saved with Less walking','已用「较少步行」保存 17:20 KLCC（KJ）至武吉免登（KG）',e.saved&&Boolean(e.trip),e.trip?.date||'');break;
+      case 'minute2-market-lens':saved('Canon kit with lens saved','已收藏附镜头的佳能套机');break;
+    }
+    RULES[record.taskId].checks?.forEach(({label},index)=>add(...label,e.checks[index]));
+    return {checks,allMet:checks.length>0&&checks.every(c=>c.met)};
+  };
+
+  // Each condition uses the same frozen round evidence as the original assessment.
+  // Correct target selection establishes its fixed catalogue facts, not a separate
+  // unobservable "read the metadata" action. Unknown historical facts stay neutral.
+  const CONDITION_EVIDENCE = {
+    'minute2-wall-earthrise':[[1],'found',[0]],
+    'minute2-recipe-budget':['found',[1],[2],[0]],
+    'minute2-tool-webp':[[0],[1],[0]],
+    'minute2-movie-animation':[[0],'detail0',[0,1]],
+    'minute2-outing-craft':['found',[0],[1]],
+    'minute2-book-verne':[[2],[0],[1]],
+    'minute2-museum-manet':[[1],'found',[0]],
+    'minute2-nature-woodpeckers':[[1],'found',[0]],
+    'minute2-travel-interchange':['detail0','detail1','detail2','detail3'],
+    'minute2-market-lens':[[1],[0],[0]],
+    'minute3-courier-redelivery':['found','detail0','detail1'],
+    'minute3-search-official':[[1],[0],'detail0'],
+    'minute4-penang-indoor':[[0],[0],[0]]
+  };
+  const conditions = input => {
+    const record=input&&idOK(input.id)?normalize(input,input.id):null;
+    const task=taskData(record?.taskId),assessment=assess(record),map=CONDITION_EVIDENCE[record?.taskId];
+    if(!task?.steps||!map)return assessment;
+    const e=record.evidence,base=RULES[record.taskId].checks?.length || 0;
+    const checks=task.steps.map((label,index)=>{
+      const refs=map[index];let met=null,detail='';
+      if(Array.isArray(refs)) {met=refs.every(i=>assessment.checks[i]?.met===true);detail=refs.map(i=>assessment.checks[i]?.detail).filter(value=>value&&!(typeof value==='string'&&/^[✓✗○—\s]*$/.test(value))).join('; ');}
+      else if(refs==='found') met=e.found||e.saved;
+      else if(refs?.startsWith('detail')) {
+        const value=e.checks?.[base+Number(refs.slice(6))];
+        if(typeof value==='boolean') {
+          met=value;
+          if(record.taskId==='minute3-search-official'&&!value)detail=['A sponsored search result was clicked during this round.','本轮曾点击赞助搜索结果。'];
+        }
+        // Older complete evidence already proves these positive facts. A failed
+        // aggregate cannot establish which individual subcondition was missing.
+        else if(record.taskId==='minute2-movie-animation'&&e.checks?.[0]===true)met=true;
+        else if(record.taskId==='minute3-courier-redelivery'&&e.saved)met=true;
+        else if(record.taskId==='minute2-travel-interchange'&&e.saved&&e.trip)met=true;
+      }
+      if(met===null)detail=['The browser record is insufficient to verify this condition automatically. Staff should check it; it has not been marked incomplete.','浏览器记录不足以自动核实此项，请工作人员核对；这不表示未完成。'];
+      return {label,met,detail};
+    });
+    return {checks,allMet:checks.length>0&&checks.every(c=>c.met===true)};
+  };
+
+  // Query validation is available before the engine chooses a seed or enables ads.
+  const context = (params, scene) => {
+    const p=params instanceof URLSearchParams?params:new URLSearchParams(params || location.search),requested=p.has('round');
+    if (!requested) return {requested:false,valid:false,round:null,task:null,reason:null};
+    const record=get(p.get('round')),task=record&&taskData(record.taskId);
+    if (!record || !task) return {requested:true,valid:false,round:null,task:null,reason:'missing'};
+    if (scene && RULES[record.taskId].scene!==scene) return {requested:true,valid:false,round:record,task,reason:'scene'};
+    return {requested:true,valid:true,round:record,task,reason:null};
+  };
+  let active=null,suspended=false,restoring=false,generation=0,frame=0,ticker=0,bar=null,dialog=null,observer=null,redirecting=false,reminder=null,reminderUntil=0,countdown=null;
+  const emit = (name,detail) => window.dispatchEvent(new CustomEvent(name,{detail}));
+  const translate = (en,zh) => active?.lang === 'zh' ? zh : en;
+  const stopUI = () => { clearInterval(ticker);ticker=0;countdown?.destroy();countdown=null; if(dialog?.open)dialog.close();reminder?.remove();reminder=null; };
+  const leave = record => {
+    if (redirecting) return;
+    redirecting=true;stopUI();
+    emit('browse:booth-end',{roundId:record?.id || active?.id,seed:record?.seed || active?.seed,reason:record?.reason || 'invalid',mode:record?.mode || active?.mode});
+    // Hand a one-use presentation ticket to the result page after durable finalization.
+    // Actual reason is authoritative: a click at/after the deadline stays a timeout.
+    try {
+      if(record?.status==='ended' && ['timeout','submitted'].includes(record.reason) &&
+         !sessionStorage.getItem('br-booth-ending-seen-v1:'+record.id))
+        sessionStorage.setItem('br-booth-ending-next-v1',JSON.stringify({id:record.id,reason:record.reason,at:Date.now()}));
+    } catch {} // Missing storage must never prevent leaving or submitting a score.
+    location.replace(record ? resultURL(record) : pageURL('booth.html',null,{notice:'expired-context'}));
+  };
+  const current = () => active ? readRecord(active.id) : null;
+  const end = reason => {
+    if (!active || suspended || restoring) return null;
+    const record=current();
+    if (!record) {leave(null);return null;}
+    if (record.status !== 'running') {leave(record);return record;}
+    // An early submission first captures current authoritative scene state. Expiry
+    // deliberately keeps the last pre-deadline evidence instead of reading late DOM.
+    if (Date.now()<record.deadline) capture(active.C);
+    const result=finalize(record,reason,Date.now());leave(result);return result;
+  };
+  const canAct = () => {
+    if (!active) {
+      const p=new URLSearchParams(location.search);
+      if (!p.has('round') || !FILES.has(location.pathname.split('/').pop())) return true;
+      const ctx=context(p,document.body?.dataset.scene);
+      return ctx.valid && ctx.round.status==='armed';
+    }
+    if (suspended || restoring || redirecting) return false;
+    const record=current();
+    if (!record || record.seed!==active.seed || record.taskId!==active.taskId) {leave(null);return false;}
+    if (record.status!=='running' || Date.now()>=record.deadline) {end('timeout');return false;}
+    return true;
+  };
+  const capture = C => {
+    if (!active || C!==active.C || suspended || restoring || redirecting) return false;
+    const now=Date.now(),record=current();
+    if (!record || record.status!=='running' || now>=record.deadline || record.seed!==C.seed || RULES[record.taskId].scene!==C.scene) return false;
+    const rule=RULES[record.taskId],e={...record.evidence,exports:record.evidence.exports.slice()},read=(key,fallback)=>{
+      try {return C.read(key,fallback);} catch {return fallback;}
+    };
+    let details=[];
+    if (rule.key) {
+      const values=read(rule.key,[]);
+      e.saved=Array.isArray(values)&&values.some(x=>rule.key==='nature-sightings'?isObject(x)&&x.id===rule.target:x===rule.target);
+    }
+    // Judge the normal host record itself, never a stale derived completion flag.
+    if (record.taskId==='minute3-courier-redelivery') {
+      const values=read('courier-reschedules',{}),schedule=isObject(values)?values[rule.target]:null;
+      const tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);
+      const date=[tomorrow.getFullYear(),String(tomorrow.getMonth()+1).padStart(2,'0'),String(tomorrow.getDate()).padStart(2,'0')].join('-');
+      e.saved=isObject(schedule)&&validDate(schedule.date)&&schedule.date===date&&schedule.slot==='afternoon'&&schedule.address==='Campus parcel desk, Sepang';
+      details=[isObject(schedule)&&schedule.date===date&&schedule.slot==='afternoon',isObject(schedule)&&validDate(schedule.date)&&['morning','afternoon','evening'].includes(schedule.slot)&&schedule.address==='Campus parcel desk, Sepang'];
+    }
+    if(record.taskId==='minute2-movie-animation') {
+      const list=read('frame-watchlist',[]);details=[Array.isArray(list)&&list.includes('elephants-dream')];
+    }
+    if(record.taskId==='minute3-search-official') {
+      const trace=read('search-result-actions-v1',null);
+      if(isObject(trace)&&trace.version===1&&trace.roundId===record.id&&Array.isArray(trace.clicked)&&trace.clicked.every(id=>['software','security'].includes(id)))details=[trace.clicked.length===0];
+    }
+    if (record.taskId==='minute4-penang-indoor') {
+      const values=read('bp-outing-details',{}),plan=isObject(values)?values[rule.target]:null;
+      e.saved=e.saved&&isObject(plan)&&plan.id===rule.target&&plan.country==='Malaysia'&&plan.area==='Penang'&&plan.kind==='attraction'&&plan.shelter==='indoor'&&plan.cost===20&&plan.hours===2&&plan.transit==='connection';
+    }
+    if (record.taskId==='minute-recipe-lunch') {const value=read('bp-recipe-servings-chickpea-salad',2);e.servings=[1,2,4,6].includes(value)?value:2;}
+    if (rule.trip) {
+      const values=read('travel-trips',[]),trip=Array.isArray(values)?values.find(v=>validTrip(v,rule.trip)):null;
+      e.saved=Boolean(trip);e.trip=trip?tripEvidence(trip,rule.trip):null;
+      if(record.taskId==='minute2-travel-interchange') {
+        const validPlan=v=>isObject(v)&&typeof v.from==='string'&&typeof v.to==='string'&&v.from!==v.to&&validDate(v.date)&&typeof v.time==='string'&&/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(v.time)&&['fastest','changes','walking'].includes(v.pref);
+        const saved=Array.isArray(values)?values.filter(validPlan):[],planned=Object.fromEntries(['from','to','date','time','pref'].map(key=>[key,C.params?.get(key)]));
+        // Derive all four rows from one coherent journey, never a union of
+        // different partial journeys. A previously saved exact match still counts.
+        const candidate=trip||(validPlan(planned)?planned:saved[0]);
+        const stored=Boolean(candidate)&&saved.some(v=>['from','to','date','time','pref'].every(key=>v[key]===candidate[key]));
+        details=[candidate?.from===rule.trip.from&&candidate?.to===rule.trip.to,candidate?.time===rule.trip.time,candidate?.pref===rule.trip.pref,stored];
+      }
+    }
+    if (rule.checks) e.checks=rule.checks.map(({key,items,value,count})=>{
+      const stored=read(key,null);
+      if (!items) return stored===value;
+      return Array.isArray(stored)&&(count===undefined||stored.length===count)&&items.every(item=>stored.includes(item));
+    });
+    if(DETAIL_CHECKS[record.taskId])e.checks=[...(rule.checks?e.checks:[]),...details];
+    const selected=C.params?.get('id');
+    e.found=e.found||selected===rule.target||record.taskId==='minute-tool-webp'&&C.params?.get('sample')==='city'||record.taskId==='minute3-courier-redelivery'&&(C.params?.get('tracking')||'').slice(0,160).trim().toUpperCase()===rule.target;
+    e.capturedAt=now;
+    record.evidence=e;record.updatedAt=Math.max(record.updatedAt,now);
+    return store(record);
+  };
+  const recordExport = detail => {
+    if (!active || !canAct()) return false;
+    const item=exportValue({...detail,kind:detail?.kind || 'tool'}),record=current(),now=Date.now();
+    if (!item || !record || now>=record.deadline) {if(record&&now>=record.deadline)end('timeout');return false;}
+    if (RULES[record.taskId].exportKind!==item.kind) return false;
+    record.evidence.exports=[...record.evidence.exports,{...item,at:now}].slice(-12);
+    record.evidence.found=record.evidence.found||(item.id || item.sample)===RULES[record.taskId].target;
+    record.updatedAt=Math.max(record.updatedAt,now);
+    return store(record);
+  };
+  const decorate = value => {
+    let u;try {u=new URL(value,location.href);} catch {return value;}
+    const here=new URL(location.href),ctx=active?{round:current()}:context(new URLSearchParams(location.search));
+    const record=ctx.round;
+    if (!record || u.origin!==here.origin || u.pathname.slice(0,u.pathname.lastIndexOf('/')+1)!==here.pathname.slice(0,here.pathname.lastIndexOf('/')+1) || !FILES.has(u.pathname.split('/').pop())) return u.href;
+    u.searchParams.set('round',record.id);u.searchParams.set('mode',record.mode);u.searchParams.set('seed',record.seed);u.searchParams.set('v',VERSION);
+    return u.href;
+  };
+  const modalActive = () => {
+    if (!active) return false;
+    return Boolean(active.C.root?.inert) || Array.from(document.querySelectorAll('dialog[open]')).some(d=>d!==dialog) || Array.from(document.querySelectorAll('[aria-modal="true"]')).some(d=>d!==dialog&&!d.hidden&&!d.closest('[hidden]')&&d.getClientRects().length);
+  };
+  const syncControls = () => {
+    if(!bar)return;
+    const actions=bar.querySelector('.br-booth-actions'),blocked=suspended||restoring||modalActive();
+    // The observer also sees this reflected attribute; avoid a self-triggered loop.
+    if(actions.inert!==blocked)actions.inert=blocked;
+  };
+  const mount = record => {
+    if (bar) return;
+    const task=taskData(record.taskId),text=v=>Array.isArray(v)?v[record.lang==='zh'?1:0]:v;
+    const taskText=value=>window.BROWSE_BOOTH_TASK_TEXT(text(value),task,record.lang);
+    bar=document.createElement('aside');bar.id='br-booth-bar';bar.setAttribute('aria-label',translate('60-second challenge','60秒挑战'));
+    bar.innerHTML=`<div class="br-booth-time"><small>${translate('TIME LEFT','剩余时间')}</small><strong data-booth-clock role="timer" aria-live="off">1:00</strong></div><div class="br-booth-current"><span>${record.mode==='clean'?translate('CLEAN ROUND','无广告挑战'):translate('AD CHALLENGE','广告挑战')}</span><b>${escape(text(task.title))}</b>${task.badge?`<strong class="br-booth-badge">${escape(text(task.badge))}</strong>`:""}</div><div class="br-booth-actions"><button type="button" data-booth-task>${translate('View task','查看任务')}</button><button type="button" data-booth-submit>${translate('Submit','我完成了')}</button><button type="button" data-booth-void aria-label="${translate('Staff: void this round','工作人员：作废本轮')}">${translate('Staff','工作人员')}</button></div>`;
+    dialog=document.createElement('dialog');dialog.id='br-booth-task-dialog';dialog.setAttribute('aria-labelledby','br-booth-dialog-title');
+    const goals=task.steps || task.goals || [];
+    dialog.innerHTML=`<div class="br-booth-dialog-inner"><div class="br-booth-dialog-kicker">${translate('YOUR 60-SECOND TASK','你的60秒任务')}</div><h1 id="br-booth-dialog-title">${escape(text(task.title))}</h1><p>${taskText(task.brief)}</p><ul class="br-booth-conditions">${goals.map(x=>`<li><span aria-hidden="true">□</span> ${taskText(x)}</li>`).join('')}</ul>${task.hint?`<details class="br-booth-start-hint"><summary>${translate('Start here','从这里开始')}</summary><p>${taskText(task.hint)}</p></details>`:''}${task.hint2?`<button type="button" data-booth-second-hint aria-expanded="false" aria-controls="br-booth-hint2">${translate('A little more help','再给一点提示')}</button><p id="br-booth-hint2" hidden>${taskText(task.hint2)}</p>`:''}<p class="br-booth-dialog-rule">${translate('Viewing the task uses time. The clock continues in other tabs too. A staff member checks the result.','查看任务会消耗时间。打开其他标签页时也继续计时，结果由工作人员核对。')}</p><button type="button" data-booth-dialog-close>${translate('Continue challenge','继续挑战')}</button></div>`;
+    dialog.querySelector('[data-booth-second-hint]')?.addEventListener('click',()=>{
+      if(!canAct())return;
+      const fresh=current();if(!fresh)return;
+      fresh.usedSecondHint=true;fresh.updatedAt=Math.max(fresh.updatedAt,Date.now());
+      if(!store(fresh))return;
+      dialog.querySelector('#br-booth-hint2').hidden=false;
+      dialog.querySelector('[data-booth-second-hint]').setAttribute('aria-expanded','true');
+    });
+    document.body.append(bar,dialog);document.documentElement.classList.add('br-booth-running');document.documentElement.style.setProperty('--br-booth-offset','56px');
+    bar.querySelector('[data-booth-task]').addEventListener('click',()=>{if(!canAct()||modalActive())return;reminder?.remove();reminder=null;emit('browse:booth-dialog',{open:true});dialog.showModal();});
+    bar.querySelector('[data-booth-submit]').addEventListener('click',()=>{if(!modalActive()&&canAct())end('submitted');});
+    bar.querySelector('[data-booth-void]').addEventListener('click',()=>{
+      if(!canAct()||modalActive())return;
+      // Staff confirmation lives inside the same native dialog; countdown never pauses.
+      const node=dialog.querySelector('.br-booth-void-confirm');
+      if(node)node.remove();
+      const box=document.createElement('section');box.className='br-booth-void-confirm';box.innerHTML=`<h2>${translate('Staff: void this round','工作人员：作废本轮')}</h2><p>${translate('Use for loading or equipment problems. This round will not count as a failure.','用于加载或设备问题。作废不会记为任务失败。')}</p><button type="button" data-booth-confirm-void>${translate('Confirm void','确认作废')}</button>`;
+      dialog.querySelector('.br-booth-dialog-inner').append(box);box.querySelector('button').addEventListener('click',()=>{if(canAct())end('void');});emit('browse:booth-dialog',{open:true});dialog.showModal();box.querySelector('button').focus();
+    });
+    dialog.querySelector('[data-booth-dialog-close]').addEventListener('click',()=>dialog.close());
+    dialog.addEventListener('close',()=>{dialog.querySelector('.br-booth-void-confirm')?.remove();emit('browse:booth-dialog',{open:false});syncControls();});
+    // The native dialog owns its focus rules. Ads retain their existing focus trap.
+    observer=new MutationObserver(syncControls);observer.observe(document.body,{attributes:true,attributeFilter:['inert','open','hidden','aria-modal'],childList:true,subtree:true});
+    const soundButton=document.createElement('button');soundButton.type='button';soundButton.dataset.boothSound='';
+    bar.querySelector('.br-booth-actions').prepend(soundButton);
+    countdown=window.BROWSE_COUNTDOWN_SOUND?.({button:soundButton,readRound:current,isLive:()=>Boolean(active&&!suspended&&!restoring&&!redirecting),lang:record.lang});
+    syncControls();
+  };
+  const openingReminder = record => {
+    if(reminder && Date.now()>=reminderUntil){reminder.remove();reminder=null;}
+    const age=Date.now()-record.startedAt;
+    if(age<4000||age>=7000||reminder||modalActive()||dialog?.open)return;
+    const key='br-booth-ui-v1:'+record.id;
+    try{if(sessionStorage.getItem(key)==='reminded')return;sessionStorage.setItem(key,'reminded');}catch{return;}
+    const task=taskData(record.taskId),text=v=>Array.isArray(v)?v[record.lang==='zh'?1:0]:v;
+    reminder=document.createElement('aside');reminder.id='br-booth-opening-reminder';
+    reminder.setAttribute('aria-label',translate('Task reminder','任务提醒'));
+    reminder.innerHTML=`<strong>${escape(text(task.badge||task.title))}</strong><button type="button" aria-label="${translate('Close reminder','关闭提醒')}">×</button><ul>${(task.steps||task.goals||[]).map(x=>`<li>${window.BROWSE_BOOTH_TASK_TEXT(text(x),task,record.lang)}</li>`).join('')}</ul>`;
+    reminderUntil=Date.now()+3000;document.body.append(reminder);
+    reminder.querySelector('button').addEventListener('click',()=>{reminder.remove();reminder=null;});
+  };
+  const tick = () => {
+    if (!active || suspended || restoring || redirecting) return;
+    const record=current();
+    if (!record || record.status!=='running') {leave(record);return;}
+    const left=record.deadline-Date.now();
+    if (left<=0) {end('timeout');return;}
+    const seconds=Math.ceil(left/1000),clock=bar?.querySelector('[data-booth-clock]');
+    if(clock)clock.textContent=`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;
+    if(bar)bar.dataset.urgent=String(seconds<=10);
+    countdown?.tick(record);openingReminder(record);syncControls();
+  };
+  const start = C => {
+    const ctx=context(C.params,C.scene);
+    if (!ctx.requested) return null;
+    if (!ctx.valid) {location.replace(ctx.round&&ctx.reason==='scene'?entryURL(ctx.round):pageURL('booth.html',null,{notice:'expired-context'}));return null;}
+    let record=ctx.round;
+    if (C.seed!==record.seed || RULES[record.taskId].scene!==C.scene) {location.replace(entryURL(record));return null;}
+    if (active) return active.id===record.id?get(record.id):null;
+    active={id:record.id,seed:record.seed,taskId:record.taskId,lang:record.lang,C};
+    if (record.status!=='armed'&&record.status!=='running') {leave(record);return null;}
+    if (record.status==='armed') {
+      const now=Date.now();record={...record,status:'running',startedAt:now,deadline:now+DURATION,updatedAt:now};
+      if(!store(record)){leave(null);return null;}
+    }
+    suspended=false;restoring=false;mount(record);capture(C);tick();
+    ticker=setInterval(tick,100);
+    return get(record.id);
+  };
+  const hide = () => {
+    if (!active) return;
+    if (!suspended&&!restoring&&!redirecting) {
+      if(canAct())capture(active.C);
+    }
+    reminder?.remove();reminder=null;countdown?.pause();
+    suspended=true;restoring=false;generation++;cancelAnimationFrame(frame);frame=0;
+    if(dialog?.open)dialog.close();syncControls();
+  };
+  const show = event => {
+    if(!active||!event.persisted)return;
+    suspended=true;restoring=true;const own=++generation;cancelAnimationFrame(frame);
+    if(bar)bar.dataset.restoring='true';syncControls();
+    // Chrome may deliver the departed renderer's storage write after pageshow.
+    // No writer or action is allowed until two frames have reconciled that state.
+    frame=requestAnimationFrame(()=>{frame=requestAnimationFrame(()=>{
+      frame=0;if(own!==generation)return;
+      const fresh=current();restoring=false;suspended=false;
+      if(bar)delete bar.dataset.restoring;
+      if(!fresh||fresh.status!=='running'||Date.now()>=fresh.deadline){end('timeout');return;}
+      capture(active.C);countdown?.resume();tick();syncControls();
+    });});
+  };
+  window.addEventListener('pagehide',hide);
+  window.addEventListener('pageshow',show);
+  window.addEventListener('focus',tick);
+  document.addEventListener('visibilitychange',tick);
+  window.addEventListener('browse:image-export',event=>recordExport(event.detail));
+  // Catch an input dispatched just after the deadline before scene handlers run.
+  for (const name of ['click','submit','input','change','drop','paste']) document.addEventListener(name,event=>{
+    if(!active||bar?.contains(event.target)||dialog?.contains(event.target)||reminder?.contains(event.target))return;
+    if(!canAct()){event.preventDefault();event.stopImmediatePropagation();}
+  },true);
+  window.BROWSE_BOOTH={create,get,list,judge,assess,conditions,entryURL,resultURL,reviewURL,context,start,capture,canAct,recordExport,decorate};
+})();

@@ -421,7 +421,7 @@ route('GET', '/api/export/rounds.csv', async req => {
 // ---- static files ----
 const BUILD = Date.now().toString(36);        // new on every deploy (the service restarts)
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css', '.json': 'application/json',
-  '.jpg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.ttf': 'font/ttf', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.md': 'text/plain; charset=utf-8' };
+  '.jpg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.ttf': 'font/ttf', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.md': 'text/plain; charset=utf-8', '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.mp4': 'video/mp4', '.webm': 'video/webm', '.ogg': 'audio/ogg', '.avif': 'image/avif' };
 function serveStatic(req, res, pathname) {
   // /games/** comes from the repo (same files GitHub Pages serves); everything else from server/public.
   let base = PUBLIC, rel = pathname;
