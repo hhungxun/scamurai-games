@@ -19,7 +19,7 @@ Staff at the front desk who registers Participants.
 _Avoid_: admin, registrar
 
 **Game Master**:
-Staff who runs one Station and picks the Participant at the start of every Round.
+Staff who sets up and supervises one Station. At desktop Stations, Participants select their own registered identity on a Station Laptop; the Game Master helps and handles cancellations.
 _Avoid_: host, operator
 
 ### Event structure
@@ -29,7 +29,7 @@ One of the five booths, each running one game. Participants visit Stations in an
 _Avoid_: booth (in code and docs), level
 
 **Round**:
-One Participant's single attempt at one Station, from the Game Master's start to the game's finish. A Participant may play several Rounds at a Station, but only one at a time per Station. Several Participants can each have a Round open at the same Station at once.
+One Participant's single attempt at one Station, from participant selection and start to the game's finish. A Participant may play several Rounds at a Station, but only one at a time per Station. Several Participants can each have a Round open at the same Station at once.
 _Avoid_: session, attempt, play
 
 **Cancelled Round**:
@@ -60,6 +60,20 @@ A Participant with no Registration or Round end in the last 15 minutes and no Ch
 
 **Leaderboard**:
 The live ranking of Participants by total Station Score, ties broken by the shortest total time of the best Rounds. It shows first name and the last 3 digits of the Participant ID. The top 3 who completed all five Stations and the Exit Survey win the prize.
+
+**Station Laptop**:
+A staff-provisioned computer that one Participant uses to play a desktop Station. Several Station Laptops may serve different Participants at the same Station at once.
+
+**Demo**:
+An unscored rehearsal separate from event Rounds and Participant records. Its displayed practice score never contributes to a Station Score.
+
+### Station 1: Phishing Fishing
+
+**Email Deal**:
+The ten messages assigned to a Station 1 Round: five Phishing and five Legitimate, with the same difficulty mix for both classifications, presented in a random order.
+
+**Email Classification**:
+A Participant's Legitimate or Phishing call on one message in their Email Deal.
 
 ### Station 2: Close the Popups
 

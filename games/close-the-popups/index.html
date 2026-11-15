@@ -8,10 +8,12 @@
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="station.css">
   <!-- Loaded in the head: station.js registers dashboard mode before DOMContentLoaded boots the SDK. -->
-  <script src="../../sdk.js" data-station="2"></script>
+  <script src="../../sdk.js" data-station="2" data-demo-param="demo"></script>
   <script defer src="station.js"></script>
 </head>
 <body>
+  <div id="booth-brand"><a href="/">SCAM<span>URAI</span></a><span>02 / CLOSE THE POPUPS</span><strong id="booth-player">Choose participant</strong><a href="?demo=1&amp;lang=en">Try demo</a></div>
+  <div id="demo-banner" hidden>DEMO / PRACTICE · No event score is saved. <a href="?lang=en">Return to event play →</a></div>
   <button id="staff-toggle" aria-haspopup="dialog" aria-controls="station-header" aria-expanded="false">Staff</button>
   <dialog id="station-header" aria-labelledby="staff-title">
     <header class="station-panel-heading">

@@ -42,7 +42,8 @@ def run():
                     return page.evaluate('(key)=>JSON.parse(sessionStorage.getItem(key))', KEY)
 
                 def select(pid):
-                    page.click('#staff-toggle'); page.click('#next')
+                    if not page.locator('.scm .find').is_visible():
+                        page.click('#staff-toggle'); page.click('#next')
                     page.locator(f'.scm .it[data-id="{pid}"]').wait_for()
                     page.locator('.scm .find').fill(pid)
                     page.locator('.scm .go').click()

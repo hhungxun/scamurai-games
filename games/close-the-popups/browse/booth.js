@@ -10,6 +10,7 @@
   const api = window.BROWSE_BOOTH;
   const lang = params.get('lang') === 'en' ? 'en' : 'zh';
   const li = lang === 'en' ? 0 : 1;
+  const demo = Boolean(window.parent.CLOSE_POPUPS_HOST?.demo);
   const mode = params.get('mode') === 'clean' ? 'clean' : 'ads';
   const view = params.get('view') || 'choose';
   const taskId = params.get('task');
@@ -109,12 +110,12 @@
         </section>
         ${staffHistory()}
       </main>`;
-    if (mode === 'ads') {
+    if (mode === 'ads' && !demo) {
       document.querySelector('.booth-collection').hidden = true;
       document.querySelector('.booth-advanced').hidden = true;
     }
     document.getElementById('booth-random').addEventListener('click', async () => {
-      if (mode === 'ads') {
+      if (mode === 'ads' && !demo) {
         const button = document.getElementById('booth-random'); button.disabled = true;
         try {
           const id = await window.CLOSE_POPUPS_BRIDGE.draw(tasks.map(item => item.id));

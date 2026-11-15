@@ -128,7 +128,7 @@ def run():
                     def scan(raw):p.evaluate("im=>localStorage.setItem('test.qr',im)",fixtures.qr(raw))
                     scan('https://example.com/bad');p.wait_for_function("document.querySelector('.scanner-status').textContent.includes('not part')")
                     p.screenshot(path=str(OUT/'participant-scanner.png'),full_page=True)
-                    scan(BASE+'/station.html?n=1');p.wait_for_url('**/station.html?n=1');p.wait_for_function("document.getElementById('station').textContent.includes('COMING SOON')")
+                    scan(BASE+'/station.html?n=1');p.wait_for_url('**/station.html?n=1');p.wait_for_function("document.getElementById('station').textContent.includes('Phishing Fishing')")
                     p.get_by_role('link',name='My participant page',exact=True).click();p.wait_for_selector('#participant-name')
                     assert p.inner_text('#participant-id')=='SITE001'
                     p.evaluate("localStorage.removeItem('test.qr')");p.click('#start-scamming');p.wait_for_function("document.querySelector('video').readyState >= 2")

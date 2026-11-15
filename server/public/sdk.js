@@ -27,7 +27,7 @@
   const me = document.currentScript;
   const API = new URL(me.src).origin;
   const STATION = +me.dataset.station || 0;
-  const TEST = me.dataset.test === '1';
+  const TEST = me.dataset.test === '1' || (me.dataset.demoParam === 'demo' && new URLSearchParams(location.search).get('demo') === '1');
   const PIN_KEY = 'scamurai.pin.' + STATION;
   const C = { bg: '#171616', surf: '#242221', red: '#e52521', yellow: '#edcf61', grey: '#c2bdb5', dim: '#6e6961', gold: '#edcf61' };
 
@@ -205,6 +205,7 @@
     if (mode === 'leave') { leave.textContent = 'Back to play'; go.style.background = C.dim; }
     function render() {
       const t = find.value.trim().toUpperCase();
+      sel = sel ? list.find(p => p.id === sel.id) || null : list.find(p => p.id === t) || null;
       const rows = list.filter(p => !t || p.id.includes(t) || p.name.toUpperCase().includes(t))
         .sort((a, b) => (b.id === t) - (a.id === t) || a.name.localeCompare(b.name)).slice(0, 40);
       box.innerHTML = rows.map(p => {

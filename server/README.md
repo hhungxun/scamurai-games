@@ -12,10 +12,11 @@ Live: https://scamurai.physicsxmum.my (labvps, via the existing Cloudflare tunne
 | `/games/<name>/` | Game Master laptops (station PIN, entered once per laptop) |
 | `/leaderboard.html` | Public screen |
 | `/admin.html` | Overview + `participants.csv` / `rounds.csv` (admin PIN) |
-| `/games/close-the-popups/` | Station 2 Game Master laptop, participant picker and scored desktop challenge |
+| `/games/phishing-fishing/` | Station 1 participant-played desktop laptops |
+| `/games/close-the-popups/` | Station 2 participant-played desktop laptops, participant picker and scored challenge |
 | `/games/scan-me-if-you-can/board.html` | Print the 25 Station 5 QR codes |
 | `/stations.html` | Print the five public station QR codes |
-| `/station.html?n=1…5` | Participant station screen (2 directs to the laptop; 5 explains the Join QR; 1, 3 and 4 coming soon) |
+| `/station.html?n=1…5` | Participant station screen (1–2 direct to the laptops; 5 explains the Join QR; 3–4 coming soon) |
 
 ## Run locally
 
@@ -38,7 +39,7 @@ cd server && npm test            # PLAYERS=300 npm test for a bigger crowd
 
 The Secretary hands each Participant their personal page QR after Registration; **Personal QR** in the registration list shows it again. Existing registrations receive a pass on demand. The page stores the pass on the phone and removes it from the URL fragment, refreshes every 5 seconds, and shows best completed Station Scores out of 100 (500 total). Active Rounds are labelled playing. It never returns registration survey answers or staff credentials.
 
-**Start Scamming** opens the shared camera scanner inside the participant page. Station codes lead to the correct station screen; Station 5 Join QRs are checked against the registered identity before opening the game. Its board codes use the same scan-time timer rules as the game scanner. Every station/game has a way back to the participant page. Station 2 runs Close the Popups on the Game Master laptop; Stations 1, 3 and 4 remain placeholders. See `docs/ui-design.md` for design provenance and the full local test commands, including `python3 server/test/e2e_site.py`.
+**Start Scamming** opens the shared camera scanner inside the participant page. Station codes lead to the correct station screen; Station 5 Join QRs are checked against the registered identity before opening the game. Its board codes use the same scan-time timer rules as the game scanner. Every station/game has a way back to the participant page. Stations 1 and 2 run Phishing Fishing and Close the Popups on participant-played laptops; Stations 3 and 4 remain placeholders. See `docs/ui-design.md` for design provenance and the full local test commands, including `python3 server/test/e2e_site.py`.
 
 The `participant_passes` table is added automatically without changing existing Participants or Rounds. Passes persist across service restarts. They allow read-only access to one Participant's own profile; no ID-only public lookup is available. The public leaderboard continues to mask names and IDs.
 
@@ -95,3 +96,11 @@ ssh labvps 'cd ~/scamurai-games && git pull --ff-only && cd server && npm instal
 
 1. Download both CSVs from `/admin.html` for the post-mortem report.
 2. By 26 Dec 2026, delete personal data: `ssh labvps 'sudo systemctl disable --now scamurai && rm -f ~/scamurai-games/server/data/scamurai.db*'`.
+
+## Desktop laptop lifecycle
+
+`desktop-booth.js` is a reusable same-origin parent host for a desktop game. It uses the shared SDK in dashboard mode, stores one selected Participant/server Round plus the game's snapshot per tab, and freezes pending scores before submission. Its embedded game calls `snapshot(window)`, `update(window, snapshot)`, `finish(window, snapshot, score)` and `next(window)`. The game snapshot must be validated by its game core before resuming; it contains the original absolute start time and dealt content. The parent checks the embedded document's identity and path and does not pass staff PINs into game scripts.
+
+`data-demo-param="demo"` on an SDK tag allows that entry's `?demo=1` rehearsal to skip staff authentication. Desktop hosts explicitly isolate demo storage and never call score/participant APIs in that mode. The popup game retains its specialized host and bridge for multi-document navigation; it uses the same SDK and backend Round rules.
+
+Use the same Station PIN on every laptop at one Station. The server already allows many distinct Participants concurrently and rejects a second active Round for the same Participant at that Station. No new Station numbers or per-laptop PINs are needed. `python3 server/test/e2e_desktop.py` verifies the complete multi-laptop flow on a temporary database.

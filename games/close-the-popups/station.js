@@ -2,7 +2,8 @@
  * only this host owns SDK calls and the server Round. Never embed PINs in game code. */
 (() => {
   'use strict';
-  const KEY = 'close-popups:station2:v1';
+  const DEMO = new URLSearchParams(location.search).get('demo') === '1';
+  const KEY = DEMO ? 'close-popups:demo:v1' : 'close-popups:station2:v1';
   const frame = document.getElementById('game');
   const status = document.getElementById('station-status');
   const root = new URL('./', location.href);
@@ -33,6 +34,7 @@
     panelSummary();
   }
   function panelSummary() {
+    $('booth-player').textContent = state ? `${state.participant.name} · ${state.participant.id}` : DEMO ? 'Demo / no event score' : practice ? 'Staff practice' : lang==='zh'?'请选择参与者':'Choose participant';
     $('station-header').dataset.phase=practice?'practice':state?.status||'idle';
     $('participant-name').textContent=state ? `${state.participant.name} · ${state.participant.id}` : (practice ? (lang==='zh'?'工作人员练习':'Staff practice') : (lang==='zh'?'等待下一位参与者':'Ready for the next participant'));
     $('next').textContent=state||practice ? (lang==='zh'?'下一位':'Next participant') : (lang==='zh'?'选择参与者 ID':'Select participant ID');
@@ -90,7 +92,7 @@
     $('next').disabled = busy || picking;
     $('personal').hidden = !ready || !state;
     $('survey').hidden = !ready || state?.status !== 'saved' || !state.result?.surveyDue;
-    $('leaving').hidden = !ready || !!state || !!practice || damaged || picking;
+    $('leaving').hidden = DEMO || !ready || !!state || !!practice || damaged || picking;
     panelSummary();
     inlineStatus();
   }
@@ -109,6 +111,7 @@
   }
   async function prepare(win, mode, taskId) {
     verifyChild(win);
+    if (DEMO) return true;
     if (mode === 'ads' && taskId && taskId !== state?.taskId) throw new Error('Use the assigned task. Return to Draw a task.');
     if (damaged) throw new Error('Station storage is damaged. Staff must resolve the open round before continuing.');
     if (picking || busy) throw new Error('A participant is already being selected.');
@@ -136,7 +139,7 @@
   }
   function bind(win, round) {
     verifyChild(win);
-    if (!state && !practice && round?.mode === 'clean' && localID(round.id)) {
+    if (!state && !practice && (round?.mode === 'clean' || DEMO) && localID(round.id)) {
       practice = {localId:round.id,status:'open',score:0,url:safeURL(win.BROWSE_BOOTH.entryURL(round))};
       sessionStorage.setItem(KEY+':practice',JSON.stringify(practice)); showState(); return;
     }
@@ -153,6 +156,15 @@
       if (!Number.isFinite(res?.pct) || !Number.isFinite(res.best)) throw new Error('Invalid score response');
       state.result = res; state.status = 'saved'; persist(); clearNotice(); showState();
     } catch (error) {
+      if (error.status === 409) {
+        try {
+          const current = await Scamurai.api(`/api/rounds/${state.roundId}/events?after=0`);
+          if (current.cancelled) {
+            state.status = 'cancelled'; persist(); frame.hidden = true; frame.inert = true;
+            clearNotice(); showState(); openPanel(); return;
+          }
+        } catch {}
+      }
       say(`Could not confirm the score: ${error.message}. Retry save.`, `未能确认成绩：${error.message}。请重试保存。`);
       $('notice-text').textContent=lang==='zh'?'成绩暂未保存，请工作人员重试。':'Score not yet saved. Ask staff to retry.';
       $('station-notice').hidden=false;
@@ -201,6 +213,7 @@
     // Clear state first, close panel, then immediately open ID picker
     state = null; practice = null; persist(); sessionStorage.removeItem(KEY+':practice'); $('personal-link').hidden = true; clearNotice(); closePanel();
     frame.inert = true; picking = true; showState();
+    if (DEMO) { picking = false; frame.inert = false; frame.hidden = false; frame.src = chooser(); showState(); return true; }
     await selectNext(); return true;
   }
   async function selectNext() {
@@ -224,7 +237,7 @@
       openPanel();
     } finally { picking = false; frame.inert = state?.status === 'cancelled'; controls(); }
   }
-  window.CLOSE_POPUPS_HOST = {prepare,bind,result,
+  window.CLOSE_POPUPS_HOST = {prepare,bind,result,demo:DEMO,
     async draw(win, ids) {
       verifyChild(win);
       const pool = [...new Set(ids)].filter(id => typeof id === 'string' && /^minute[234]-[a-z-]+$/.test(id));
@@ -283,6 +296,7 @@
   if (!window.Scamurai) { warn('SDK unavailable. Open through the Scamurai server and reload.', '接入脚本不可用，请通过 Scamurai 服务打开并刷新。'); return; }
   Scamurai.onDashboard(() => {
     ready = true;
+    $('demo-banner').hidden = !DEMO;
     try {
       state = read();
       const raw = sessionStorage.getItem(KEY+':practice');
@@ -298,5 +312,6 @@
     }
     frame.src = state?.url || practice?.url || chooser(); frame.hidden = state?.status === 'cancelled';
     showState(); if (state?.status === 'pending') flush();
+    if (!DEMO && !state && !practice) next();
   });
 })();

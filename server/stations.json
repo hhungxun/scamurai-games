@@ -1,9 +1,9 @@
 {
   "event": "Scamurai · 26 Nov 2026 · A3 G-floor, XMUM",
   "stations": [
-    { "n": 1, "name": "Station 1", "questions": [
-      { "id": "s1q1", "type": "scale", "text": "Station 1 helped me understand its scam type. (1 = not at all, 5 = a lot)" },
-      { "id": "s1q2", "type": "text", "text": "One thing you learnt at Station 1:" }
+    { "n": 1, "name": "Phishing Fishing", "questions": [
+      { "id": "s1q1", "type": "scale", "text": "Phishing Fishing helped me inspect email senders, destinations and requests. (1 = not at all, 5 = a lot)" },
+      { "id": "s1q2", "type": "text", "text": "One email warning sign you will check before clicking:" }
     ]},
     { "n": 2, "name": "Close the Popups", "questions": [
       {"id": "s2q1", "type": "choice", "text": "What helped you avoid misleading popups?", "options": ["Checking where buttons and links lead", "Finding the genuine close button", "Ignoring urgency and prize claims", "Staying focused on the original task"]},
