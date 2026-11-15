@@ -617,5 +617,22 @@
     "note": "Retired standalone Stillwall and unused earlier assets removed from delivery. Original source commit above is retained as provenance. Station integration and active shared dependencies are preserved.",
     "tests_rerun": false,
     "tests_note": "User requested no further testing for prototype cleanup."
+  },
+  "ending_effects": {
+    "date": "2026-11-15",
+    "version": "ending3",
+    "triggers": {
+      "timeout": "1.5s air raid siren, then nuclear shot and supplied explosion recording",
+      "submitted": "dense fireworks and supplied sustained crowd cheer"
+    },
+    "scope": "Separate update to this Station 2 delivery. Station-specific entry, participant, SDK, scoring and handover retained. Shared only the ending assets/behaviour with standalone CSpopups.",
+    "audio": "Three user-supplied MP3s. Siren for 1.5 seconds; nuclear sound starts at 1.5s and ducks siren to silence within 0.55s. Crowd cheer at original pitch/rate.",
+    "verification": "No tests run, per user instruction. Earlier verification does not cover these changes.",
+    "audio_files": [
+      "u_mojdif8pzp-crowd-cheering-yelling-525147.mp3",
+      "lazychillzone-air-raid-siren-2-227377.mp3",
+      "professionalsfx-nuclear-explosion-507442.mp3"
+    ],
+    "source_effects_commit": "87e7479a5499dfc4053150f9e823ad89783bee62"
   }
 }

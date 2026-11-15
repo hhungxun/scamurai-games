@@ -64,3 +64,9 @@ The following results describe the integration before the retired prototypes wer
 Those checks apply to the initial integration revision. The collapsed staff menu and styled handover card were subsequently tried locally. A targeted 12-check desktop Chrome run verified the final ID-first handover: both next-participant controls open the SDK picker, the old identity clears before selection, a selected ID survives refresh, starting reuses the selected Round, two participants receive their own actual scores, and backing out permits selecting again. No runtime exceptions were observed in that run. No full regression suite was rerun after the UI changes or prototype cleanup.
 
 Tests of the initial revision used 1440×960 desktop Chrome (with a 1920×1080 malformed-state check); the handover run also used 1440×960. Mobile acceptance and other browsers are outside this delivery. The event's deployed server, credentials and production database were not used. These local results do not claim that the game is already published or connected to the live event.
+
+## Round endings (ending3)
+
+Timeout plays a 1.5-second air-raid siren, followed by the nuclear shot and supplied explosion audio; the siren ducks to silence within 0.55 seconds. Submit / 我完成了 plays dense fireworks and the supplied sustained crowd cheer. Submission is not proof of task completion. The ending displays the actual total without delaying score submission. Skip, mute and reduced-motion controls are available; voids and previously viewed results do not replay it.
+
+This update preserves the Station 2 participant, SDK, scoring and handover integration. It shares only the new ending assets/behaviour with the standalone CSpopups game. See docs/ENDING-EFFECTS.md for file provenance. No tests or regression checks were run for these endings, as requested; earlier validation above does not cover ending3. Deployment and live scoreboard verification remain pending.
