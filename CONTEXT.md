@@ -78,12 +78,6 @@ Fictional facts from a service record, revealed when a Participant chooses Indep
 **Independent Verification**:
 A Participant consulting the established service’s record to check an email claim. Checking carries no score deduction and does not pause a Round.
 
-**Evidence Selection**:
-The specific sender, message, destination or verified fact a Participant cites to justify an Email Classification. A contextual detail can be true without being sufficient evidence.
-
-**Supported Judgement**:
-An Email Classification supported by decisive Evidence Selection for that case. A correct label without supported evidence is not a Supported Judgement.
-
 **Email Classification**:
 A Participant's Legitimate or Phishing call on one message in their Email Deal.
 

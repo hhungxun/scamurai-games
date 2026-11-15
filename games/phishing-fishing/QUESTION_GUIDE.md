@@ -1,8 +1,8 @@
 # Phishing Fishing — operator case guide
 
-Scored rounds: 10 balanced emails, 120 seconds. +10 only for a correct label with supported evidence; unsupported correct labels 0; wrong labels −10; unanswered 0; final minimum 0. Verification is voluntary and has no deduction. The full 32-case demo is unscored for the event.
+Scored rounds: 10 balanced emails, 120 seconds. +10 for a correct classification; wrong classifications −10; unanswered 0; final minimum 0. Verification is voluntary and has no deduction. The full 32-case demo is unscored for the event.
 
-| Case | Label | Difficulty | Decisive evidence accepted |
+| Case | Label | Difficulty | Post-round decisive clue fields |
 |---|---|---|---|
 | Action on device review MB-841209 (bank-verification) | phishing | Easy | body:4, sender, destination:3 |
 | Mailbox retention report IT-Q-1022 — review available (campus-storage) | phishing | Medium | destination:3 |
@@ -41,8 +41,8 @@ Scored rounds: 10 balanced emails, 120 seconds. +10 only for a correct label wit
 
 Do not coach participants to look for one writing pattern. Both labels contain ordinary deadlines, fees, familiar senders and independent-channel language. The paired cloud-share cases even have the same URL but different permission requests. Verify the controlling host, requested privileges/secrets/payment and case-specific purpose.
 
-All ordinary fields are selectable. Accepted evidence keys identify a sender, body block, actual destination or verified record fact. True but weak facts may earn 0 if selected without a decisive basis. The review labels weak/contextual highlights separately and explains the safe next action. If a Participant presents another genuinely decisive detail, review the content mapping rather than dismissing their reasoning merely because of the key list.
+Clue keys identify fields highlighted in the post-round review only. Participants choose only Legitimate or Phishing; no clue selection is required or scored. The review distinguishes contextual details from decisive clues and explains the safe next action.
 
-Verification records are supplied only after the learner chooses to check; revealing a mismatch after deliberate verification teaches the habit and has no deduction. The classification itself and supported evidence are never revealed during play. Case classifications, explanations and keys stay in this staff guide and post-Round review.
+Verification records are supplied only after the learner chooses to check; revealing a mismatch after deliberate verification teaches the habit and has no deduction. Correct classifications and decisive clues are never revealed during play. Case classifications, explanations and keys stay in this staff guide and post-Round review.
 
 The bank has 18 Phishing and 14 Legitimate cases. Legitimate difficulty buckets are 4 Easy/5 Medium/5 Hard, removing the previously fixed easy pair. Scored deals remain 5/5 with equal difficulty mixes.

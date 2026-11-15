@@ -2,7 +2,7 @@
   "event": "Scamurai · 26 Nov 2026 · A3 G-floor, XMUM",
   "stations": [
     { "n": 1, "name": "Phishing Fishing", "questions": [
-      { "id": "s1q1", "type": "scale", "text": "Phishing Fishing helped me verify email claims and explain the evidence for my decision. (1 = not at all, 5 = a lot)" },
+      { "id": "s1q1", "type": "scale", "text": "Phishing Fishing helped me verify email claims before classifying them. (1 = not at all, 5 = a lot)" },
       { "id": "s1q2", "type": "text", "text": "One email warning sign you will check before clicking:" }
     ]},
     { "n": 2, "name": "Close the Popups", "questions": [

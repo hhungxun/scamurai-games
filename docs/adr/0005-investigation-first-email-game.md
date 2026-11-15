@@ -21,3 +21,7 @@ Use snapshot version2 to persist evidence drafts and voluntary-verification stat
 ## Consequences
 
 The game measures inspection and justified decisions rather than binary recognition alone. Participants may need to read, inspect or verify before selecting a useful detail. Difficulty is increased by plausible paired cases and evidence quality, not ambiguous trick labels or a penalty for checking. The 120-second budget is an accepted operational choice and still needs event playtesting. Client-side cases and accepted evidence are visible to a deliberate source-code reader; this is an educational station, not a secure examination system.
+
+## Subsequent revision
+
+The user requested classification-only play. Evidence selection and supported/unsupported grading are retired: correct +10, wrong −10, unanswered 0, final minimum 0. The 32-case bank, balanced 10-email deals, 120-second timer, optional verification and post-round teaching remain. Finished historical scores are unchanged; active version2 labels migrate without extending their deadline.

@@ -46,4 +46,4 @@ Validation on 15 November checked common computed background colours, inspected 
 
 The popup ending player imports the shared theme and applies `ending-theme.css` to its result card, typography, actual-score display and audio controls. Its confetti/fireworks use red/charcoal colours and the parent Skip button uses the same paper controls. Timeout imagery retains its timed visual sequence; the ending's score and navigation do not control score submission. Regular and reduced-motion paths were checked.
 
-The email game hides its fictional service record behind Verify independently. Neutral evidence controls appear beside ordinary fields; choosing a label does not submit until one detail is cited. The result review distinguishes supported evidence from contextual clues, explains the selected detail, and teaches a safe next step.
+The email game hides its fictional service record behind Verify independently. Choosing Legitimate or Phishing submits immediately, including L/P shortcuts. There are no evidence-selection controls or extra submit step. The result review explains decisive and contextual clues and teaches a safe next step.

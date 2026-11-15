@@ -61,11 +61,11 @@
     if (!initial && host) { host.next(window); return; }
     clearWork();
     let saved = initial && host ? host.snapshot(window) : null;
-    if (demo && saved && saved.version !== 2) {
+    if (demo && saved && saved.version !== 3) {
       if(host.restartDemo)host.restartDemo(window);else window.parent.location.reload();
       return;
     }
-    if (saved && saved.version !== 2) {
+    if (saved && (saved.version !== 3 && !(saved.version === 2 && saved.status !== 'finished'))) {
       main.innerHTML='<section class="setup-error"><h1>This exercise has been updated.</h1><p>This tab contains an earlier Round. Its saved score stays unchanged. Use Next participant if it is saved, or ask the Game Master to cancel an unfinished Round before starting the new exercise.</p></section>';
       return;
     }
@@ -92,14 +92,14 @@
           <span class="eyebrow"><span class="tiny-line"></span> THE INBOX CHALLENGE</span>
           <h1 tabindex="-1">Phishing<br><span>Fishing</span><span class="title-dot">.</span></h1>
           <p class="hero-subtitle">Can you tell what's real<br class="desktop-break"> and what's a scam?</p>
-          <p class="hero-description">Investigate the sender, actual destination and requested action. Make your classification, select the detail that supports it, then submit your judgement.</p>
+          <p class="hero-description">Inspect the sender, actual destination and requested action, then choose Legitimate or Phishing. Your choice submits immediately.</p>
           <div class="round-facts" aria-label="Round details">
             <div>${icon("mail")}<span><strong>${questionCount} emails</strong><small>One inbox challenge</small></span></div>
             <div>${icon("clock")}<span><strong>${esc(settings.roundSeconds)} seconds</strong><small>One shared timer</small></span></div>
             <div>${icon("trophy")}<span><strong>100 points</strong><small>A perfect score</small></span></div>
           </div>
           <button class="button primary start-button" id="start-game" type="button">Start Game ${icon("arrow")}</button>
-          <p class="scoring-note">${questionCount} emails · +${pointsPerEmail} for a correct label with supported evidence, 0 for an unsupported correct label, −${pointsPerEmail} for a wrong label. Unanswered: 0. Final score cannot go below 0. ${demo ? "Unscored demo: no event result is saved." : "Your best completed Station 1 score counts."}</p>
+          <p class="scoring-note">${questionCount} emails · +${pointsPerEmail} for a correct classification, −${pointsPerEmail} for a wrong classification. Unanswered: 0. Final score cannot go below 0. ${demo ? "Unscored demo: no event result is saved." : "Your best completed Station 1 score counts."}</p>
           <p class="start-note">Use Verify independently when you need the service record. Checking is free; the timer keeps running. A familiar sender alone proves nothing.</p>
         </div>
         <div class="hero-art" aria-hidden="true">
@@ -121,7 +121,7 @@
       </section>
       <section class="how-to" aria-label="How to play"><div class="how-to-label">A quick game.<br><strong>A useful habit.</strong></div>
         <div class="how-step"><span class="step-number">01</span><div><h2>Read the email</h2><p>Check the sender, the message<br>and what it asks you to do.</p></div></div>
-        <div class="how-step"><span class="step-number">02</span><div><h2>Make your call</h2><p>Choose a label and select evidence.<br>Submit both within the shared timer.</p></div></div>
+        <div class="how-step"><span class="step-number">02</span><div><h2>Make your call</h2><p>Choose Legitimate or Phishing.<br>Your choice records the answer.</p></div></div>
         <div class="how-step"><span class="step-number">03</span><div><h2>See the signs</h2><p>Get your score and review<br>the clues when the round ends.</p></div></div>
       </section>`;
     document.querySelector("#start-game").addEventListener("click", startGame);
@@ -155,34 +155,25 @@
     const pattern = new RegExp(clues.map(text => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"), "g");
     let result = "", offset = 0;
     for (const match of value.matchAll(pattern)) {
-      result += esc(value.slice(offset, match.index)) + `<mark class="${decisive ? email.classification === "phishing" ? "risk-mark" : "trust-mark" : "context-mark"}" title="${decisive ? "Supported evidence" : "Contextual clue: not sufficient alone"}">${esc(match[0])}</mark>`;
+      result += esc(value.slice(offset, match.index)) + `<mark class="${decisive ? email.classification === "phishing" ? "risk-mark" : "trust-mark" : "context-mark"}" title="${decisive ? "Decisive clue" : "Contextual clue: not sufficient alone"}">${esc(match[0])}</mark>`;
       offset = match.index + match[0].length;
     }
     return result + esc(value.slice(offset));
   }
-  function evidenceText(email,id) {
-    if(id==='sender')return email.senderEmail;
-    if(id==='subject')return email.subject;
-    const [kind,index]=String(id||'').split(':');
-    return kind==='verification'?email.context.facts[+index]||'':kind==='destination'?email.body[+index]?.url||'':email.body[+index]?.text||'';
-  }
-  function evidenceButton(id,description,review=false) {
-    return review?'':`<button class="evidence-pick" type="button" data-evidence="${esc(id)}" aria-pressed="false" aria-label="Use ${esc(description)} as evidence" title="Use this detail as evidence">${icon('eye')}<span>Use as evidence</span></button>`;
-  }
   function caseContext(email,review=false) {
-    return `<aside class="case-context" aria-label="Independent verification record"><div><strong>INDEPENDENT SERVICE RECORD</strong><span>${esc(email.context.source)}</span></div><ul>${email.context.facts.map((fact,i)=>`<li>${esc(fact)} ${evidenceButton('verification:'+i,'verification detail '+(i+1),review)}</li>`).join('')}</ul></aside>`;
+    return `<aside class="case-context" aria-label="Independent verification record"><div><strong>INDEPENDENT SERVICE RECORD</strong><span>${esc(email.context.source)}</span></div><ul>${email.context.facts.map((fact,i)=>`<li>${esc(fact)} </li>`).join('')}</ul></aside>`;
   }
   function emailContent(email, review = false) {
     const initials=email.senderName.split(/\s+/).slice(0,2).map(word=>word[0]).join('');
-    return `<div class="email-heading"><span class="inbox-tag">Inbox</span><h${review?'4':'1'} ${review?'':'tabindex="-1"'}>${highlighted(email.subject,'subject',email,review,'subject')}</h${review?'4':'1'}>${evidenceButton('subject','subject',review)}</div>
-      <div class="sender-row"><span class="sender-avatar">${esc(initials)}</span><div class="sender-details"><div><strong>${esc(email.senderName)}</strong><span class="sender-address">&lt;${highlighted(email.senderEmail,'sender',email,review,'sender')}&gt;</span>${evidenceButton('sender','sender address',review)}</div><small>to ${esc(email.recipient||'student@xmum.example')}</small></div></div>
+    return `<div class="email-heading"><span class="inbox-tag">Inbox</span><h${review?'4':'1'} ${review?'':'tabindex="-1"'}>${highlighted(email.subject,'subject',email,review,'subject')}</h${review?'4':'1'}></div>
+      <div class="sender-row"><span class="sender-avatar">${esc(initials)}</span><div class="sender-details"><div><strong>${esc(email.senderName)}</strong><span class="sender-address">&lt;${highlighted(email.senderEmail,'sender',email,review,'sender')}&gt;</span></div><small>to ${esc(email.recipient||'student@xmum.example')}</small></div></div>
       <div class="email-body" ${review?'':'tabindex="0" role="region" aria-label="Email message; scroll to read the full text"'}>${email.body.map((block,i)=>{
         if(block.type==='link') {
           if(review)return `<div class="email-link-block"><span class="simulated-link">${highlighted(block.text,'body',email,true,'body:'+i)}</span><span class="link-destination review-destination"><small>ACTUAL SIMULATED DESTINATION</small>${highlighted(block.url,'body',email,true,'destination:'+i)}</span></div>`;
           const did=`destination-${email.id}-${i}-play`;
-          return `<div class="email-link-block" data-link-inspector><div class="link-controls"><button class="simulated-link" type="button" data-inspect-link aria-expanded="false" aria-controls="${did}">${esc(block.text)} ${icon('arrow')}</button><button class="inspect-link" type="button" data-inspect-link aria-expanded="false" aria-controls="${did}" aria-label="Inspect destination for ${esc(block.text)}">${icon('eye')} <span>Inspect link</span></button>${evidenceButton('body:'+i,'link text')}</div><span id="${did}" class="link-destination" role="note" hidden><small>SIMULATED DESTINATION</small><span class="destination-url">${esc(block.url)}</span>${evidenceButton('destination:'+i,'actual destination')}<span class="destination-note">Inspection only. Nothing will open.</span></span></div>`;
+          return `<div class="email-link-block" data-link-inspector><div class="link-controls"><button class="simulated-link" type="button" data-inspect-link aria-expanded="false" aria-controls="${did}">${esc(block.text)} ${icon('arrow')}</button><button class="inspect-link" type="button" data-inspect-link aria-expanded="false" aria-controls="${did}" aria-label="Inspect destination for ${esc(block.text)}">${icon('eye')} <span>Inspect link</span></button></div><span id="${did}" class="link-destination" role="note" hidden><small>SIMULATED DESTINATION</small><span class="destination-url">${esc(block.url)}</span><span class="destination-note">Inspection only. Nothing will open.</span></span></div>`;
         }
-        return `<div class="message-detail ${block.type==='detail'?'email-detail':block.type==='attachment'?'simulated-attachment':''}">${block.type==='attachment'?icon('paperclip'):''}<span>${highlighted(block.text,'body',email,review,'body:'+i)}</span>${evidenceButton('body:'+i,(block.type==='attachment'?'attachment':'message detail')+' '+(i+1),review)}</div>`;
+        return `<div class="message-detail ${block.type==='detail'?'email-detail':block.type==='attachment'?'simulated-attachment':''}">${block.type==='attachment'?icon('paperclip'):''}<span>${highlighted(block.text,'body',email,review,'body:'+i)}</span></div>`;
       }).join('')}</div>`;
   }
   function bindLinkInspectors() {
@@ -219,15 +210,14 @@
       </div>
       <div class="game-workspace">${progressRail()}<section class="message-area" aria-label="Current email">
         <div class="verification-tools"><button id="verify-independent" type="button" aria-expanded="${round.verified[round.index]}">${icon('shield')} Verify independently</button><span>Optional · no deduction · timer continues</span></div><div id="verification-record" ${round.verified[round.index]?'':'hidden'}>${caseContext(email)}</div><article class="email-card"><div class="email-toolbar"><span>${icon("mail")} Message</span><span>SIMULATED EMAIL</span></div>${emailContent(email)}<div class="email-training-note">${icon("info")} Hover or tap links to inspect. No sites or files will open.<span class="scroll-hint" hidden>Scroll to read more ${icon("chevron")}</span></div></article>
-        <div class="decision-heading"><h2>Is this request legitimate for this case?</h2><span>Choose a label, then select one detail ${icon("arrow")}</span></div>
+        <div class="decision-heading"><h2>Is this request legitimate for this case?</h2><span>Choose one to continue ${icon("arrow")}</span></div>
         <div class="answer-buttons">
           <button class="answer-button legitimate-button" type="button" data-answer="legitimate" data-question="${esc(email.id)}">${icon("shield")}<span><strong>LEGITIMATE</strong><small>This request is appropriate.</small></span><kbd>L</kbd></button>
           <button class="answer-button phishing-button" type="button" data-answer="phishing" data-question="${esc(email.id)}">${icon("flag")}<span><strong>PHISHING</strong><small>This request is deceptive or unsafe.</small></span><kbd>P</kbd></button>
         </div>
-        <div class="judgement-submit"><p id="evidence-selection" role="status">Select a specific detail in the message or verification record.</p><button id="submit-judgement" class="button primary" type="button" disabled>Submit judgement ${icon('arrow')}</button></div><p class="answer-hint">${icon('lock')} No correctness feedback until the round ends. <span><kbd>L</kbd>/<kbd>P</kbd> select a label</span></p>
+        <p class="answer-hint">${icon('lock')} Answers are revealed after the round. <span><kbd>L</kbd>/<kbd>P</kbd> answers immediately</span></p>
       </section></div>`;
-    main.querySelectorAll("[data-answer]").forEach(button => button.addEventListener("click", () => chooseDraft({classification:button.dataset.answer})));
-    main.querySelectorAll('[data-evidence]').forEach(button=>button.onclick=()=>chooseDraft({evidenceId:button.dataset.evidence}));
+    main.querySelectorAll("[data-answer]").forEach(button => button.addEventListener("click", () => submitAnswer(button.dataset.question,button.dataset.answer)));
     main.querySelector('#verify-independent').onclick=()=>{
       if(round.verify(email.id)) {
         try { save(); } catch(error) { storageFailure(error); return; }
@@ -235,8 +225,7 @@
         main.querySelector('#verify-independent').setAttribute('aria-expanded',String(!record.hidden));
       }
     };
-    main.querySelector('#submit-judgement').onclick=()=>submitAnswer(email.id);
-    bindLinkInspectors(); syncDraft();
+    bindLinkInspectors();
     // A newly rendered rail starts at the top; keep the current step visible
     // when the full bank exceeds the available height on a booth laptop.
     const rail = main.querySelector(".round-sidebar");
@@ -259,23 +248,9 @@
     focusHeading();
     announce(`Email ${round.index + 1} of ${round.questions.length}. ${email.subject}`);
   }
-  function syncDraft() {
-    if(page!=='playing')return;
-    main.querySelectorAll('[data-answer]').forEach(button=>button.setAttribute('aria-pressed',String(round.draft.classification===button.dataset.answer)));
-    main.querySelectorAll('[data-evidence]').forEach(button=>button.setAttribute('aria-pressed',String(round.draft.evidenceId===button.dataset.evidence)));
-    const text=round.draft.evidenceId?evidenceText(round.questions[round.index],round.draft.evidenceId):'';
-    main.querySelector('#evidence-selection').textContent=text?'Selected evidence: '+text.slice(0,135):'Select a specific detail in the message or verification record.';
-    main.querySelector('#submit-judgement').disabled=!(round.draft.classification&&round.draft.evidenceId);
-  }
-  function chooseDraft(patch) {
-    if(page!=='playing'||locked||referenceDialog.open)return;
-    if(!round.choose(round.questions[round.index].id,patch)) { if(round.status==='finished')showResults(); return; }
-    try { save(); } catch(error) { storageFailure(error); return; }
-    syncDraft();
-  }
-  function submitAnswer(questionId) {
+  function submitAnswer(questionId, classification) {
     if (page !== "playing" || locked) return;
-    if (!round.answer(questionId)) {
+    if (!round.answer(questionId,classification)) {
       if (round.status === "finished") showResults();
       return;
     }
@@ -315,8 +290,7 @@
   }
   function performanceMessage(results) {
     if (!results.answered) return ["Ready to give it a go?", "No answers were recorded. Review the clues, then try a new round."];
-    if (results.correct === results.answered && results.unsupported) return ['Labels right. Find stronger evidence.', 'Your labels were correct, but some selected details did not justify them. Compare your evidence with the decisive clues below.'];
-    if (results.justified === results.answered) return [
+    if (results.correct === results.answered) return [
       results.unanswered ? "A sharp eye. Keep it going." : "An inbox detective in the making.",
       results.unanswered ? "Every email you answered was correct. Try keeping that accuracy while checking more messages." : "You spotted every email correctly. Keep checking the details beyond the game."
     ];
@@ -325,15 +299,12 @@
       ["You're building your radar.", "Every clue you learn makes the next suspicious email easier to recognise."],
       ["Your instincts are taking shape.", "A few small details made the difference. Take a look at the clues below."],
       ["You've got a sharp eye.", "Good accuracy. Review the details that slipped through and try again."]
-    ][Math.min(3,Math.floor((results.justified / results.answered) * 4))];
+    ][Math.min(3,Math.floor((results.correct / results.answered) * 4))];
   }
   function reviewCard(review, i) {
-    const { email, answer, correct } = review;
-    return `<details class="review-card" ${!correct ? "open" : ""}>
-      <summary><span class="review-status ${correct ? "correct" : !answer ? "unanswered" : review.labelCorrect ? "unsupported" : "incorrect"}">${icon(correct ? "check" : !answer ? "clock" : review.labelCorrect ? "eye" : "cross")}</span><span class="review-summary"><span class="review-overline">EMAIL ${String(i + 1).padStart(2, "0")} <span>· ${esc(email.difficulty)}</span></span><strong>${esc(email.subject)}</strong><span class="review-answer-line">Your answer: <b>${label(answer)}</b><span class="answer-separator">·</span>Correct: <b class="classification-${email.classification}">${label(email.classification)}</b></span><span class="evidence-summary">${!answer ? "No judgement submitted" : correct ? "Evidence supports the label" : review.labelCorrect ? "Evidence is insufficient" : review.evidenceCorrect ? "Evidence supports the other label" : "Label and evidence need review"}</span></span><span class="result-badge ${correct ? "correct" : !answer ? "unanswered" : review.labelCorrect ? "unsupported" : "incorrect"}">${correct ? "Supported" : answer ? review.labelCorrect ? "Unsupported evidence" : "Wrong label" : "Unanswered"}</span>${icon("chevron", "review-chevron")}</summary>
-      <div class="review-content"><div class="review-explanation"><span class="explanation-label">${icon(email.classification === "phishing" ? "flag" : "shield")}${email.classification === "phishing" ? "Why this request is phishing" : "Why this request is legitimate in this case"}</span><p>${esc(email.explanation)}</p><p class="submitted-evidence"><strong>Your evidence:</strong> ${esc(review.evidenceId?evidenceText(email,review.evidenceId):"No completed judgement")} · ${review.verified?"Verification opened":"Verification not opened"}${review.labelCorrect&&!review.evidenceCorrect?"<br>This detail does not justify the classification on its own. Compare the supported details below.":""}</p>${caseContext(email,true)}<dl class="decision-reasoning"><dt>Decisive evidence</dt><dd>${esc(email.reasoning.evidence)}</dd><dt>Supported details</dt><dd>${email.acceptedEvidence.map(id=>esc(evidenceText(email,id))).join("<br>")}</dd><dt>Why not ${email.classification === 'phishing' ? 'Legitimate' : 'Phishing'}?</dt><dd>${esc(email.reasoning.contrast)}</dd><dt>Safe next step</dt><dd>${esc(email.reasoning.nextStep)}</dd></dl><p class="review-highlight-key">Coloured highlights: supported evidence. Muted highlights: context, insufficient alone.</p><ul class="clue-list">${email.indicators.map(ind => `<li><strong>${esc(ind.text)}</strong><p>${esc(ind.explanation)}${email.acceptedEvidence.some(id=>evidenceText(email,id).includes(ind.text))?"":" Contextual clue only; this detail is not sufficient on its own."}</p></li>`).join("")}</ul></div>
-        <article class="review-email ${email.classification === "phishing" ? "review-risk" : "review-trust"}" aria-label="Email ${i + 1} with highlighted clues">${emailContent(email, true)}</article>
-      </div></details>`;
+    const {email,answer,correct}=review;
+    return `<details class="review-card" ${!correct?'open':''}><summary><span class="review-status ${correct?'correct':answer?'incorrect':'unanswered'}">${icon(correct?'check':answer?'cross':'clock')}</span><span class="review-summary"><span class="review-overline">EMAIL ${String(i+1).padStart(2,'0')} · ${esc(email.difficulty)}</span><strong>${esc(email.subject)}</strong><span class="review-answer-line">Your answer: <b>${label(answer)}</b> · Correct: <b class="classification-${email.classification}">${label(email.classification)}</b></span></span><span class="result-badge ${correct?'correct':answer?'incorrect':'unanswered'}">${correct?'Correct':answer?'Incorrect':'Unanswered'}</span>${icon('chevron','review-chevron')}</summary>
+    <div class="review-content"><div class="review-explanation"><span class="explanation-label">${email.classification==='phishing'?'Why this request is phishing':'Why this request is legitimate in this case'}</span><p>${esc(email.explanation)}</p>${caseContext(email,true)}<dl class="decision-reasoning"><dt>Decisive clues</dt><dd>${esc(email.reasoning.evidence)}</dd><dt>Why not ${email.classification==='phishing'?'Legitimate':'Phishing'}?</dt><dd>${esc(email.reasoning.contrast)}</dd><dt>Safe next step</dt><dd>${esc(email.reasoning.nextStep)}</dd></dl><ul class="clue-list">${email.indicators.map(ind=>`<li><strong>${esc(ind.text)}</strong><p>${esc(ind.explanation)}</p></li>`).join('')}</ul></div><article class="review-email ${email.classification==='phishing'?'review-risk':'review-trust'}" aria-label="Email ${i+1} with highlighted clues">${emailContent(email,true)}</article></div></details>`;
   }
   function storageFailure(error) {
     clearWork(); page='error';
@@ -350,7 +321,7 @@
     main.className = "results-screen";
     main.innerHTML = `
       <div class="results-topline"><span class="eyebrow">THE INBOX CHALLENGE / ROUND COMPLETE</span><button class="button primary new-player" type="button">${icon("refresh")} New Player</button></div>
-      <section class="results-hero"><div class="score-circle" style="--score-angle:${results.score / results.maximum * 360}deg"><div><strong>${results.score}<span>/ ${results.maximum}</span></strong><small>YOUR SCORE</small></div></div><div class="results-copy"><span class="completion-label">${icon(results.justified === results.reviews.length ? "trophy" : "shield")} ${results.endReason === "timeout" ? "Time's up. Let's find the clues." : "Inbox checked. A little more awareness."}</span><h1 tabindex="-1">${title}</h1><p>${message}</p><div class="result-stats"><div><strong>${results.answered}</strong><small>Emails answered / ${questionCount}</small></div><div><strong>${(results.accuracy * 100).toFixed(1)}<span>%</span></strong><small>Label accuracy (${results.correct} right, ${results.incorrect} wrong)</small></div><div><strong>${results.timeUsed.toFixed(1)}<span>s</span></strong><small>Time used of ${esc(settings.roundSeconds)}s</small></div></div><p class="score-breakdown">${results.justified} supported correct × ${pointsPerEmail} − ${results.incorrect} wrong × ${pointsPerEmail} = <strong>${results.score} / 100</strong> (minimum 0). ${results.unsupported} correct labels lacked supported evidence and earn 0. Unanswered emails earn 0. ${demo ? 'Demo only — this does not affect the event leaderboard.' : 'The same displayed score is submitted to your event record.'}</p></div></section>
+      <section class="results-hero"><div class="score-circle" style="--score-angle:${results.score / results.maximum * 360}deg"><div><strong>${results.score}<span>/ ${results.maximum}</span></strong><small>YOUR SCORE</small></div></div><div class="results-copy"><span class="completion-label">${icon(results.correct === results.reviews.length ? "trophy" : "shield")} ${results.endReason === "timeout" ? "Time's up. Let's find the clues." : "Inbox checked. A little more awareness."}</span><h1 tabindex="-1">${title}</h1><p>${message}</p><div class="result-stats"><div><strong>${results.answered}</strong><small>Emails answered / ${questionCount}</small></div><div><strong>${(results.accuracy * 100).toFixed(1)}<span>%</span></strong><small>Label accuracy (${results.correct} right, ${results.incorrect} wrong)</small></div><div><strong>${results.timeUsed.toFixed(1)}<span>s</span></strong><small>Time used of ${esc(settings.roundSeconds)}s</small></div></div><p class="score-breakdown">${results.correct} correct × ${pointsPerEmail} − ${results.incorrect} wrong × ${pointsPerEmail} = <strong>${results.score} / 100</strong> (minimum 0). Unanswered emails earn 0. ${demo ? 'Demo only — this does not affect the event leaderboard.' : 'The same displayed score is submitted to your event record.'}</p></div></section>
       ${results.unanswered ? `<div class="timeout-note">${icon("clock")} ${results.unanswered} email${results.unanswered === 1 ? " was" : "s were"} unanswered. Unanswered emails earn no points; wrong answers deduct ${pointsPerEmail} each.${results.answered ? "" : " No answers means zero points."}</div>` : ""}
       <section class="answer-review" aria-labelledby="review-title"><div class="review-heading"><div><span class="eyebrow">THE DETAILS MAKE THE DIFFERENCE</span><h2 id="review-title">Review Answers</h2></div><span>Open an email to see the clues ${icon("chevron")}</span></div>${results.reviews.map(reviewCard).join("")}</section>
       <div class="takeaway"><span class="takeaway-icon">${icon("shield")}</span><div><strong>A familiar look is a clue. It isn't a guarantee.</strong><p>Sender addresses can be spoofed and genuine accounts compromised. Urgency, payment amounts and attachments do not automatically mean phishing. Inspect actual destinations, check permission requests, and verify through a known app, bookmark or contact. Never share passwords, PINs or one-time codes. The .example ending is used for every training message and is not a warning sign.</p></div></div>
@@ -367,7 +338,7 @@
     const key = event.key.toLowerCase();
     if (key !== "l" && key !== "p") return;
     event.preventDefault();
-    chooseDraft({classification:key === "l" ? "legitimate" : "phishing"});
+    submitAnswer(round.questions[round.index]?.id,key === "l" ? "legitimate" : "phishing");
   });
   document.addEventListener("visibilitychange", () => { if (!document.hidden) tick(); });
   window.addEventListener("pageshow", tick);

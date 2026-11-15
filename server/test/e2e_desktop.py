@@ -34,16 +34,11 @@ def run():
     def frame(p,id='booth-frame'):
      return p.locator('#'+id).element_handle().content_frame()
     def state(p,key=EMAIL_KEY):return p.evaluate('(key)=>JSON.parse(sessionStorage.getItem(key))',key)
-    def answer(p,correct=True,kind=None,supported=True):
+    def answer(p,correct=True,kind=None):
      f=frame(p);qid=f.locator('[data-question]').first.get_attribute('data-question')
      actual=f.evaluate('(id)=>EMAIL_BANK.find(e=>e.id===id).classification',qid)
      choice=kind or (actual if correct else 'phishing' if actual=='legitimate' else 'legitimate')
      f.locator(f'[data-answer="{choice}"]').click()
-     evidence=f.evaluate('(id)=>EMAIL_BANK.find(e=>e.id===id).acceptedEvidence[0]',qid) if supported else 'subject'
-     if evidence.startswith('verification:'):f.click('#verify-independent')
-     pick=f.locator(f'[data-evidence="{evidence}"]')
-     if evidence.startswith('destination:'):pick.evaluate("el=>el.closest('[data-link-inspector]').querySelector('.inspect-link').click()")
-     pick.click();f.click('#submit-judgement')
      f.wait_for_function('(old)=>document.querySelector("[data-question]")?.dataset.question!==old',arg=qid)
     a=laptop('phishing-fishing',1);b=laptop('phishing-fishing',1)
     select(a,'MAIL001');frame(a).wait_for_selector('#start-game');frame(a).click('#start-game')
@@ -53,11 +48,11 @@ def run():
     assert len(api.ok('GET','/api/rounds/open',pin='5001'))==2
     assert state(a)['participant']['id']=='MAIL001' and state(b)['participant']['id']=='MAIL002'
     print('PASS: two email laptops play independently; the same participant cannot start twice')
-    af=frame(a);qid=af.locator('[data-question]').first.get_attribute('data-question');label=af.evaluate('(id)=>EMAIL_BANK.find(e=>e.id===id).classification',qid)
-    af.locator(f'[data-answer="{label}"]').click();af.click('#verify-independent');af.locator('[data-evidence="subject"]').click();draft=state(a)['snapshot']
-    a.reload();frame(a).wait_for_selector('[data-question]');assert state(a)['snapshot']['draft']==draft['draft'] and state(a)['snapshot']['verified']==draft['verified']
+    af=frame(a);af.click('#verify-independent');saved=state(a)['snapshot']
+    a.reload();frame(a).wait_for_selector('[data-question]');assert state(a)['snapshot']['verified']==saved['verified'] and state(a)['snapshot']['startedAt']==saved['startedAt']
     assert frame(a).locator('.case-context').is_visible()
-    print('PASS: pending label, evidence and voluntary verification survive full reload')
+    assert frame(a).locator('[data-evidence],#submit-judgement').count()==0
+    print('PASS: optional verification survives reload; classification has no evidence step')
     for _ in range(4):answer(a)
     before=state(a)['snapshot'];a.reload();frame(a).wait_for_selector('[data-question]')
     after=state(a)['snapshot'];assert before['startedAt']==after['startedAt'] and before['questionIds']==after['questionIds'] and before['answers']==after['answers']
@@ -138,12 +133,12 @@ def run():
     lp.add_init_script("""
       if(window===top&&!sessionStorage.getItem('legacy-seeded')) {
       sessionStorage.setItem('legacy-seeded','1');
-      sessionStorage.setItem('scamurai.booth.1.demo.v1',JSON.stringify({version:1,status:'open',roundId:null,participant:null,snapshot:{version:1,status:'playing'}}));
+      sessionStorage.setItem('scamurai.booth.1.demo.v1',JSON.stringify({version:1,status:'open',roundId:null,participant:null,snapshot:{version:2,status:'playing'}}));
       }
     """)
     lp.goto(BASE+'/games/phishing-fishing/?demo=1');frame(lp).wait_for_selector('#start-game');frame(lp).click('#start-game')
     assert lp.evaluate("sessionStorage.getItem('legacy-seeded')")=='1'
-    assert state(lp,'scamurai.booth.1.demo.v1')['snapshot']['version']==2 and not legacy_writes
+    assert state(lp,'scamurai.booth.1.demo.v1')['snapshot']['version']==3 and not legacy_writes
     legacy.close();print('PASS: an earlier-format demo restarts safely into the new exercise without event writes')
     assert not api.ok('GET','/api/rounds/open',pin='5001') and not api.ok('GET','/api/rounds/open',pin='5002')
     print('PASS: both public demos bypass PIN/identity, allow practice and write no event data')
