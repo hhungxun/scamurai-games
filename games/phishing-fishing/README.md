@@ -56,3 +56,7 @@ node games/phishing-fishing/tests/browser.test.cjs
 ```
 
 Set `PLAYWRIGHT_PATH` and `BROWSER_PATH` when using an existing installation. Screenshots go to `/tmp/scamurai-phishing-qa` unless `SCREENSHOT_DIR` is set. It covers all 20 scenarios, desktop/mobile layouts, inert keyboard/touch inspection, duplicate answers and accessible review. Run a physical laptop check for readability and browser behaviour before the event.
+
+## Message design
+
+The 12 phishing messages use plausible campus, bank, parcel and shopping contexts. The former joke scenarios now teach locker QR fraud, an attendance-report executable, wallet recovery-phrase theft and callback refund abuse. Familiar senders and protective-sounding advice occur in fake messages too, so decisions depend on destinations, permissions and the requested action. All eight legitimate counterparts remain. The in-game UI uses the same shared theme as the popup and QR games.

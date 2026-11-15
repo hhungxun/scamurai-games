@@ -1,0 +1,110 @@
+/* Shared in-game design system: Stations 1, 2 and 5.
+   Website/email evidence keeps its own content presentation; game controls use these tokens. */
+@font-face{font-family:Lexend;src:url('/assets/fonts/Lexend[wght].ttf') format('truetype');font-weight:100 900;font-display:swap}
+@font-face{font-family:Anton;src:url('/assets/fonts/Anton-Regular.ttf') format('truetype');font-display:swap}
+:root{--game-bg:#f3efe5;--game-paper:#fffdf8;--game-ink:#24201d;--game-muted:#6d645d;--game-line:#d4ccc1;--game-red:#d82b24;--game-red-dark:#a71e19;--game-green:#246947;--game-soft:#eae4d9;--game-radius:3px;--game-font:Lexend,"Microsoft YaHei",system-ui,sans-serif;--game-display:Anton,"Microsoft YaHei",Impact,sans-serif;--game-shadow:0 4px 18px #372c2010}
+body[data-game]{background:var(--game-bg);color:var(--game-ink);font-family:var(--game-font);color-scheme:light}
+body[data-game] :is(button,input,select){font-family:var(--game-font)}
+body[data-game] :is(button,a,input,summary):focus-visible{outline:3px solid var(--game-red);outline-offset:3px}
+/* Popup task selection, briefing and results: the same paper cards as the inbox. */
+body[data-game="popups"]{--paper:var(--game-paper);--cream:var(--game-bg);--yellow:var(--game-soft);--yellow-soft:var(--game-muted);--ink:var(--game-ink);--red:var(--game-red);--red-dark:var(--game-red-dark);--muted:var(--game-muted);--line:var(--game-line);--sans:var(--game-font);--display:var(--game-display);--shadow:var(--game-shadow);--tape:none}
+body[data-game="popups"] :is(h1,h2,h3){font-family:var(--game-display);font-weight:400;letter-spacing:.01em}
+body[data-game="popups"] .booth-header{background:var(--game-bg);color:var(--game-ink);border-bottom:1px solid var(--game-line);min-height:54px}
+body[data-game="popups"] .booth-brand{font:600 13px var(--game-font);color:var(--game-ink);letter-spacing:0}
+body[data-game="popups"] .booth-brand-mark{background:var(--game-ink);color:white;border-radius:3px}
+body[data-game="popups"] .booth-stage{color:var(--game-muted);font-size:10px}
+body[data-game="popups"] .booth-language{background:var(--game-paper);border:1px solid var(--game-line);border-radius:3px;color:var(--game-ink)}
+body[data-game="popups"] .booth-hero{background:var(--game-bg);border:0;border-bottom:2px solid var(--game-ink);box-shadow:none;padding:30px 0}
+body[data-game="popups"] .booth-hero::before{display:none}
+body[data-game="popups"] .booth-hero h1{font-size:clamp(46px,6vw,78px);text-transform:uppercase}
+body[data-game="popups"] .booth-hero p:not(.booth-eyebrow){color:var(--game-muted);font-weight:400}
+body[data-game="popups"] .booth-eyebrow{background:none;color:var(--game-muted);padding:0;transform:none;font:650 10px var(--game-font);letter-spacing:.16em}
+body[data-game="popups"] .booth-hero-clock{background:var(--game-paper);color:var(--game-red);border:1px solid var(--game-line);border-radius:3px;transform:none;box-shadow:none;font:400 clamp(60px,8vw,96px)/1 var(--game-display);padding:24px}
+body[data-game="popups"] .booth-button{border:1px solid transparent;border-radius:3px;font:650 14px var(--game-font);min-height:48px;box-shadow:3px 3px 0 var(--game-ink);text-transform:none}
+body[data-game="popups"] :is(.booth-button-primary,.booth-button-inverse){background:var(--game-red);color:white}
+body[data-game="popups"] .booth-button:hover:not(:disabled){background:var(--game-red-dark);color:white;transform:translateY(-1px);box-shadow:3px 4px 0 var(--game-ink)}
+body[data-game="popups"] :is(.booth-task-card,.booth-staff,.booth-start-hint,.booth-goals,.booth-score,.booth-checks,.booth-brief-photo,.booth-recovery-task){border:1px solid var(--game-line);border-radius:3px;box-shadow:var(--game-shadow);background:var(--game-paper)}
+body[data-game="popups"] .booth-task-card:hover{transform:translateY(-2px);border-color:var(--game-red);box-shadow:var(--game-shadow)}
+body[data-game="popups"] .booth-task-card img{border:1px solid var(--game-line);border-radius:2px}
+body[data-game="popups"] :is(.booth-task-card strong,.booth-staff summary,.booth-note){font-family:var(--game-font)}
+body[data-game="popups"] .booth-task-card strong{font-size:13px;font-weight:600}
+body[data-game="popups"] :is(.booth-score-split>div,.booth-score-detail li){border:1px solid var(--game-line);background:var(--game-bg);border-radius:3px}
+body[data-game="popups"] .booth-score-total strong{font:400 76px/1 var(--game-display);color:var(--game-red)}
+body[data-game="popups"] :is(.booth-collection-heading,.booth-result-hero){border-bottom:1px solid var(--game-line)}
+body[data-game="popups"] .booth-time-stamp{background:var(--game-paper);color:var(--game-red);border:1px solid var(--game-line);border-radius:3px;transform:none}
+body[data-game="popups"] .booth-time-stamp span{color:var(--game-muted)}
+body[data-game="popups"] .booth-memory-badge{background:var(--game-soft);color:var(--game-ink);border-radius:3px;font:600 12px var(--game-font)}
+body[data-game="popups"] .booth-checks li[data-met=true]{background:#f1f7ef}
+/* Actual popup gameplay: persistent HUD and task dialog, outside simulated site content. */
+#br-booth-bar{font-family:var(--game-font);background:var(--game-bg);color:var(--game-ink);box-shadow:0 2px 8px #372c2015;border-bottom:1px solid var(--game-line)}
+#br-booth-bar::after{height:3px;background:var(--game-red)}
+#br-booth-bar .br-booth-time{border-right-color:var(--game-line)}
+#br-booth-bar .br-booth-time small,#br-booth-bar .br-booth-current span{color:var(--game-muted)}
+#br-booth-bar .br-booth-time strong{font:400 32px/1 var(--game-display);color:var(--game-red)}
+#br-booth-bar .br-booth-current b{font:600 12px var(--game-font)}
+#br-booth-bar button{font:600 12px var(--game-font);border:1px solid var(--game-line);border-radius:3px;color:var(--game-ink);background:var(--game-paper);text-transform:none}
+#br-booth-bar button:hover{background:var(--game-soft)}
+#br-booth-bar button[data-booth-submit]{background:var(--game-red);border-color:var(--game-red);color:white}
+#br-booth-bar button[data-booth-void]{color:var(--game-muted)}
+#br-booth-task-dialog{background:var(--game-paper);color:var(--game-ink);border:1px solid var(--game-line);border-radius:3px;box-shadow:var(--game-shadow);font-family:var(--game-font)}
+#br-booth-task-dialog h1{font-family:var(--game-display);font-weight:400;color:var(--game-ink)}
+#br-booth-task-dialog button{background:var(--game-red);color:white;border:0;border-radius:3px;box-shadow:3px 3px 0 var(--game-ink);font-family:var(--game-font)}
+#br-booth-task-dialog .br-booth-dialog-kicker{color:var(--game-muted);font-family:var(--game-font)}
+/* Scan game: scanner, dashboard, verdicts and results share the paper surface. */
+body[data-game="scan"]{--bg:var(--game-bg);--surf:var(--game-paper);--grey:var(--game-muted);--dim:var(--game-line);--line:var(--game-line);--red:var(--game-red);--yellow:var(--game-red);background:var(--game-bg);color:var(--game-ink)}
+body[data-game="scan"] :is(.s5,.dash){font-family:var(--game-font);color:var(--game-ink)}
+body[data-game="scan"] :is(.box,.dash .tile,.modal .card,.dash .empty){background:var(--game-paper);color:var(--game-ink);border:1px solid var(--game-line);border-radius:3px;box-shadow:var(--game-shadow)}
+body[data-game="scan"] :is(.s5 h1,.s5 h2,.dash h1){font-family:var(--game-display);font-weight:400;text-transform:uppercase}
+body[data-game="scan"] .tag{font:600 10px var(--game-font);text-transform:uppercase;letter-spacing:.13em;color:var(--game-muted)}
+body[data-game="scan"] :is(.big,.tile .pts){font-family:var(--game-display);color:var(--game-red)}
+body[data-game="scan"] :is(.btn,.ghost,.scores-link,.game-home){font:600 13px var(--game-font);letter-spacing:0;text-transform:none;border-radius:3px;min-height:44px}
+body[data-game="scan"] .btn{background:var(--game-red);color:white;border:1px solid var(--game-red)}
+body[data-game="scan"] .ghost{background:var(--game-paper);border:1px solid var(--game-line);color:var(--game-ink)}
+body[data-game="scan"] .muted{color:var(--game-muted)}
+body[data-game="scan"] .strip span{background:var(--game-soft);color:var(--game-muted);border-radius:3px}
+body[data-game="scan"] :is(.strip .ok,.chips span.ok){background:var(--game-green);color:white}
+body[data-game="scan"] :is(.strip .no,.chips span.no){background:var(--game-red-dark);color:white}
+body[data-game="scan"] .phone-home{background:var(--game-ink);border-bottom:3px solid var(--game-red)}
+body[data-game="scan"] .phone-home a{color:var(--game-paper);font:600 11px var(--game-font)}
+body[data-game="scan"] .game-scores{background:var(--game-ink)}
+body[data-game="scan"] :is(.game-home,.scores-link){color:var(--game-paper);background:transparent;border-color:#73695e}
+body[data-game="scan"] .res{background:var(--game-bg)}
+body[data-game="scan"] .score-list .correct{color:var(--game-green)}
+body[data-game="scan"] .score-list .wrong{color:var(--game-red-dark)}
+body[data-game="scan"] .vbar{background:var(--game-bg);border-top:1px solid var(--game-line);box-shadow:0 -3px 12px #372c2010;backdrop-filter:none}
+body[data-game="scan"] .vbar button{font:650 16px var(--game-font);border:1px solid transparent;border-radius:3px;min-height:48px;opacity:1}
+body[data-game="scan"] .vbar .real{background:#f1f7ef;border-color:#92b69d;color:var(--game-green)}
+body[data-game="scan"] .vbar .fake{background:#fff6f3;border-color:#d3a39a;color:var(--game-red-dark)}
+body[data-game="scan"] .vbar .t b{background:var(--game-paper);color:var(--game-red);font-family:var(--game-display)}
+body[data-game="scan"] .sb{font-family:var(--game-font)}
+body[data-game="scan"] .sb-bar{background:var(--game-bg);border-bottom-color:var(--game-line)}
+body[data-game="scan"] .sb-omni{border-radius:3px;border-color:var(--game-line)}
+body[data-game="scan"] .sb-nav{border-radius:3px;color:var(--game-muted)}
+@media(max-width:600px){body[data-game="popups"] .booth-hero{padding:24px 0}body[data-game="popups"] .booth-hero h1{font-size:44px}body[data-game="scan"] .s5 h1{font-size:28px}}
+@media(prefers-reduced-motion:reduce){body[data-game] *{scroll-behavior:auto;transition:none!important}}
+/* Same station chrome and staff controls outside the embedded game. */
+#booth-brand,.booth-top{background:var(--game-ink);border-bottom-color:var(--game-red);font-family:var(--game-font)}
+#demo-banner,#booth-demo{background:var(--game-soft);color:var(--game-ink);border-bottom:1px solid var(--game-line);font-family:var(--game-font)}
+#station-header,#cancel-dialog{--ink:var(--game-ink);--paper:var(--game-paper);--accent:var(--game-red);--line:var(--game-line);background:var(--game-paper);color:var(--game-ink);border:1px solid var(--game-line);border-radius:3px;box-shadow:var(--game-shadow);font-family:var(--game-font)}
+#station-header .station-panel-heading{background:var(--game-ink);border-bottom:3px solid var(--game-red)}
+#station-header .station-eyebrow{color:var(--game-paper)}
+#station-header nav #next,#station-header nav #retry{background:var(--game-red);color:white;border-color:var(--game-red);border-radius:3px;box-shadow:3px 3px 0 var(--game-ink)}
+#station-header nav #next:hover,#station-header nav #retry:hover{background:var(--game-red-dark)}
+#staff-toggle{background:var(--game-paper);color:var(--game-ink);border:1px solid var(--game-line);border-radius:3px;box-shadow:var(--game-shadow);font-family:var(--game-font)}
+/* Personal-score links on paper screens stay dark; the persistent footer stays light. */
+body[data-game="scan"] .scores-link{color:var(--game-ink);background:var(--game-paper);border-color:var(--game-line)}
+body[data-game="scan"] .game-scores .scores-link{color:var(--game-paper);background:transparent;border-color:#73695e}
+body[data-game="scan"] .site-footer .wordmark{color:var(--game-ink)}
+body[data-game="scan"] .site-footer .wordmark span{color:var(--game-ink)}
+#br-booth-bar .br-booth-badge{background:var(--game-soft);color:var(--game-ink);font:600 12px var(--game-font);border:1px solid var(--game-line);border-radius:3px}
+#br-booth-task-dialog .br-booth-dialog-kicker{background:none;padding:0;transform:none;color:var(--game-muted)}
+#br-booth-task-dialog .br-booth-start-hint{border:1px solid var(--game-line);border-left:3px solid var(--game-red);background:var(--game-bg)}
+#br-booth-task-dialog .br-booth-conditions li{background:var(--game-bg)}
+#br-booth-task-dialog #br-booth-hint2{border-left-color:var(--game-red)}
+#br-booth-opening-reminder{font-family:var(--game-font);background:var(--game-paper);color:var(--game-ink);border:1px solid var(--game-line);border-left:3px solid var(--game-red);border-radius:3px;box-shadow:var(--game-shadow)}
+#staff-toggle::before{background:var(--game-ink);color:white}
+body[data-game="email"] :is(.timer strong,.score-circle strong){font-family:var(--game-display);font-weight:400}
+body[data-game="email"] .legitimate-button :is(strong,small,kbd){color:var(--game-green)}
+body[data-game="email"] .phishing-button :is(strong,small,kbd){color:var(--game-red-dark)}
+body[data-game="email"] .sender-avatar{background:var(--game-soft);color:var(--game-muted)}
+body[data-game="email"] :is(.game-topbar p,.sender-address,.sender-details small,.answer-hint,.decision-heading>span){color:var(--game-muted)}

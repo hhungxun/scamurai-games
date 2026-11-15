@@ -21,7 +21,7 @@
 <script src="/vendor/jsQR.js"></script>
 <script src="/qr-scanner.js"></script>
 <script src="scanner.js"></script>
-</head><body>
+<link rel="stylesheet" href="../shared/theme.css"></head><body data-game="scan">
 <nav class="game-scores" aria-label="Participant navigation"><a class="game-home" href="/">Home</a><a class="scores-link" href="/participant.html?from=station5">My scores</a></nav>
 <main class="s5" id="app"></main>
 <div id="sim"></div>
@@ -141,8 +141,8 @@ function play() {
     const res = document.createElement('div'); res.className = 'res';
     res.innerHTML = `<main class="s5">${H}
       <div class="box" style="text-align:center">
-        <div class="big" style="color:${correct ? '#7CFC8A' : 'var(--red)'}">${correct ? '✓ +' + pts : v === 'timeout' ? "Time's up · 0" : '✗ ' + pts}</div>
-        ${card ? `<p>It was <b style="color:${card.real ? '#7CFC8A' : 'var(--red)'}">${card.real ? 'REAL' : 'FAKE'}</b> · ${esc(card.brand)}</p><p class="muted" style="word-break:break-all">${esc(card.url)}</p>` : '<p>The site did not load before time ran out.</p>'}</div>
+        <div class="big" style="color:${correct ? 'var(--game-green)' : 'var(--red)'}">${correct ? '✓ +' + pts : v === 'timeout' ? "Time's up · 0" : '✗ ' + pts}</div>
+        ${card ? `<p>It was <b style="color:${card.real ? 'var(--game-green)' : 'var(--red)'}">${card.real ? 'REAL' : 'FAKE'}</b> · ${esc(card.brand)}</p><p class="muted" style="word-break:break-all">${esc(card.url)}</p>` : '<p>The site did not load before time ran out.</p>'}</div>
       ${next ? '<div id="scanner"></div>' : '<div class="box">All done! Tap <b>My scores</b> to see your total and each QR result.</div>'}
       ${card ? `<div class="box"><b>${card.real ? 'Why it is genuine' : !correct ? 'What you missed' : 'The tells'}</b><ul class="tells">${(card.tells || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>` : ''}
       <p class="muted" id="sent" style="text-align:center">Saving…</p></main>`;

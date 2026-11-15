@@ -33,3 +33,11 @@ All use temporary local databases. Site checks cover public routes and links, 32
 ## Desktop games
 
 The desktop hosts use a charcoal Scamurai wordmark bar, red station border, local Lexend/Anton type and paper-coloured game area. The selected identity stays visible above the email game. Both have public, clearly marked unscored demos with a way back to event play. The email game's cream/red event treatment frames a readable white simulated inbox; the popup game keeps the distinct simulated website layouts that form its challenge. SDK participant selection retains the common event styling. Two-laptop and no-write demo checks are in `server/test/e2e_desktop.py`.
+
+## Shared in-game theme
+
+All three games load `games/shared/theme.css`, the source for paper/ink/red/green colours, Lexend/Anton typography, borders and surfaces. It applies to the actual popup gameplay HUD and task dialog, popup briefing/results, the email controls, and Station 5’s scanner, verdict bar, simulated browser chrome, results and dashboard. Parent station/demo controls use the same tokens. This replaces the popup game’s yellow hazard treatment and Station 5’s dark card treatment with the same paper cards as the inbox game.
+
+The website snapshots inside the Sim Browser and the popup game’s task websites retain the presentation that forms their evidence. They receive the common game controls around them; Real and Fake cards receive identical browser/verdict styling. Personal-score links use dark text on paper and light text only in the dark persistent footer. Printed QR boards retain their print styling.
+
+Validation on 15 November checked common computed background colours, inspected screenshots of welcome/play screens and the QR scanner/dashboard, and covered phone widths down to 360px and booth laptops at 1366×768. The phishing, multi-laptop, full popup timeout and QR phone/camera suites passed with the shared theme.
