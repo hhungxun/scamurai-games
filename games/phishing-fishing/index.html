@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="A 60-second, 20-email challenge. Learn to spot phishing at the XMUM Community Service booth, completely offline.">
+  <title>Phishing Fishing · XMUM</title>
+  <link rel="icon" href="assets/shield.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="config.js"></script>
+  <script defer src="domains.js"></script>
+  <script defer src="emails.js"></script>
+  <script defer src="game-core.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to game</a>
+  <div class="app-shell">
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Phishing Fishing home">
+        <span class="brand-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6Z"/><path d="m8.5 11.5 2.5 2.5 4.5-5"/></svg></span>
+        <span>Think before<br><strong>you click.</strong></span>
+      </a>
+      <div class="header-context"><span class="xmum">XMUM</span><span class="header-divider"></span><span>Community Service<br><strong>Scam Awareness Initiative</strong></span></div>
+      <button id="open-reference" class="reference-button" type="button" aria-haspopup="dialog" aria-controls="reference-dialog">How to verify</button>
+      <button id="fullscreen" class="icon-button" type="button" aria-label="Enter full screen" title="Full screen (or press F11)"></button>
+    </header>
+    <main id="main" tabindex="-1"></main>
+    <footer class="site-footer"><span><span class="status-dot"></span>Offline & ready to play</span><span>Practice here. Stay safer out there.</span><span>XMUM Community Service</span></footer>
+  </div>
+  <dialog id="reference-dialog" aria-labelledby="reference-title" aria-describedby="reference-intro">
+    <div class="reference-header"><div><span class="eyebrow">OPTIONAL REFERENCE</span><h2 id="reference-title">How to verify</h2></div><button id="close-reference" class="icon-button" type="button" aria-label="Close reference">✕</button></div>
+    <p id="reference-intro">Every address in this game uses a fictional <strong>.example</strong> domain. That ending means training, not phishing. These are the services' reference domains, not real website addresses.</p>
+    <div id="domain-reference" class="domain-reference"></div>
+    <p class="reference-advice"><strong>Check the whole destination.</strong> A subdomain such as <code>events.xmum.example</code> belongs under <code>xmum.example</code>. A name such as <code>xmum.example.other.example</code> belongs under <code>other.example</code>.</p>
+    <p class="reference-advice">Sender addresses can be spoofed and legitimate accounts can be compromised. A matching domain, HTTPS or polished formatting does not prove authenticity. A deadline or payment amount does not prove phishing. Check the request and use a known app, bookmark or contact to verify it independently.</p>
+    <p class="reference-timer-note">During a round, the shared timer keeps running while this reference is open.</p>
+  </dialog>
+  <div id="announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+  <noscript><div class="noscript">Please enable JavaScript in your browser to play this offline game.</div></noscript>
+</body>
+</html>
