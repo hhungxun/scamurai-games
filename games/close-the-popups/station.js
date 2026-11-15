@@ -6,12 +6,43 @@
   const frame = document.getElementById('game');
   const status = document.getElementById('station-status');
   const root = new URL('./', location.href);
-  const lang = new URLSearchParams(location.search).get('lang') === 'zh' ? 'zh' : 'en';
+  let lang = new URLSearchParams(location.search).get('lang') === 'zh' ? 'zh' : 'en';
   const localID = v => typeof v === 'string' && /^r_[a-f0-9]{24}$/.test(v);
   const $ = id => document.getElementById(id);
   let ready = false, busy = false, picking = false, state = null, practice = null, damaged = false;
   let ownedPreparation = false;
-  const say = (en, zh) => { status.textContent = lang === 'zh' ? zh : en; };
+  let message = ['Connecting to Scamurai…','正在连接活动系统…'];
+  const say = (en, zh) => { message=[en,zh]; status.textContent = lang === 'zh' ? zh : en; };
+  function localise() {
+    document.documentElement.lang=lang==='zh'?'zh-Hans':'en';
+    const labels={
+      'staff-toggle':['Staff','工作人员'],'staff-title':['Station 2 · Staff','第2站 · 工作人员'],
+      retry:['Retry save','重试保存'],resume:['Resume task','返回任务'],personal:['My scores','我的成绩'],
+      survey:['Exit survey','离场问卷'],next:['Next participant','下一位'],void:['Cancel round','作废本轮'],
+      leaving:['Leaving','离场问卷'],'notice-action':['Staff','工作人员'],
+      'cancel-title':['Cancel this round?','作废本轮？'],
+      'cancel-note':['Use for equipment or loading problems. A cancelled round receives no score.','用于设备或加载问题。作废轮次不计分。'],
+      'confirm-void':['Cancel round','确认作废'],'keep-playing':['Keep playing','继续挑战']
+    };
+    for(const [id,text] of Object.entries(labels)) $(id).textContent=text[lang==='zh'?1:0];
+    $('staff-close').setAttribute('aria-label',lang==='zh'?'关闭工作人员菜单':'Close staff menu');
+    status.textContent=message[lang==='zh'?1:0];
+  }
+  function openPanel() { if(!$('station-header').open)$('station-header').showModal(); $('staff-toggle').setAttribute('aria-expanded','true'); }
+  function closePanel() { if($('station-header').open)$('station-header').close(); }
+  function warn(en,zh) { say(en,zh); $('notice-text').textContent=status.textContent; $('station-notice').hidden=false; }
+  function clearNotice() { $('station-notice').hidden=true; }
+  function inlineStatus() {
+    if(!state?.localId)return;
+    try {
+      const win=frame.contentWindow,u=new URL(win.location.href);
+      if(u.searchParams.get('round')!==state.localId || u.searchParams.get('view')!=='result')return;
+      const score=win.document.querySelector('.booth-score'); if(!score)return;
+      let note=win.document.getElementById('station-score-status');
+      if(!note){note=win.document.createElement('p');note.id='station-score-status';note.className='booth-note';note.setAttribute('role','status');score.after(note);}
+      note.textContent=state.status==='saved' ? (lang==='zh'?'成绩已同步。':'Score saved to the event.') : (lang==='zh'?'正在同步成绩…':'Saving score…');
+    } catch {}
+  }
   function safeURL(raw) {
     try {
       const u = new URL(raw, root);
@@ -46,6 +77,7 @@
     $('personal').hidden = !ready || !state;
     $('survey').hidden = !ready || state?.status !== 'saved' || !state.result?.surveyDue;
     $('leaving').hidden = !ready || !!state || !!practice || damaged || picking;
+    inlineStatus();
   }
   function showState() {
     if (practice) say(`Practice only — no event score${practice.status !== 'open' ? ' · '+practice.score+' / 100' : ''}`, `工作人员练习，不写入活动成绩${practice.status !== 'open' ? ' · '+practice.score+' / 100' : ''}`);
@@ -53,7 +85,7 @@
     else if (state.status === 'saved') say(`${state.participant.name} · Saved ${state.result.pct} / 100 · best ${state.result.best} / 100`, `${state.participant.name} · 已同步 ${state.result.pct} / 100 · 本站最佳 ${state.result.best} / 100`);
     else if (state.status === 'cancelled') say('Round cancelled. No score recorded.', '本轮已作废，不计分。');
     else if (state.status === 'pending') say('Score awaiting confirmation. Retry saving before the next participant.', '成绩尚待确认。请重试保存后再交接下一位。');
-    else say(`${state.participant.name} · Station 2 round ${state.roundId}`, `${state.participant.name} · 第2站 · 轮次 ${state.roundId}`);
+    else say(`Current participant: ${state.participant.name}`, `当前参与者：${state.participant.name}`);
     controls();
   }
   function verifyChild(win) {
@@ -75,7 +107,7 @@
       ownedPreparation = !p.existing;
       state = {version:1, roundId:p.roundId, participant:{id:p.id,name:p.name}, localId:null,
         status:'open', score:0, result:null, url:safeURL(win.location.href) || chooser()};
-      persist(); showState();
+      persist(); clearNotice(); showState();
       // Existing rounds are deliberately not given a new local 60-second clock.
       if (p.existing) throw new Error('This participant already has an open round. Resume it in the original tab, or use Cancel round before restarting. / 已有未完成轮次，请回原标签恢复，或先作废。');
       return true;
@@ -98,9 +130,11 @@
     try {
       const res = await Scamurai.finishRound(state.roundId, {score:state.score, maxScore:100});
       if (!Number.isFinite(res?.pct) || !Number.isFinite(res.best)) throw new Error('Invalid score response');
-      state.result = res; state.status = 'saved'; persist(); showState();
+      state.result = res; state.status = 'saved'; persist(); clearNotice(); showState();
     } catch (error) {
       say(`Could not confirm the score: ${error.message}. Retry save.`, `未能确认成绩：${error.message}。请重试保存。`);
+      $('notice-text').textContent=lang==='zh'?'成绩暂未保存，请工作人员重试。':'Score not yet saved. Ask staff to retry.';
+      $('station-notice').hidden=false;
     } finally { busy = false; controls(); }
   }
   function result(win, round, score) {
@@ -119,7 +153,7 @@
     state.score = score.total; state.status = 'pending';
     state.url = safeURL(win.location.href) || state.url;
     try { persist(); } catch {
-      say('Storage failed. Keep this tab open and retry saving.', '存储失败，请保留本标签并重试保存。'); controls(); return;
+      warn('Storage failed. Keep this tab open and retry saving.', '存储失败，请保留本标签并重试保存。'); controls(); return;
     }
     flush();
   }
@@ -134,29 +168,34 @@
         if (!existing.cancelled) throw error;
       }
       state.status = 'cancelled'; persist();
-      if (manual) { frame.hidden = true; $('cancel-dialog').close(); }
+      clearNotice();
+      if (manual) { frame.hidden = true; $('cancel-dialog').close(); openPanel(); }
       showState();
     } catch (error) {
-      say(`Cancellation not confirmed: ${error.message}. Keep this round open.`, `作废尚未确认：${error.message}。请保留本轮。`);
+      warn(`Cancellation not confirmed: ${error.message}. Keep this round open.`, `作废尚未确认：${error.message}。请保留本轮。`);
     } finally { busy = false; frame.inert = state?.status === 'cancelled'; controls(); }
   }
   function next() {
     if (!(state && ['saved','cancelled'].includes(state.status) || practice && practice.status !== 'open')) return false;
-    state = null; practice = null; persist(); sessionStorage.removeItem(KEY+':practice'); $('personal-link').hidden = true;
+    state = null; practice = null; persist(); sessionStorage.removeItem(KEY+':practice'); $('personal-link').hidden = true; clearNotice(); closePanel();
     frame.inert = false; frame.hidden = false; frame.src = chooser(); showState(); return true;
   }
   window.CLOSE_POPUPS_HOST = {prepare,bind,result,
     canNext(win) { verifyChild(win); return next(); },
     async abort(win) { verifyChild(win); if (ownedPreparation && state?.localId === null) await cancel(false); ownedPreparation = false; }
   };
-  $('retry').onclick = () => { try { persist(); flush(); } catch { say('Enable session storage and retry.', '请允许会话存储后重试。'); } };
+  $('staff-toggle').onclick=openPanel;
+  $('notice-action').onclick=openPanel;
+  $('staff-close').onclick=closePanel;
+  $('station-header').addEventListener('close',()=>{$('staff-toggle').setAttribute('aria-expanded','false');});
+  $('retry').onclick = () => { try { persist(); flush(); } catch { warn('Enable session storage and retry.', '请允许会话存储后重试。'); } };
   $('next').onclick = next;
-  $('resume').onclick = () => { const active=state||practice; if (!active) return; frame.hidden = false; frame.src = active.url; };
+  $('resume').onclick = () => { const active=state||practice; if (!active) return; closePanel(); frame.hidden = false; frame.src = active.url; };
   $('void').onclick = () => $('cancel-dialog').showModal();
   $('keep-playing').onclick = () => $('cancel-dialog').close();
   $('confirm-void').onclick = () => cancel(true);
-  $('leaving').onclick = () => { if (!state && !damaged) Scamurai.leaving(); };
-  $('survey').onclick = () => { if (state?.status === 'saved') Scamurai.survey(state.participant, state.result.stationsDone); };
+  $('leaving').onclick = () => { if (!state && !damaged) {closePanel();Scamurai.leaving();} };
+  $('survey').onclick = () => { if (state?.status === 'saved') {closePanel();Scamurai.survey(state.participant, state.result.stationsDone);} };
   $('personal').onclick = async () => {
     if (!state) return;
     const p = {...state.participant};
@@ -164,10 +203,11 @@
       const href = await Scamurai.participantURL(p);
       if (state?.participant.id !== p.id) return;
       const a = document.createElement('a'); a.href = href; a.target = '_blank'; a.rel = 'noopener';
-      a.textContent = 'Open my participant page / 打开我的成绩页'; $('personal-link').replaceChildren(a); $('personal-link').hidden = false;
+      a.textContent = lang==='zh'?'打开我的成绩页':'Open my participant page'; $('personal-link').replaceChildren(a); $('personal-link').hidden = false;
     } catch { say('Could not open the participant page. Try again.', '成绩页暂不可用，请重试。'); }
   };
   frame.addEventListener('load', () => {
+    try { const u=new URL(frame.contentWindow.location.href);if(safeURL(u.href)){lang=u.searchParams.get('lang')==='zh'?'zh':'en';localise();inlineStatus();} } catch {}
     if (practice) {
       try { const url=safeURL(frame.contentWindow.location.href); if(url && new URL(url).searchParams.get('round')===practice.localId){practice.url=url;sessionStorage.setItem(KEY+':practice',JSON.stringify(practice));} } catch {}
       return;
@@ -180,7 +220,8 @@
       if (url && (!state.localId || new URL(url).searchParams.get('round') === state.localId)) { state.url = url; persist(); }
     } catch { /* Departures cannot replace the saved task route. */ }
   });
-  if (!window.Scamurai) { say('SDK unavailable. Open through the Scamurai server and reload.', '接入脚本不可用，请通过 Scamurai 服务打开并刷新。'); return; }
+  localise();
+  if (!window.Scamurai) { warn('SDK unavailable. Open through the Scamurai server and reload.', '接入脚本不可用，请通过 Scamurai 服务打开并刷新。'); return; }
   Scamurai.onDashboard(() => {
     ready = true;
     try {
@@ -193,7 +234,7 @@
       }
     } catch {
       damaged = true;
-      say('Station storage is unavailable or damaged. Staff: check open Station 2 rounds before clearing site data.', '第2站记录不可用或损坏。请工作人员先检查后台未完成轮次，再处理本地存储。');
+      warn('Station storage is unavailable or damaged. Staff: check open Station 2 rounds before clearing site data.', '第2站记录不可用或损坏。请工作人员先检查后台未完成轮次，再处理本地存储。');
       controls(); return;
     }
     frame.src = state?.url || practice?.url || chooser(); frame.hidden = state?.status === 'cancelled';

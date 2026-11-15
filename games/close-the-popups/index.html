@@ -12,26 +12,28 @@
   <script defer src="station.js"></script>
 </head>
 <body>
-  <header id="station-header">
-    <strong>close the popups <small>STATION 2</small></strong>
+  <button id="staff-toggle" aria-haspopup="dialog" aria-controls="station-header" aria-expanded="false">Staff</button>
+  <dialog id="station-header" aria-labelledby="staff-title">
+    <div class="station-panel-heading"><strong id="staff-title">Station 2 · Staff</strong><button id="staff-close" aria-label="Close staff menu">×</button></div>
     <span id="station-status" role="status" aria-live="polite">Connecting to Scamurai…</span>
     <nav aria-label="Station controls">
-      <button id="retry" hidden>Retry save / 重试保存</button>
-      <button id="resume" hidden>Resume / 返回本轮</button>
-      <button id="personal" hidden>My scores / 我的成绩</button>
-      <button id="survey" hidden>Exit survey / 离场问卷</button>
-      <button id="next" hidden>Next participant / 下一位</button>
-      <button id="void" hidden>Cancel round / 作废本轮</button>
-      <button id="leaving" hidden>Leaving / 离场问卷</button>
+      <button id="retry" hidden>Retry save</button>
+      <button id="resume" hidden>Resume task</button>
+      <button id="personal" hidden>My scores</button>
+      <button id="survey" hidden>Exit survey</button>
+      <button id="next" hidden>Next participant</button>
+      <button id="void" hidden>Cancel round</button>
+      <button id="leaving" hidden>Leaving</button>
     </nav>
-  </header>
-  <p id="personal-link" hidden></p>
+    <p id="personal-link" hidden></p>
+  </dialog>
+  <aside id="station-notice" role="alert" hidden><span id="notice-text"></span><button id="notice-action">Staff</button></aside>
   <iframe id="game" title="close the popups — 60-second challenge" allow="autoplay; fullscreen" hidden></iframe>
   <dialog id="cancel-dialog">
-    <h2>Cancel this round? / 作废本轮？</h2>
-    <p>Use for equipment or loading problems. A cancelled round receives no score.<br>用于设备或加载问题。作废轮次不计分。</p>
-    <button id="confirm-void">Cancel round / 确认作废</button>
-    <button id="keep-playing">Keep playing / 继续挑战</button>
+    <h2 id="cancel-title">Cancel this round?</h2>
+    <p id="cancel-note">Use for equipment or loading problems. A cancelled round receives no score.</p>
+    <button id="confirm-void">Cancel round</button>
+    <button id="keep-playing">Keep playing</button>
   </dialog>
   <noscript>JavaScript is needed to connect this game to the scoreboard.</noscript>
 </body>

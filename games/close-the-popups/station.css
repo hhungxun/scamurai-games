@@ -1,11 +1,18 @@
 html,body{margin:0!important;padding:0!important;width:100%;height:100%;max-width:none!important;background:#f6f6f1;color:#222;font-family:system-ui,sans-serif}
 body{display:flex;flex-direction:column;overflow:hidden}
-#station-header{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:9px 14px;background:#171616;color:#fff;border-bottom:2px solid #edcf61;flex:none;font:14px/1.4 system-ui,sans-serif}
-#station-header strong{font-size:17px}#station-header small{font-size:11px;color:#edcf61;white-space:nowrap}
-#station-status{flex:1;min-width:180px}#station-header nav{display:flex;flex-wrap:wrap;gap:6px}
-#station-header button,#cancel-dialog button{font:13px/1.3 system-ui,sans-serif;margin:0;padding:7px 10px;min-height:34px;border:1px solid #999;border-radius:3px;background:#fff;color:#171616;cursor:pointer}
-#station-header button:disabled{opacity:.5;cursor:wait}#station-header [hidden],#game[hidden],#personal-link[hidden]{display:none}
-#station-header button:focus-visible{outline:3px solid #edcf61;outline-offset:2px}
 #game{display:block;flex:1;min-height:0;width:100%;border:0;background:#f6f6f1}
-#personal-link{margin:0;padding:8px 14px;background:#fff;overflow-wrap:anywhere;font:14px system-ui}
-#cancel-dialog{max-width:480px;padding:24px;font:16px/1.5 system-ui;border:2px solid #171616}#cancel-dialog::backdrop{background:#0009}
+#staff-toggle,#station-header button,#cancel-dialog button,#station-notice button{font:13px/1.4 system-ui,sans-serif!important;text-transform:none!important;letter-spacing:normal!important;margin:0;padding:7px 10px;min-height:32px;border:1px solid #ccc;border-radius:4px;background:#fff;color:#333;cursor:pointer;box-shadow:none}
+#staff-toggle{position:fixed;bottom:8px;left:8px;z-index:20;padding:4px 9px;min-height:28px;font-size:12px!important;color:#666;background:#fffffff2}
+#station-header,#cancel-dialog{max-width:min(380px,calc(100vw - 48px));padding:20px;border:1px solid #bbb;border-radius:6px;background:#fff;color:#222;font:14px/1.6 system-ui,sans-serif;box-shadow:0 12px 50px #0003}
+#station-header:not([open]),#cancel-dialog:not([open]){display:none}
+#station-header::backdrop,#cancel-dialog::backdrop{background:#0005}
+.station-panel-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:12px}
+#station-header #staff-close{font-size:22px!important;border:0;padding:0 7px;background:transparent}
+#station-status{display:block;margin:0 0 14px;overflow-wrap:anywhere;color:#555}
+#station-header nav{display:flex;flex-wrap:wrap;gap:8px}
+#station-header button:disabled{opacity:.5;cursor:wait}
+#staff-toggle:focus-visible,#station-header button:focus-visible{outline:2px solid #555;outline-offset:3px}
+#personal-link{margin:12px 0 0;overflow-wrap:anywhere;font:14px system-ui}
+#station-notice{position:fixed;bottom:8px;right:12px;z-index:21;max-width:min(450px,calc(100vw - 110px));padding:10px 12px;border:1px solid #ba7828;border-radius:4px;background:#fff7e5;color:#613d10;font:14px/1.5 system-ui;box-shadow:0 3px 12px #0002}
+#station-notice button{margin-left:8px}
+[hidden],#game[hidden],#station-header [hidden]{display:none!important}
