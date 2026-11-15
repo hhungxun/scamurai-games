@@ -113,12 +113,9 @@
     verifyChild(win);
     if (DEMO) {
       if (damaged) throw new Error('Demo storage is unavailable. Allow site storage and reload.');
-      if (practice?.status === 'open') {
-        openPanel();
-        throw new Error('A demo task is already running. Use Resume task in Staff to continue it. / 演示任务仍在进行，请在工作人员菜单中点击返回任务。');
-      }
-      // A completed rehearsal must not keep ownership of the next local Round.
-      // Starting another demo never creates, cancels or finishes an event Round.
+      // Explicit Start in an unscored demo replaces the previous rehearsal,
+      // including one abandoned on the chooser before its timeout callback ran.
+      // Resume/reload do not call prepare and retain the original deadline.
       if (practice) {
         sessionStorage.removeItem(KEY+':practice'); practice = null; showState();
       }

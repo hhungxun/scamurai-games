@@ -88,3 +88,5 @@ On event day, open the normal entry on two or more Station 2 laptops and enter t
 Completed demos release their local binding when another task starts. Returning through the game header or refreshing a completed result no longer blocks the next task. An active demo offers Resume task and keeps its original deadline. `python3 server/test/e2e_popup_demo.py` covers these paths, no event writes, the actual ending score and returning from the themed ending.
 
 Celebration and timeout result cards use the shared in-game theme. The celebration particles use its red/charcoal palette. Skip, audio controls, reduced motion and one-use ending playback remain supported. Submitting still means the Round ended, not that every task condition was met.
+
+An explicit **Start** after drawing/selecting a new demo task replaces an unfinished rehearsal, including one left on the chooser past its deadline. Reload and Resume still retain the existing Round’s deadline. Event-play protections are unchanged. `python3 server/test/e2e_popup_draw.py` exercises the Draw route after browser Back and an expired, unfinished demo.

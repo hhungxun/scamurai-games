@@ -41,12 +41,12 @@ def run():
     start('minute3-search-official');finish();print('PASS: another demo starts after refreshing a completed result')
     game().locator('.booth-brand').click();start()
     original=game().evaluate('BROWSE_BOOTH.list()[0]')
-    game().goto(BASE+'/games/close-the-popups/browse/booth.html?lang=en')
-    game().locator('[data-booth-task="minute2-movie-animation"]').click();game().click('#booth-start')
-    page.locator('#station-header').wait_for(state='visible');page.click('#resume');game().wait_for_selector('[data-booth-submit]')
+    page.reload();game().wait_for_selector('[data-booth-submit]')
     resumed=game().evaluate('BROWSE_BOOTH.list()[0]')
     assert original['id']==resumed['id'] and original['deadline']==resumed['deadline']
-    finish();print('PASS: active demo resumes its original deadline; themed ending shows the actual score and returns to results')
+    game().goto(BASE+'/games/close-the-popups/browse/booth.html?lang=en');start()
+    fresh=game().evaluate('BROWSE_BOOTH.list()[0]');assert fresh['id']!=original['id']
+    finish();print('PASS: reload preserves a demo deadline; explicit Start replaces an unfinished rehearsal without event writes')
     assert not writes,writes
     assert not errors,errors
     browser.close()
