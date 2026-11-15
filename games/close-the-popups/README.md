@@ -53,7 +53,7 @@ The standalone Stillwall pages, scripts, styles, vendor copies and unused earlie
 
 ## Delivery status
 
-Prepared locally on `feature/gary`. No push, PR, merge, deployment or live-score test is included in this preparation. The maintainer must later add the Station 2 public entry/name and station-specific survey questions in shared configuration as part of event integration; this change stays within `games/close-the-popups/` as requested by the repo's contribution rules.
+Submitted from `feature/gary` for maintainer review. The game has not been deployed to the event site or tested against its production scoreboard. The maintainer must add the Station 2 public entry/name and station-specific survey questions in shared configuration as part of event integration; this change stays within `games/close-the-popups/` under the repo's contribution rules.
 
 ## Local verification before prototype cleanup
 
@@ -61,4 +61,6 @@ The following results describe the integration before the retired prototypes wer
 
 51 Chrome desktop checks passed against the real SDK and a local backend with temporary SQLite databases and fictional Participants: actual movie-task controls and score equality, 13 task routes/assets, actual 60-second timeout, native advertiser tab/opener isolation, history and full-page refresh recovery, lost finish/cancel responses, duplicate finish, SDK 409 recovery without cancelling another laptop's Round, old-result resume protection, preparation failure cleanup, malformed storage, practice isolation and five-Station score aggregation. No runtime exceptions or missing runtime assets were observed. All 67 JavaScript files passed syntax checks. A separate read-only code review checked the SDK/server contracts and the recovery fixes.
 
-Those checks apply to the initial integration revision. The subsequent collapsed-staff-menu adjustment is left for the user's own acceptance, as requested; no browser regression run was performed for that UI adjustment. Tests of the initial revision used 1440×960 desktop Chrome (with a 1920×1080 malformed-state check); mobile acceptance and other browsers are outside this delivery. The event's deployed server, credentials and production database were not used. These local results do not claim that the game is already published or connected to the live event.
+Those checks apply to the initial integration revision. The collapsed staff menu and styled handover card were subsequently tried locally. A targeted 12-check desktop Chrome run verified the final ID-first handover: both next-participant controls open the SDK picker, the old identity clears before selection, a selected ID survives refresh, starting reuses the selected Round, two participants receive their own actual scores, and backing out permits selecting again. No runtime exceptions were observed in that run. No full regression suite was rerun after the UI changes or prototype cleanup.
+
+Tests of the initial revision used 1440×960 desktop Chrome (with a 1920×1080 malformed-state check); the handover run also used 1440×960. Mobile acceptance and other browsers are outside this delivery. The event's deployed server, credentials and production database were not used. These local results do not claim that the game is already published or connected to the live event.
