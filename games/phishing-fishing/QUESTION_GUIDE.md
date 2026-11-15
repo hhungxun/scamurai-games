@@ -40,3 +40,9 @@ Review highlights cite exact visible sender/body/destination text. “How to ver
 ## Validation — 15 November 2026
 
 The core checks validate all 20 messages and their exact indicators, reserved-domain destinations, balanced difficulty-matched deals, score combinations and saved snapshots. The browser suite renders all 20 scenarios, checks keyboard/touch inspection and review, and covers five viewport sizes. See README.md for commands.
+
+## Case-based classification
+
+Case Notes are supplied before answering and are explicitly separate from email content. They make the legitimate/fake decision assessable from shared scenario facts. Both kinds can have genuine-looking case references and matching senders. For example, a real receipt in the shopping account does not justify a request to read/send campus mail; a known scholarship application can justify a limited upload through the verified application portal.
+
+Reviews explain the decisive evidence, the counterargument to the other label and the safe next action. “Legitimate” means the proposed action fits the provided case and known workflow; it is not a claim that sender text or HTTPS proves cryptographic email authenticity. The bank validator rejects missing case notes or reasoning fields. The browser suite verifies context is shown before classification and all 20 reviews contain the structured rationale.

@@ -84,7 +84,7 @@
           <span class="eyebrow"><span class="tiny-line"></span> THE INBOX CHALLENGE</span>
           <h1 tabindex="-1">Phishing<br><span>Fishing</span><span class="title-dot">.</span></h1>
           <p class="hero-subtitle">Can you tell what's real<br class="desktop-break"> and what's a scam?</p>
-          <p class="hero-description">Some messages deserve your trust. Others want to take advantage of it. Take a closer look and put your instincts to the test.</p>
+          <p class="hero-description">Compare each email with your independent case notes. Judge the destination, the requested action and what your records actually support.</p>
           <div class="round-facts" aria-label="Round details">
             <div>${icon("mail")}<span><strong>${questionCount} emails</strong><small>One inbox challenge</small></span></div>
             <div>${icon("clock")}<span><strong>${esc(settings.roundSeconds)} seconds</strong><small>One shared timer</small></span></div>
@@ -92,7 +92,7 @@
           </div>
           <button class="button primary start-button" id="start-game" type="button">Start Game ${icon("arrow")}</button>
           <p class="scoring-note">${questionCount} emails · +${pointsPerEmail} for each correct answer, −${pointsPerEmail} for each wrong answer, 0 for unanswered. Final score cannot go below 0. ${demo ? "Unscored demo: no event result is saved." : "Your best completed Station 1 score counts."}</p>
-          <p class="start-note">Hover or tap a link to inspect it. “How to verify” has the fictional domains.</p>
+          <p class="start-note">Case notes are given facts outside the email. A familiar sender alone proves nothing. Hover or tap links to inspect destinations.</p>
         </div>
         <div class="hero-art" aria-hidden="true">
           <div class="art-grid"></div>
@@ -151,6 +151,9 @@
     }
     return result + esc(value.slice(offset));
   }
+  function caseContext(email) {
+    return `<aside class="case-context" aria-label="Independent case notes"><div><strong>CASE NOTES · INDEPENDENT CONTEXT</strong><span>${esc(email.context.source)}</span></div><ul>${email.context.facts.map(fact=>`<li>${esc(fact)}</li>`).join('')}</ul></aside>`;
+  }
   function emailContent(email, review = false) {
     const initials = email.senderName.split(/\s+/).slice(0, 2).map(word => word[0]).join("");
     return `<div class="email-heading"><span class="inbox-tag">Inbox</span><h${review ? "4" : "1"} ${review ? "" : 'tabindex="-1"'}>${highlighted(email.subject, "subject", email, review)}</h${review ? "4" : "1"}></div>
@@ -198,11 +201,11 @@
         <div class="timer" id="timer" role="timer" aria-live="off" aria-label="Time remaining">${icon("clock")}<div><small>TIME LEFT</small><strong id="timer-value">${formatClock(Math.ceil(round.remainingMs() / 1000))}</strong></div><span class="timer-unit">shared across<br>all ${round.questions.length} emails</span></div>
       </div>
       <div class="game-workspace">${progressRail()}<section class="message-area" aria-label="Current email">
-        <article class="email-card"><div class="email-toolbar"><span>${icon("mail")} Message</span><span>SIMULATED EMAIL</span></div>${emailContent(email)}<div class="email-training-note">${icon("info")} Hover or tap links to inspect. No sites or files will open.<span class="scroll-hint" hidden>Scroll to read more ${icon("chevron")}</span></div></article>
-        <div class="decision-heading"><h2>Would you trust this email?</h2><span>Choose one to continue ${icon("arrow")}</span></div>
+        ${caseContext(email)}<article class="email-card"><div class="email-toolbar"><span>${icon("mail")} Message</span><span>SIMULATED EMAIL</span></div>${emailContent(email)}<div class="email-training-note">${icon("info")} Hover or tap links to inspect. No sites or files will open.<span class="scroll-hint" hidden>Scroll to read more ${icon("chevron")}</span></div></article>
+        <div class="decision-heading"><h2>Is this request legitimate for this case?</h2><span>Choose one to continue ${icon("arrow")}</span></div>
         <div class="answer-buttons">
-          <button class="answer-button legitimate-button" type="button" data-answer="legitimate" data-question="${esc(email.id)}">${icon("shield")}<span><strong>LEGITIMATE</strong><small>This email appears genuine.</small></span><kbd>L</kbd></button>
-          <button class="answer-button phishing-button" type="button" data-answer="phishing" data-question="${esc(email.id)}">${icon("flag")}<span><strong>PHISHING</strong><small>This email is suspicious.</small></span><kbd>P</kbd></button>
+          <button class="answer-button legitimate-button" type="button" data-answer="legitimate" data-question="${esc(email.id)}">${icon("shield")}<span><strong>LEGITIMATE</strong><small>Fits the case and a safe workflow.</small></span><kbd>L</kbd></button>
+          <button class="answer-button phishing-button" type="button" data-answer="phishing" data-question="${esc(email.id)}">${icon("flag")}<span><strong>PHISHING</strong><small>A deceptive or unsafe requested action.</small></span><kbd>P</kbd></button>
         </div>
         <p class="answer-hint">${icon("lock")} Answers are revealed at the end. <span>Keyboard: <kbd>L</kbd> or <kbd>P</kbd></span></p>
       </section></div>`;
@@ -287,7 +290,7 @@
     const { email, answer, correct } = review;
     return `<details class="review-card" ${!correct ? "open" : ""}>
       <summary><span class="review-status ${correct ? "correct" : "incorrect"}">${icon(correct ? "check" : answer ? "cross" : "clock")}</span><span class="review-summary"><span class="review-overline">EMAIL ${String(i + 1).padStart(2, "0")} <span>· ${esc(email.difficulty)}</span></span><strong>${esc(email.subject)}</strong><span class="review-answer-line">Your answer: <b>${label(answer)}</b><span class="answer-separator">·</span>Correct: <b class="classification-${email.classification}">${label(email.classification)}</b></span></span><span class="result-badge ${correct ? "correct" : "incorrect"}">${correct ? "Correct" : answer ? "Incorrect" : "Unanswered"}</span>${icon("chevron", "review-chevron")}</summary>
-      <div class="review-content"><div class="review-explanation"><span class="explanation-label">${icon(email.classification === "phishing" ? "flag" : "shield")}${email.classification === "phishing" ? "Why this is phishing" : "What supports its legitimacy"}</span><p>${esc(email.explanation)}</p><ul class="clue-list">${email.indicators.map(ind => `<li><strong>${esc(ind.text)}</strong><p>${esc(ind.explanation)}</p></li>`).join("")}</ul></div>
+      <div class="review-content"><div class="review-explanation"><span class="explanation-label">${icon(email.classification === "phishing" ? "flag" : "shield")}${email.classification === "phishing" ? "Why this request is phishing" : "Why this request is legitimate in this case"}</span><p>${esc(email.explanation)}</p>${caseContext(email)}<dl class="decision-reasoning"><dt>Decisive evidence</dt><dd>${esc(email.reasoning.evidence)}</dd><dt>Why not ${email.classification === 'phishing' ? 'Legitimate' : 'Phishing'}?</dt><dd>${esc(email.reasoning.contrast)}</dd><dt>Safe next step</dt><dd>${esc(email.reasoning.nextStep)}</dd></dl><ul class="clue-list">${email.indicators.map(ind => `<li><strong>${esc(ind.text)}</strong><p>${esc(ind.explanation)}</p></li>`).join("")}</ul></div>
         <article class="review-email ${email.classification === "phishing" ? "review-risk" : "review-trust"}" aria-label="Email ${i + 1} with highlighted clues">${emailContent(email, true)}</article>
       </div></details>`;
   }

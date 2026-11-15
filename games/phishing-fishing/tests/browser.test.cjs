@@ -99,6 +99,8 @@ function observe(page) {
     for (let i = 0; i < 20; i++) {
       assert.match(await page.locator(".game-topbar p").innerText(), new RegExp(`Email ${i + 1} of 20`));
       assert.equal(await page.locator("mark,.review-card").count(), 0);
+      assert.equal(await page.locator(".case-context").count(), 1);
+      assert.equal(await page.locator(".case-context li").count(), 2);
       assert.equal(await page.locator(".email-card a,.email-card input,.email-card form").count(), 0);
       const id = await page.locator("[data-question]").first().getAttribute("data-question");
       const block = bank.find(e => e.id === id).body.find(b => b.type === "link");
@@ -120,6 +122,8 @@ function observe(page) {
     assert.equal(new Set(ids).size, 20);
     assert.equal(await page.locator(".review-card").count(), 20);
     assert.match(await page.locator(".score-circle strong").innerText(), /^100/);
+    assert.equal(await page.locator(".decision-reasoning dt").count(), 60);
+    assert.equal(await page.locator(".review-explanation .case-context").count(), 20);
     assert.equal(await page.locator(".score-circle").evaluate(e => e.style.getPropertyValue("--score-angle")), "360deg");
     await page.locator(".review-card summary").first().click({force: true});
     assert.ok(await page.locator("mark").count() > 0);

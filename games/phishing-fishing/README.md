@@ -60,3 +60,9 @@ Set `PLAYWRIGHT_PATH` and `BROWSER_PATH` when using an existing installation. Sc
 ## Message design
 
 The 12 phishing messages use plausible campus, bank, parcel and shopping contexts. The former joke scenarios now teach locker QR fraud, an attendance-report executable, wallet recovery-phrase theft and callback refund abuse. Familiar senders and protective-sounding advice occur in fake messages too, so decisions depend on destinations, permissions and the requested action. All eight legitimate counterparts remain. The in-game UI uses the same shared theme as the popup and QR games.
+
+## Evidence for each verdict
+
+Every message has visible **Case Notes** outside the simulated email. These are given facts for the fictional scenario, not claims by the sender or real information about the Participant. They provide independently checked context such as an existing application, a recorded deposit or the usual account workflow. Participants classify the requested action against that context and the actual destination. A matching sender or URL alone does not prove authenticity.
+
+Each review now separates the conclusion, independent context, decisive evidence, why the other classification is less appropriate, and a safe next step. Legitimate cases require both corroborated context and a proportionate action within the established workflow. Phishing cases identify a concrete mismatch, deceptive destination, unjustified secret, payment, permission or software request. All explanatory indicators still quote exact visible message text. Scoring and the 60-second deadline are unchanged.

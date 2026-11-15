@@ -20,6 +20,8 @@
     if (settings.roundQuestions === 10 && ["phishing","legitimate"].some(kind => bank.filter(e => e.classification === kind).length < 5))
       throw new Error("A scored deal needs five messages of each classification.");
     for (const email of bank) {
+      if (!email.context || typeof email.context.source !== 'string' || !email.context.source.trim() || !Array.isArray(email.context.facts) || email.context.facts.length < 1 || email.context.facts.some(fact=>typeof fact !== 'string' || !fact.trim())) throw new Error("Every email needs independent case notes.");
+      if (!email.reasoning || ['evidence','contrast','nextStep'].some(key=>typeof email.reasoning[key] !== 'string' || !email.reasoning[key].trim())) throw new Error("Every classification needs evidence, a counterpoint and a safe next step.");
       if (!email.id || !["phishing", "legitimate"].includes(email.classification)) throw new Error("Every email needs an ID and valid classification.");
       if (!email.senderName || !email.senderEmail || !email.subject || !email.body?.length || !email.explanation || !email.indicators?.length) throw new Error("An email is missing required content.");
       if (!["Easy", "Medium", "Hard"].includes(email.difficulty)) throw new Error("Unknown email difficulty.");

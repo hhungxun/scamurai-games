@@ -84,3 +84,7 @@ This update preserves the Station 2 participant, SDK, scoring and handover integ
 Open [`?demo=1&lang=en`](https://scamurai.physicsxmum.my/games/close-the-popups/?demo=1&lang=en) for a full demo with simulated popups. No PIN or Participant selection is required. Choose any task, read the brief, then start. The visible DEMO banner stays above the game; the displayed score is practice only. **Return to event play** switches to the separate scored entry.
 
 On event day, open the normal entry on two or more Station 2 laptops and enter the same Station 2 PIN once per browser. Each Participant selects their registered name/ID on the laptop they use. Different Participants can play concurrently; one Participant cannot start two active Station 2 Rounds. Each laptop keeps its own binding, task, deadline and pending score. No per-laptop PIN or extra Station number is needed.
+
+Completed demos release their local binding when another task starts. Returning through the game header or refreshing a completed result no longer blocks the next task. An active demo offers Resume task and keeps its original deadline. `python3 server/test/e2e_popup_demo.py` covers these paths, no event writes, the actual ending score and returning from the themed ending.
+
+Celebration and timeout result cards use the shared in-game theme. The celebration particles use its red/charcoal palette. Skip, audio controls, reduced motion and one-use ending playback remain supported. Submitting still means the Round ended, not that every task condition was met.

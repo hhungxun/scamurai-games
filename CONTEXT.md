@@ -72,6 +72,9 @@ An unscored rehearsal separate from event Rounds and Participant records. Its di
 **Email Deal**:
 The ten messages assigned to a Station 1 Round: five Phishing and five Legitimate, with the same difficulty mix for both classifications, presented in a random order.
 
+**Case Notes**:
+Fictional, independently checked facts supplied before an Email Classification, separate from the message’s own claims. They describe the scenario’s known registrations, purchases or established account workflow.
+
 **Email Classification**:
 A Participant's Legitimate or Phishing call on one message in their Email Deal.
 

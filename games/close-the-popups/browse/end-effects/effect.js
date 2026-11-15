@@ -15,7 +15,8 @@
   let soundGeneration = 0;
   let W=0,H=0,scale=1,raf=0,run=null,lastMode='nuke',voices=[];
   let bits=[],embers=[],cloud=[],rockets=[],sparks=[],confetti=[],nextRocket=0,lastTime=0;
-  const colors=['#dcff78','#ffbc66','#ff7198','#89cfff','#e6c8ff','#fff2b4'];
+  const theme=getComputedStyle(document.documentElement);
+  const colors=['--game-red','--game-ink','--game-red-dark','--game-muted'].map(name=>theme.getPropertyValue(name).trim());
   function resize(){
     W=innerWidth;H=innerHeight;scale=Math.min(W/1400,H/860);
     const dpr=Math.min(devicePixelRatio||1,1.6);
@@ -280,7 +281,7 @@
       nextRocket=t+rand(.28,.5);
     }
     if(run.lastRain<t-.4&&t<5.7){addConfetti(80);run.lastRain=t;}
-    ctx.globalCompositeOperation='screen';
+    ctx.globalCompositeOperation='source-over';
     for(let i=rockets.length-1;i>=0;i--){
       const r=rockets[i],progress=clamp((t-r.start)/r.travel);
       const oldX=r.x,oldY=r.y;r.x=r.ox+(r.tx-r.ox)*progress;r.y=H+20+(r.ty-H-20)*(1-Math.pow(1-progress,1.6));
@@ -304,7 +305,7 @@
       ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.a);ctx.scale(Math.cos(p.age*7+p.phase),1);
       ctx.globalAlpha=clamp((p.life-p.age)/1.1)*.9;ctx.fillStyle=p.color;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore();
     }
-    caption.textContent='YOU BEAT THE DISTRACTIONS';caption.style.opacity=t<1.2?ease(t*2)*(1-clamp((t-.7)/.5)):0;
+    caption.textContent=en?'ROUND SUBMITTED':'本轮已交卷';caption.style.opacity=t<1.2?ease(t*2)*(1-clamp((t-.7)/.5)):0;
     if(t>1.35)showResult('win');
   }
   function frame(now){

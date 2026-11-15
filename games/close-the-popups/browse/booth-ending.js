@@ -16,7 +16,7 @@
       }catch{return;}
       const en=round.lang==='en',previous=document.activeElement;
       const dialog=document.createElement('dialog');dialog.setAttribute('aria-label',en?'Round ending':'本轮结束动画');
-      dialog.style.cssText='position:fixed;inset:0;width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;padding:0;border:0;background:#10120e;color:white;overflow:hidden';
+      dialog.style.cssText='position:fixed;inset:0;width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;padding:0;border:0;background:var(--game-bg);color:var(--game-ink);overflow:hidden';
       const frame=document.createElement('iframe');frame.title=en?'Round ending animation':'本轮结束动画';
       frame.allow='autoplay';frame.style.cssText='width:100%;height:100%;border:0;display:block';
       const url=new URL(base);url.searchParams.set('mode',round.reason==='timeout'?'nuke':'win');
@@ -25,7 +25,7 @@
       try{if(JSON.parse(sessionStorage.getItem('br-booth-audio-v1'))?.enabled===false)url.searchParams.set('sound','0');}catch{}
       frame.src=url.href;
       const skip=document.createElement('button');skip.type='button';skip.textContent=en?'Skip animation · View results →':'跳过动画 · 查看成绩 →';
-      skip.style.cssText='position:absolute;top:24px;right:28px;z-index:100;padding:12px 18px;border:1px solid #8b977b;background:#171b16e8;color:#f3f0df;font:13px sans-serif;cursor:pointer';
+      skip.className='booth-ending-skip';
       let timer=0;
       const message=e=>{if(e.origin===location.origin&&e.source===frame.contentWindow&&e.data?.type==='close-popups:ending-done')close();};
       const close=()=>{

@@ -26,13 +26,27 @@ def run():
      except PlaywrightTimeout:raise AssertionError('Start did not launch task: '+f.locator('#booth-start-note').inner_text())
     def finish():
      f=game();f.locator('[data-booth-submit]').click(force=True);f.wait_for_selector('.booth-score')
-     skip=f.get_by_role('button',name='Skip animation')
-     if skip.count():skip.click()
+     ending=f.locator('dialog[aria-label="Round ending"] iframe').element_handle().content_frame()
+     ending.wait_for_selector('#result.visible')
+     assert ending.evaluate('getComputedStyle(document.body).backgroundColor')=='rgb(243, 239, 229)'
+     assert ending.locator('#score-number').inner_text()==str(f.evaluate('BROWSE_BOOTH_SCORE_LAST.total'))
+     ending.get_by_role('button',name='View results').click()
+     f.wait_for_selector('dialog[aria-label="Round ending"]',state='detached')
     start();finish();print('PASS: first demo task starts and finishes')
     assert page.evaluate("JSON.parse(sessionStorage.getItem('close-popups:demo:v1:practice')).status")=='ended'
     # A returning visitor can use the game brand to choose another task.
     game().locator('.booth-brand').click();game().wait_for_selector('#booth-random')
     start();finish();print('PASS: another task starts after returning through the game header')
+    page.reload();game().wait_for_selector('.booth-score');game().locator('.booth-brand').click()
+    start('minute3-search-official');finish();print('PASS: another demo starts after refreshing a completed result')
+    game().locator('.booth-brand').click();start()
+    original=game().evaluate('BROWSE_BOOTH.list()[0]')
+    game().goto(BASE+'/games/close-the-popups/browse/booth.html?lang=en')
+    game().locator('[data-booth-task="minute2-movie-animation"]').click();game().click('#booth-start')
+    page.locator('#station-header').wait_for(state='visible');page.click('#resume');game().wait_for_selector('[data-booth-submit]')
+    resumed=game().evaluate('BROWSE_BOOTH.list()[0]')
+    assert original['id']==resumed['id'] and original['deadline']==resumed['deadline']
+    finish();print('PASS: active demo resumes its original deadline; themed ending shows the actual score and returns to results')
     assert not writes,writes
     assert not errors,errors
     browser.close()

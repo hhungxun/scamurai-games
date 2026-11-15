@@ -41,3 +41,9 @@ time or alter scores. The generated voice is retained only in the local archive.
 The standalone source and Station 2 integration receive separate updates on 15 November 2026. Station-specific entry, SDK, participant and handover code are retained only in the Station 2 copy. These changes are prepared as separate source and Station 2 commits. No automated tests, regression or live checks
 were run for this change, as requested. Earlier verification reports do not
 cover ending1 or ending3.
+
+## Shared theme and current validation — 15 November 2026
+
+The player now imports the common game theme plus `ending-theme.css`. Paper result cards, Anton/ Lexend type, red score/action controls and red/charcoal celebration particles match the live game UI. The Submit caption says Round submitted without claiming task completion. Existing audio, skip, reduced motion and one-use playback remain.
+
+The original no-tests note above describes the earlier handoff. Current local checks cover regular-motion presentation and actual score, reduced-motion display and View results, repeat demo starts, refresh recovery, no event writes, and the real 60-second timeout/skip/no-replay path. Run `python3 server/test/e2e_popup_demo.py` and `python3 server/test/e2e_popup.py` from the repository root with Python Playwright/Chromium.

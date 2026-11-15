@@ -41,3 +41,9 @@ All three games load `games/shared/theme.css`, the source for paper/ink/red/gree
 The website snapshots inside the Sim Browser and the popup game’s task websites retain the presentation that forms their evidence. They receive the common game controls around them; Real and Fake cards receive identical browser/verdict styling. Personal-score links use dark text on paper and light text only in the dark persistent footer. Printed QR boards retain their print styling.
 
 Validation on 15 November checked common computed background colours, inspected screenshots of welcome/play screens and the QR scanner/dashboard, and covered phone widths down to 360px and booth laptops at 1366×768. The phishing, multi-laptop, full popup timeout and QR phone/camera suites passed with the shared theme.
+
+## Endings and case evidence
+
+The popup ending player imports the shared theme and applies `ending-theme.css` to its result card, typography, actual-score display and audio controls. Its confetti/fireworks use red/charcoal colours and the parent Skip button uses the same paper controls. Timeout imagery retains its timed visual sequence; the ending's score and navigation do not control score submission. Regular and reduced-motion paths were checked.
+
+The email game displays neutral Case Notes outside the email before classification. The result review lays out conclusion, independent facts, decisive evidence, counterargument and safe next step. Compact message headers leave room for these notes at booth-laptop sizes.

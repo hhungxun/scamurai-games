@@ -1,0 +1,15 @@
+/* Celebration and timeout results use the same game theme as the live HUD. */
+:root{color-scheme:light;--lime:var(--game-red);--ink:var(--game-ink)}
+body,body.win{background:var(--game-bg);color:var(--game-ink);font-family:var(--game-font)}
+#fx{opacity:.8}#caption{color:var(--game-red);font:650 11px/1.5 var(--game-font);letter-spacing:.16em;top:15%}
+#result{top:48%;width:min(620px,calc(100vw - 40px));padding:32px 28px;background:var(--game-paper);border:1px solid var(--game-line);border-top:4px solid var(--game-red);border-radius:3px;box-shadow:var(--game-shadow)}
+#result .result-kicker,body.win #result .result-kicker{color:var(--game-muted);font:650 10px var(--game-font);letter-spacing:.14em;margin:0 0 16px}
+#result h2,body.win #result h2{font:400 clamp(42px,6vw,76px)/1.05 var(--game-display);color:var(--game-ink);letter-spacing:0;text-shadow:none;margin:12px 0}
+#result-copy{font:400 14px/1.7 var(--game-font);letter-spacing:0;color:var(--game-muted)}
+.score{margin-top:24px}.score span{font:400 80px/1 var(--game-display);color:var(--game-red);letter-spacing:0}.score small{font:500 16px var(--game-font);color:var(--game-muted)}
+#again{font:600 14px var(--game-font);background:var(--game-red);color:white;border:1px solid var(--game-red);border-radius:3px;box-shadow:3px 3px 0 var(--game-ink);padding:12px 24px;margin-top:26px;min-height:46px}
+#again:hover{background:var(--game-red-dark)}
+#sound-controls{color:var(--game-muted);font:400 12px var(--game-font);bottom:18px;left:20px}
+#sound-controls button{font:600 12px var(--game-font);background:var(--game-paper);color:var(--game-ink);border:1px solid var(--game-line);border-radius:3px;padding:8px 12px}input{accent-color:var(--game-red)}
+@media(max-width:600px){#result{padding:26px 18px}#result h2{font-size:42px}.score span{font-size:68px}#sound-controls{bottom:12px;left:14px;font-size:11px}}
+@media(prefers-reduced-motion:reduce){#fx{display:none}}

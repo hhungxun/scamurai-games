@@ -1,6 +1,6 @@
-/* Simulated training bank: 12 phishing and 8 legitimate messages.
- * Reserved .example addresses and inert attachments only. IDs stay stable for Round recovery.
- * Classifications, explanations and indicators appear only after the Round.
+/* Fictional training messages and independent case notes.
+ * Case notes are given facts outside the email, never claims made by its sender.
+ * Reserved .example addresses and inert attachments only; stable IDs preserve recovery.
  */
 (function(root){
   "use strict";
@@ -42,7 +42,7 @@
         "text": "Digital Banking Operations\nMeridian Bank"
       }
     ],
-    "explanation": "Phishing: a protective-looking device review collects a banking password and an authorisation code on a lookalike domain. A code can authorise access or a transaction; the email’s explanation does not change its purpose. Open the bank app independently and review registered devices there.",
+    "explanation": "Phishing: it hijacks a plausible device-review event to collect authentication factors at an unrelated destination.",
     "indicators": [
       {
         "target": "sender",
@@ -59,7 +59,19 @@
         "text": "The code confirms removal",
         "explanation": "A claim that a code cancels an action is a common way to disguise authorisation theft."
       }
-    ]
+    ],
+    "context": {
+      "source": "Your bank app, opened independently",
+      "facts": [
+        "A device review is pending in your app.",
+        "The bank’s device controls are inside its usual app."
+      ]
+    },
+    "reasoning": {
+      "evidence": "A real device review does not justify sending a banking password and authorisation code to meridian-bank-secure.example. That destination is separate from meridian-bank.example.",
+      "contrast": "The case reference and genuine device alert make the story plausible, but do not authorise the emailed site to collect authentication secrets. The deadline is not the reason for the verdict.",
+      "nextStep": "Open the bank app yourself and remove or report the device there; do not enter credentials through this email."
+    }
   },
   {
     "id": "campus-storage",
@@ -98,7 +110,7 @@
         "text": "IT Service Desk · Student Systems"
       }
     ],
-    "explanation": "Phishing: the sender looks like a university subdomain, but the inspected destination is controlled under account-review.example. The migration explanation tries to make the missing independent record seem normal. Check storage through the usual student portal or confirm the ticket with IT.",
+    "explanation": "Phishing: the genuine-looking quota detail masks a campus-credential request at an unrelated host.",
     "indicators": [
       {
         "target": "body",
@@ -115,7 +127,19 @@
         "text": "may not have appeared there yet",
         "explanation": "This pretext discourages treating a missing portal record as a reason to verify independently."
       }
-    ]
+    ],
+    "context": {
+      "source": "Your student portal, opened from its saved bookmark",
+      "facts": [
+        "Your mailbox usage is 9.8 GB.",
+        "Storage reports are under IT Services → Mailbox."
+      ]
+    },
+    "reasoning": {
+      "evidence": "The inspected host ends in account-review.example, not xmum.example. It asks for a campus sign-in despite being outside the university service.",
+      "contrast": "The correct storage figure and university-looking sender are not sufficient: a phisher can reuse known details or spoof a sender. A routine tone does not validate the destination.",
+      "nextStep": "Check the report under IT Services in the bookmarked portal or confirm the ticket at the IT counter."
+    }
   },
   {
     "id": "parcel-fee",
@@ -154,7 +178,7 @@
         "text": "Delivery Exceptions Team\nParcelPath"
       }
     ],
-    "explanation": "Phishing: a modest, believable delivery fee routes card entry to delivery-case.example, not parcelpath.example. A tracking reference or a small charge does not establish authenticity. Check the parcel and any fee in the courier app or through a known support channel.",
+    "explanation": "Phishing: it turns a plausible address problem into payment-card collection outside the courier service.",
     "indicators": [
       {
         "target": "sender",
@@ -171,7 +195,19 @@
         "text": "Enter your card details",
         "explanation": "This is a payment-data request at an unverified destination; the low amount does not make it safe."
       }
-    ]
+    ],
+    "context": {
+      "source": "Your courier app and original order",
+      "facts": [
+        "Parcel PP-MY-804219 is expected.",
+        "Your unit number needs checking in the courier app."
+      ]
+    },
+    "reasoning": {
+      "evidence": "The link belongs to delivery-case.example, not parcelpath.example, yet asks for card details. A genuine parcel problem does not verify this payment destination.",
+      "contrast": "Neither an expected parcel nor a small RM 2.40 fee makes an emailed card form trustworthy. The problem could be real while the payment instruction is fraudulent.",
+      "nextStep": "Correct the address in the courier app and check whether any fee is actually due before paying."
+    }
   },
   {
     "id": "shopping-document",
@@ -205,7 +241,7 @@
         "text": "Order SL-583102\nShopLane Purchase Documents"
       }
     ],
-    "explanation": "Phishing: the familiar sender and “password is not shared” reassurance mask a consent-phishing request. A receipt viewer does not need permission to read and send mail. The attachment is an HTML document disguised with “.pdf” in its name. Decline access and retrieve the receipt through the shopping app.",
+    "explanation": "Phishing: the purchase is plausible, but the requested mailbox access is unrelated and excessive.",
     "indicators": [
       {
         "target": "body",
@@ -222,7 +258,19 @@
         "text": "your password is not shared",
         "explanation": "An attacker can abuse granted permissions without learning your password."
       }
-    ]
+    ],
+    "context": {
+      "source": "Your ShopLane app, opened independently",
+      "facts": [
+        "Order SL-583102 for RM 89.90 exists.",
+        "Its receipt is already in My Purchases."
+      ]
+    },
+    "reasoning": {
+      "evidence": "The attachment ends in .html and asks for permission to read and send campus mail. Neither permission is needed to display this shopping receipt.",
+      "contrast": "The matching order, amount and sender do not make excessive mailbox permissions legitimate. An attacker can misuse granted access without learning a password.",
+      "nextStep": "Decline the permission request and use the receipt already available in My Purchases."
+    }
   },
   {
     "id": "tax-rebate",
@@ -257,7 +305,7 @@
         "text": "MyTax Document Notifications\nReference EF-2026-184207"
       }
     ],
-    "explanation": "Phishing: the visible MyTax address and familiar sender disguise a destination under refund-desk.example. A refund advice does not justify giving an unfamiliar partner your bank login. Open the tax portal independently and confirm the advice there; a “no debit” reassurance is not verification.",
+    "explanation": "Phishing: a plausible refund notice conceals a different host and an inappropriate request for bank credentials.",
     "indicators": [
       {
         "target": "body",
@@ -274,7 +322,19 @@
         "text": "bank login",
         "explanation": "A refund-notification workflow asking for your bank login is a sensitive, inappropriate request."
       }
-    ]
+    ],
+    "context": {
+      "source": "Your saved MyTax portal",
+      "facts": [
+        "Refund advice EF-2026-184207 exists.",
+        "The advice lists RM 486.20."
+      ]
+    },
+    "reasoning": {
+      "evidence": "The visible MyTax link actually opens refund-desk.example. The page is presented as a partner but asks for a bank login.",
+      "contrast": "A correct refund reference and amount are not enough to trust a new destination. Receiving a refund does not require disclosing bank credentials to that site.",
+      "nextStep": "Open the saved tax portal yourself and review the advice there; do not supply a bank login through the emailed link."
+    }
   },
   {
     "id": "security-reply",
@@ -308,7 +368,7 @@
         "text": "Campus ID Account Protection"
       }
     ],
-    "explanation": "Phishing: the request to reply with a verification code is the decisive clue, even though the sender matches the identity service and says not to send a password. A code can approve an attacker’s action. Check account recovery settings through the usual portal and contact IT independently.",
+    "explanation": "Phishing: it uses a real-looking security problem to solicit an authentication code by reply.",
     "indicators": [
       {
         "target": "body",
@@ -325,7 +385,19 @@
         "text": "confirm the hold",
         "explanation": "The message relabels an authorisation code as a protective cancellation step."
       }
-    ]
+    ],
+    "context": {
+      "source": "Your Campus ID security page",
+      "facts": [
+        "An unfamiliar recovery-number change is pending.",
+        "The portal has a Cancel change control."
+      ]
+    },
+    "reasoning": {
+      "evidence": "The email asks you to reply with a verification code. Such a code can approve an account action; it is not a safe way for an analyst to place a hold.",
+      "contrast": "A real pending change and a familiar sender do not justify sharing the code. “Do not send your password” does not make the separate code request safe.",
+      "nextStep": "Cancel or report the change in the independently opened identity portal and contact IT through a known channel."
+    }
   },
   {
     "id": "library-hours",
@@ -344,7 +416,7 @@
       },
       {
         "type": "paragraph",
-        "text": "Study-room bookings for 2–8 November close at 5:00 pm this Friday. Rooms seat four to six students and can be reserved for up to two hours."
+        "text": "Next week’s study-room bookings close at 5:00 pm this Friday. Rooms seat four to six students and can be reserved for up to two hours."
       },
       {
         "type": "detail",
@@ -355,11 +427,11 @@
         "text": "Make or change a booking in the library section of your usual student portal. Questions can be checked at the library service counter during staffed hours.\nXMUM Library Services"
       }
     ],
-    "explanation": "Legitimate in this simulation: the deadline relates to a specific booking service, the free-room details are consistent, and bookings use the established student portal. A deadline alone is not phishing. Confirm availability in your usual portal or at the library counter; the sender address by itself cannot prove authenticity.",
+    "explanation": "Legitimate for this case: the notice is independently recorded and the proposed action stays within the established booking workflow.",
     "indicators": [
       {
         "target": "body",
-        "text": "bookings for 2–8 November close at 5:00 pm this Friday",
+        "text": "bookings close at 5:00 pm this Friday",
         "explanation": "This is a practical booking cutoff, not a demand to reveal secrets. Real notices can have deadlines."
       },
       {
@@ -372,7 +444,19 @@
         "text": "library service counter",
         "explanation": "There is a known physical place to confirm the details."
       }
-    ]
+    ],
+    "context": {
+      "source": "Your student portal’s library noticeboard",
+      "facts": [
+        "The study-room booking notice is published there.",
+        "Bookings are free under Library → Study Rooms."
+      ]
+    },
+    "reasoning": {
+      "evidence": "The email matches the independently checked notice and asks you to use the existing library booking service. It requests no new payment, credentials by reply or additional software.",
+      "contrast": "A deadline is normal for room bookings. Nothing in this request diverts you away from the known service; the sender address alone is not what makes it legitimate.",
+      "nextStep": "Open the usual student portal and make the booking under Library → Study Rooms."
+    }
   },
   {
     "id": "bank-notification",
@@ -402,7 +486,7 @@
         "text": "Please open the Meridian Bank app yourself and select Cards → Activity to confirm or report the transaction promptly. If you cannot use the app, call the number printed on the back of your card.\nMeridian Bank Card Services"
       }
     ],
-    "explanation": "Legitimate in this simulation: the reference, partial card number and app-based review fit the bank's notification pattern. The amount and temporary restriction are reasons to check, not automatic proof of phishing. Use the app or the number on your physical card to verify; a plausible sender or transaction detail could still be forged.",
+    "explanation": "Legitimate for this case: the alert is corroborated by your app and directs you to its existing transaction-review process.",
     "indicators": [
       {
         "target": "body",
@@ -419,7 +503,19 @@
         "text": "card ending 4821",
         "explanation": "Only a limited identifier is shown. It supports context but does not prove authenticity."
       }
-    ]
+    ],
+    "context": {
+      "source": "Your bank app, opened independently",
+      "facts": [
+        "Card 4821 shows TechSquare Online: RM 840.00.",
+        "A review is pending in Cards → Activity."
+      ]
+    },
+    "reasoning": {
+      "evidence": "The merchant, amount and pending review agree with your own bank app. The email directs you to open that app yourself or use the number on your card.",
+      "contrast": "An alarming transaction amount is not itself phishing. This message does not collect a code, password or card details and supplies no replacement support number or login link.",
+      "nextStep": "Review or dispute the transaction within Cards → Activity in the independently opened app."
+    }
   },
   {
     "id": "parcel-update",
@@ -454,7 +550,7 @@
         "text": "Bring your student card and quote the tracking reference at the counter. The collection details are also in the ParcelPath app.\nParcelPath Delivery Team"
       }
     ],
-    "explanation": "Legitimate in this simulation: the tracking reference is consistent, the inspected destination uses parcelpath.example, and collection is at the named campus counter. A paid fee and collection deadline are normal details. Check the reference in your courier app and original order; these details and a matching domain are supporting clues, not a guarantee.",
+    "explanation": "Legitimate for this case: the collection details are corroborated and there is no new payment or secret to disclose.",
     "indicators": [
       {
         "target": "body",
@@ -471,7 +567,19 @@
         "text": "also in the ParcelPath app",
         "explanation": "You can check the claim independently before collecting the parcel."
       }
-    ]
+    ],
+    "context": {
+      "source": "Your BookNest order and courier app",
+      "facts": [
+        "BN-22814 maps to parcel PP-MY-612483.",
+        "The app confirms campus collection; RM 4.50 delivery is paid."
+      ]
+    },
+    "reasoning": {
+      "evidence": "The tracking reference, collection point and already-paid fee agree with your independent records. The link is under parcelpath.example and the only collection requirement is a student card.",
+      "contrast": "A collection deadline and mention of a fee are not suspicious by themselves. This request matches the order and does not ask for a new off-site payment.",
+      "nextStep": "Confirm the collection instructions in the courier app, then bring your student card to the staffed counter."
+    }
   },
   {
     "id": "shopping-receipt",
@@ -505,7 +613,7 @@
         "text": "A copy of this receipt is stored in My Purchases in your ShopLane account. For address changes or payment queries, use the order's Help option in the app.\nShopLane Orders Team"
       }
     ],
-    "explanation": "Legitimate in this simulation: item and delivery costs add up, the receipt is also in My Purchases, and the request is limited to checking your order there. Neither money, an attachment nor a packing deadline automatically makes an email phishing. Open the app independently to confirm the order; do not assume a PDF or matching sender is safe on its own.",
+    "explanation": "Legitimate for this case: it matches a recorded purchase and keeps any account change inside the known app.",
     "indicators": [
       {
         "target": "body",
@@ -522,7 +630,19 @@
         "text": "order's Help option in the app",
         "explanation": "Queries stay inside the shopping account's established workflow."
       }
-    ]
+    ],
+    "context": {
+      "source": "Your ShopLane My Purchases record",
+      "facts": [
+        "SL-582714 is your notebook order.",
+        "RM 18.00 + RM 4.50 = RM 22.50, paid on card 4821."
+      ]
+    },
+    "reasoning": {
+      "evidence": "The order, itemised total and card suffix agree with your independently opened account. The email asks for address changes through that account’s Help workflow.",
+      "contrast": "A PDF attachment and correct arithmetic do not prove safety. Here, the matching account record and proportionate in-app action support the verdict; you do not need to open the attachment.",
+      "nextStep": "Use My Purchases to view the receipt or change the address; leave the attachment unopened if uncertain."
+    }
   },
   {
     "id": "event-registration",
@@ -545,7 +665,7 @@
       },
       {
         "type": "detail",
-        "text": "Workshop: 14 November, 10:00 am–12:00 pm\nVenue: Student Activity Centre, Room 2\nDeposit: returned through the portal after attendance"
+        "text": "Workshop: Saturday, 10:00 am–12:00 pm\nVenue: Student Activity Centre, Room 2\nDeposit: returned through the portal after attendance"
       },
       {
         "type": "link",
@@ -557,7 +677,7 @@
         "text": "You can also open your usual student portal and choose Events → My Registrations. The same reference and deposit appear there. Questions can be checked at the Student Activities counter.\nXMUM Student Activities"
       }
     ],
-    "explanation": "Legitimate in this simulation: a named event, consistent reference and refundable deposit are recorded in the established student portal. The link is under xmum.example, and you can verify the payment independently there. A deadline or deposit is not enough to call it phishing. If you did not register, contact Student Activities through a known channel before paying.",
+    "explanation": "Legitimate for this case: the fee is tied to your verified registration and the request uses the established event-payment workflow.",
     "indicators": [
       {
         "target": "body",
@@ -574,7 +694,19 @@
         "text": "returned through the portal after attendance",
         "explanation": "The fee has a specific event purpose and refund process; confirm both before paying."
       }
-    ]
+    ],
+    "context": {
+      "source": "Your student portal’s Events record",
+      "facts": [
+        "You registered for First Aid: FA-1124.",
+        "The portal lists a refundable RM 10 seat deposit."
+      ]
+    },
+    "reasoning": {
+      "evidence": "The registration reference and deposit were independently confirmed in your Events record. Payment is through that existing registration, not an unrelated payee or personal account.",
+      "contrast": "A fee and a deadline can be legitimate. The distinguishing evidence is your prior registration and the same fee in the trusted workflow, not simply the university-looking URL.",
+      "nextStep": "Open Events → My Registrations yourself and confirm the deposit and refund terms there before paying."
+    }
   },
   {
     "id": "security-change",
@@ -609,7 +741,7 @@
         "text": "Alternatively, open your usual student portal and go to Account → Security → Recovery. Review the number inside your account; the IT service counter can confirm the maintenance reference.\nCampus ID Service Team"
       }
     ],
-    "explanation": "Legitimate in this simulation: the notice asks for a limited review inside the established identity service, with a matching destination and a reference the campus counter can confirm. A sign-in request or deadline is not automatically phishing. Open the portal independently and check the notice first; a matching domain is not proof, and codes or passwords should never be sent by reply.",
+    "explanation": "Legitimate for this case: a published maintenance notice supports a limited review within your usual account settings.",
     "indicators": [
       {
         "target": "body",
@@ -626,7 +758,19 @@
         "text": "IT service counter can confirm the maintenance reference",
         "explanation": "A known campus contact can independently verify the maintenance claim."
       }
-    ]
+    ],
+    "context": {
+      "source": "Your student portal and published IT notice",
+      "facts": [
+        "Maintenance CID-M-1023 is published by IT.",
+        "Recovery settings are under Account → Security."
+      ]
+    },
+    "reasoning": {
+      "evidence": "The maintenance reference is corroborated, and the request is limited to reviewing your own recovery setting inside the existing identity service.",
+      "contrast": "A security deadline or a sign-in can also appear in real maintenance. Here there is no request to send a code or password to another person and no unrelated destination.",
+      "nextStep": "Use your normal portal bookmark, review the recovery number and ask the IT counter about anything unexpected."
+    }
   },
   {
     "id": "internship-reservation",
@@ -660,7 +804,7 @@
         "text": "Career Placement Team"
       }
     ],
-    "explanation": "Phishing: the real-looking application reference and matching sender conceal an advance payment to a personal account. A promised refund and an explanation for a missing portal record do not validate a placement. Confirm the employer and payment request through the career office using an independently known contact.",
+    "explanation": "Phishing: it contradicts the recorded application stage and adds an unsupported personal-account payment.",
     "indicators": [
       {
         "target": "body",
@@ -677,7 +821,19 @@
         "text": "before opening a duplicate enquiry",
         "explanation": "The message subtly delays independent verification rather than openly forbidding it."
       }
-    ]
+    ],
+    "context": {
+      "source": "Your student portal’s Careers record",
+      "facts": [
+        "CS-26104 is your internship application.",
+        "Its status is “Interview pending”; no equipment fee is listed."
+      ]
+    },
+    "reasoning": {
+      "evidence": "The email advances the application to onboarding and requests a transfer to a coordinator’s personal account. Your actual application has neither the offer nor the fee.",
+      "contrast": "A familiar sender and a refund promise cannot resolve the mismatch with the recorded application. The issue is the unsupported payment demand, not the fact that an internship is paid.",
+      "nextStep": "Do not transfer money. Ask the career office to check CS-26104 using the contact in the existing portal."
+    }
   },
   {
     "id": "scholarship-document",
@@ -711,7 +867,7 @@
         "text": "Please bring the completed comments sheet to your next appointment.\nScholarships Assessment Team"
       }
     ],
-    "explanation": "Phishing: a plausible scholarship document asks you to enable active content and disable a protection to see ordinary comments. A matching sender and a claim that the file was scanned do not justify running macros. Verify the document through the scholarships office or the usual application portal.",
+    "explanation": "Phishing: the requested macro/protection change is unnecessary for the verified comments workflow.",
     "indicators": [
       {
         "target": "body",
@@ -728,7 +884,19 @@
         "text": "turn it off for this document",
         "explanation": "An instruction to remove a protection is a stronger clue than the familiar sender."
       }
-    ]
+    ],
+    "context": {
+      "source": "Your Financial Aid portal",
+      "facts": [
+        "SCH-26118 is your scholarship application.",
+        "Panel comments are available there as a PDF preview."
+      ]
+    },
+    "reasoning": {
+      "evidence": "The email replaces an available PDF preview with a .docm attachment and tells you to enable active content or turn off Protected View.",
+      "contrast": "A genuine application and matching office address do not justify running document code to read comments. The independently available preview removes the claimed need for this step.",
+      "nextStep": "Use the PDF preview in Financial Aid and verify any unexpected document instruction with the scholarship counter."
+    }
   },
   {
     "id": "internship-shortlist",
@@ -763,7 +931,7 @@
         "text": "If you did not apply, ask the campus career counter to check the reference.\nXMUM Career Services"
       }
     ],
-    "explanation": "Legitimate in this simulation: the interview is tied to a recorded application, uses a university subdomain and can be checked in the independently opened portal or at the career counter. The request is limited to booking an interview with no advance payment. Confirm that you actually applied; a matching sender or the absence of a fee alone cannot prove an offer genuine.",
+    "explanation": "Legitimate for this case: a known application and independently listed invitation support the requested interview booking.",
     "indicators": [
       {
         "target": "body",
@@ -780,7 +948,19 @@
         "text": "ask the campus career counter to check the reference",
         "explanation": "An independent campus contact can check an unexpected invitation before you act."
       }
-    ]
+    ],
+    "context": {
+      "source": "Your student portal’s Careers record",
+      "facts": [
+        "You applied under CS-26104.",
+        "The portal lists an interview invitation and available slots."
+      ]
+    },
+    "reasoning": {
+      "evidence": "The reference, shortlist and interview slots agree with your existing application. The request is to book an interview in that portal; no fee or equipment purchase is required.",
+      "contrast": "A recruitment email is not automatically a scam. Unlike an advance-fee offer, this message matches your application and asks for a normal, limited next step.",
+      "nextStep": "Open Careers → My Applications from your usual portal and choose a recorded interview slot."
+    }
   },
   {
     "id": "scholarship-review",
@@ -815,7 +995,7 @@
         "text": "The scholarship counter can confirm the checklist and discuss an extension before Friday.\nXMUM Scholarships Office"
       }
     ],
-    "explanation": "Legitimate in this simulation: income evidence is relevant to the scholarship application, and the request limits what is collected through an existing portal record. The shared comments need no macros or disabled protections. Verify the checklist independently in the portal or with the scholarship counter before uploading sensitive information. A familiar address, PDF preview or deadline alone is not proof of authenticity.",
+    "explanation": "Legitimate for this case: the sensitive-document request has a verified purpose, limited scope and an established submission channel.",
     "indicators": [
       {
         "target": "body",
@@ -832,7 +1012,19 @@
         "text": "scholarship counter can confirm the checklist",
         "explanation": "A known campus office can verify the request and discuss the deadline before documents are submitted."
       }
-    ]
+    ],
+    "context": {
+      "source": "Your Financial Aid application checklist",
+      "facts": [
+        "SCH-26118 is your active application.",
+        "Its checklist requests household-income clarification."
+      ]
+    },
+    "reasoning": {
+      "evidence": "The application and requested evidence match the independently checked checklist. Upload is through the usual portal, limited to listed documents, with unrelated information redacted.",
+      "contrast": "Financial documents are sensitive, but asking for them is not automatically phishing. The known application, verified need, restricted scope and established upload channel distinguish this request.",
+      "nextStep": "Open Financial Aid → My Applications yourself, confirm the checklist and upload only the required redacted evidence."
+    }
   },
   {
     "id": "penguin-qr",
@@ -866,7 +1058,7 @@
         "text": "Campus Collection Support\nParcelPath"
       }
     ],
-    "explanation": "Phishing: a QR-based locker update asks for full payment-card details to collect a parcel. The matching sender and “no payment” wording do not justify the request. A QR code can hide a destination just like a link. Check the collection code in the courier app or with the staffed collection desk.",
+    "explanation": "Phishing: it substitutes an unnecessary card-data request for the recorded pickup process.",
     "indicators": [
       {
         "target": "body",
@@ -883,7 +1075,19 @@
         "text": "No payment is taken",
         "explanation": "Reassuring wording does not make unnecessary collection of card details safe."
       }
-    ]
+    ],
+    "context": {
+      "source": "Your courier app",
+      "facts": [
+        "Parcel PP-MY-441208 is expected.",
+        "Your collection record uses a pickup PIN."
+      ]
+    },
+    "reasoning": {
+      "evidence": "The email switches to an attached QR and asks for the card number, expiry and CVV to release a locker. Those payment credentials do not establish collection authority.",
+      "contrast": "An expected parcel or a matching sender does not justify the new card-verification step. A QR code is only a way to encode a destination, not a trust signal.",
+      "nextStep": "Use the collection PIN in the courier app or ask the staffed parcel desk to verify any change."
+    }
   },
   {
     "id": "lecture-clone",
@@ -917,7 +1121,7 @@
         "text": "Teaching Systems Support\nCase AT-261115"
       }
     ],
-    "explanation": "Phishing: the attachment is an executable, not a PDF, and asks for permission to change the computer. A routine attendance report does not require an unsolicited program. The familiar sender could be spoofed or compromised. Check attendance in the usual student portal or ask teaching support independently.",
+    "explanation": "Phishing: a plausible attendance issue is used to disguise an executable as a PDF and obtain system-change permission.",
     "indicators": [
       {
         "target": "body",
@@ -934,7 +1138,19 @@
         "text": "repair the record",
         "explanation": "A plausible administrative problem is being used to justify running the attachment."
       }
-    ]
+    ],
+    "context": {
+      "source": "Your student portal’s attendance page",
+      "facts": [
+        "An attendance correction is awaiting review.",
+        "The portal provides an in-browser review form."
+      ]
+    },
+    "reasoning": {
+      "evidence": "The attachment’s final extension is .exe, and the email asks you to allow changes to the computer. The verified attendance process is a browser form, not an executable.",
+      "contrast": "A real correction can make the pretext convincing, but it does not justify installing an unsolicited program. The misleading file type and requested privileges decide the classification.",
+      "nextStep": "Use the attendance form in the independently opened student portal and report the attachment to teaching support."
+    }
   },
   {
     "id": "alien-wallet",
@@ -969,7 +1185,7 @@
         "text": "Wallet Recovery Operations\nReference WLT-184207"
       }
     ],
-    "explanation": "Phishing: a recovery phrase gives control of a wallet and must not be entered into an emailed verification site. The destination belongs to backup-check.example, not the reference bank. Warnings not to send a password or transfer money can distract from the more valuable secret being requested. Verify any migration through the established wallet app.",
+    "explanation": "Phishing: it turns a plausible backup notice into recovery-phrase theft at an unrelated site.",
     "indicators": [
       {
         "target": "body",
@@ -986,7 +1202,19 @@
         "text": "used only to confirm",
         "explanation": "Calling a secret “verification” does not limit what an attacker can do with it."
       }
-    ]
+    ],
+    "context": {
+      "source": "Your existing wallet app",
+      "facts": [
+        "A backup-service notice appears in the app.",
+        "No external recovery-phrase check is listed."
+      ]
+    },
+    "reasoning": {
+      "evidence": "The email asks for the wallet’s 12-word recovery phrase at a host under backup-check.example. That phrase can restore control of the wallet.",
+      "contrast": "A genuine service notice does not authorise an external site to collect the recovery phrase. “No transfer” and “no bank password” do not make disclosure of the wallet secret safe.",
+      "nextStep": "Do not enter the phrase. Follow any migration instructions only inside the established wallet app."
+    }
   },
   {
     "id": "monday-refund",
@@ -1020,7 +1248,7 @@
         "text": "Please keep the billing case with the callback agent to avoid duplicate refunds.\nShopLane Billing Support"
       }
     ],
-    "explanation": "Phishing: an unexpected receipt pushes a callback and then remote access to your device. A refund does not require an unknown caller to control your computer. A matching sender and an explanation for a missing order record are not proof of a charge. Check subscriptions in the shopping app and contact support independently. No real callback number or remote-control link is supplied.",
+    "explanation": "Phishing: an unsupported charge is used to create a refund pretext for remote access.",
     "indicators": [
       {
         "target": "body",
@@ -1037,7 +1265,19 @@
         "text": "avoid duplicate refunds",
         "explanation": "This pretext encourages staying inside the attacker-controlled conversation."
       }
-    ]
+    ],
+    "context": {
+      "source": "Your independently opened ShopLane account",
+      "facts": [
+        "You have no delivery-membership subscription.",
+        "No RM 299 renewal appears in purchase or subscription records."
+      ]
+    },
+    "reasoning": {
+      "evidence": "The receipt describes an unrecorded subscription and directs you to a callback that requires remote-control software and an access code.",
+      "contrast": "A sender address or a claim that records are delayed does not establish that a charge exists. Even a genuine disputed charge would not require an unknown agent to control your computer.",
+      "nextStep": "Do not grant remote access or reply for a callback. Check payment records and contact support through the existing app."
+    }
   }
 ];
   if(typeof module!=="undefined"&&module.exports)module.exports=emails;else root.EMAIL_BANK=emails;

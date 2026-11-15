@@ -108,3 +108,19 @@ body[data-game="email"] .legitimate-button :is(strong,small,kbd){color:var(--gam
 body[data-game="email"] .phishing-button :is(strong,small,kbd){color:var(--game-red-dark)}
 body[data-game="email"] .sender-avatar{background:var(--game-soft);color:var(--game-muted)}
 body[data-game="email"] :is(.game-topbar p,.sender-address,.sender-details small,.answer-hint,.decision-heading>span){color:var(--game-muted)}
+.booth-ending-skip{position:absolute;top:20px;right:20px;z-index:100;min-height:44px;padding:10px 16px;border:1px solid var(--game-line);border-radius:3px;background:var(--game-paper);color:var(--game-ink);font:600 12px var(--game-font);cursor:pointer}
+.booth-ending-skip:hover{border-color:var(--game-red);color:var(--game-red)}
+/* Case notes are visibly outside the simulated email and available before the verdict. */
+body[data-game="email"] .case-context{flex:none;background:var(--game-soft);border:1px solid var(--game-line);border-left:3px solid var(--game-ink);border-radius:3px;padding:8px 12px;margin:0 0 10px;color:var(--game-ink);font:400 11px/1.5 var(--game-font)}
+body[data-game="email"] .case-context>div{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+body[data-game="email"] .case-context strong{font:650 9px var(--game-font);letter-spacing:.07em}
+body[data-game="email"] .case-context>div>span{color:var(--game-muted);font-size:10px}
+body[data-game="email"] .case-context ul{display:flex;flex-wrap:wrap;gap:4px 22px;margin:4px 0 0;padding-left:16px}
+body[data-game="email"] .case-context li{padding:0;margin:0}
+body[data-game="email"] .review-explanation .case-context{margin:16px 0;padding:10px 12px}
+body[data-game="email"] .review-explanation .case-context ul{display:block}
+body[data-game="email"] .decision-reasoning{margin:18px 0}
+body[data-game="email"] .decision-reasoning dt{font:650 10px var(--game-font);text-transform:uppercase;letter-spacing:.08em;color:var(--game-muted);margin:16px 0 5px}
+body[data-game="email"] .decision-reasoning dd{margin:0;font:400 12px/1.8 var(--game-font);color:var(--game-ink)}
+@media(max-width:720px){body[data-game="email"] .case-context ul{display:block}body[data-game="email"] .case-context{margin-top:8px}}
+@media(min-width:721px){body[data-game="email"][data-screen="playing"] .email-card .inbox-tag{display:none}body[data-game="email"][data-screen="playing"] .email-card .email-heading{padding:10px 24px 5px}body[data-game="email"][data-screen="playing"] .email-card .sender-row{margin:0 24px;padding:5px 0 9px;gap:10px}body[data-game="email"][data-screen="playing"] .email-card .sender-avatar{width:30px;height:30px}body[data-game="email"][data-screen="playing"] .email-card .email-toolbar{height:24px;min-height:24px}}
