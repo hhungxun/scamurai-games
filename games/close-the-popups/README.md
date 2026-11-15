@@ -30,7 +30,7 @@ The staff no-ad difficulty test is explicitly **practice only**: no Participant 
 
 `station.js` owns all scoring API calls. The child entry/result document uses `browse/station-bridge.js`; scene scripts and the pure `booth-score.js` calculator stay unchanged. Only SDK calls own event scores. The event backend is unchanged.
 
-The game fills the viewport. Station operations are collapsed behind a small **Staff** button at the bottom left; there is no persistent station toolbar. Controls follow the game's current language instead of displaying both languages together. Internal Round IDs are not displayed. Saving failures show an actionable notice without requiring the staff menu to be open.
+The game fills the viewport. Station operations are collapsed behind a small **Staff** button at the bottom left; there is no persistent station toolbar. The staff handover card follows the game's black/yellow/cream visual style, with a separate participant name, round/best score summary and a prominent next-participant action. Controls follow the game's current language instead of displaying both languages together. Internal Round IDs are not displayed. Saving failures show an actionable notice without requiring the staff menu to be open.
 
 - Per-tab `close-popups:station2:v1` binds one local round to one server Round and Participant, and records its latest game URL. A parent refresh restores the binding and original deadline.
 - A finished actual score is frozen to session storage **before** submission. A failed or lost response remains pending and exposes **Retry save**. Refresh retries the same Round/score; the backend's idempotent finish prevents duplicate credit. A saved score cannot be overwritten by returning to an old result.

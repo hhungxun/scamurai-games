@@ -16,7 +16,10 @@
   function localise() {
     document.documentElement.lang=lang==='zh'?'zh-Hans':'en';
     const labels={
-      'staff-toggle':['Staff','工作人员'],'staff-title':['Station 2 · Staff','第2站 · 工作人员'],
+      'staff-toggle':['Staff','工作人员'],'staff-title':['Staff desk','展台交接'],
+      'staff-eyebrow':['STATION 02 / SCAMURAI','第 02 站 / SCAMURAI'],
+      'participant-label':['CURRENT PARTICIPANT','当前参与者'],
+      'round-score-label':['THIS ROUND','本轮成绩'],'best-score-label':['STATION BEST','本站最佳'],
       retry:['Retry save','重试保存'],resume:['Resume task','返回任务'],personal:['My scores','我的成绩'],
       survey:['Exit survey','离场问卷'],next:['Next participant','下一位'],void:['Cancel round','作废本轮'],
       leaving:['Leaving','离场问卷'],'notice-action':['Staff','工作人员'],
@@ -27,6 +30,15 @@
     for(const [id,text] of Object.entries(labels)) $(id).textContent=text[lang==='zh'?1:0];
     $('staff-close').setAttribute('aria-label',lang==='zh'?'关闭工作人员菜单':'Close staff menu');
     status.textContent=message[lang==='zh'?1:0];
+    panelSummary();
+  }
+  function panelSummary() {
+    $('station-header').dataset.phase=practice?'practice':state?.status||'idle';
+    $('participant-name').textContent=state?.participant.name || (practice ? (lang==='zh'?'工作人员练习':'Staff practice') : (lang==='zh'?'等待下一位参与者':'Ready for the next participant'));
+    const scored=state?.status==='saved';
+    $('staff-scores').hidden=!scored;
+    if(scored){$('staff-round-score').textContent=state.result.pct;$('staff-best-score').textContent=state.result.best;}
+    if(state?.status==='saved'||practice&&practice.status!=='open')$('resume').textContent=lang==='zh'?'返回结果':'Back to results';
   }
   function openPanel() { if(!$('station-header').open)$('station-header').showModal(); $('staff-toggle').setAttribute('aria-expanded','true'); }
   function closePanel() { if($('station-header').open)$('station-header').close(); }
@@ -77,15 +89,16 @@
     $('personal').hidden = !ready || !state;
     $('survey').hidden = !ready || state?.status !== 'saved' || !state.result?.surveyDue;
     $('leaving').hidden = !ready || !!state || !!practice || damaged || picking;
+    panelSummary();
     inlineStatus();
   }
   function showState() {
     if (practice) say(`Practice only — no event score${practice.status !== 'open' ? ' · '+practice.score+' / 100' : ''}`, `工作人员练习，不写入活动成绩${practice.status !== 'open' ? ' · '+practice.score+' / 100' : ''}`);
     else if (!state) say('Choose a task. The Game Master selects a participant when you start.', '请选择任务。点击开始后，由工作人员选择参与者。');
-    else if (state.status === 'saved') say(`${state.participant.name} · Saved ${state.result.pct} / 100 · best ${state.result.best} / 100`, `${state.participant.name} · 已同步 ${state.result.pct} / 100 · 本站最佳 ${state.result.best} / 100`);
+    else if (state.status === 'saved') say('Score saved. Ready for the next participant.', '成绩已同步，可以交接下一位。');
     else if (state.status === 'cancelled') say('Round cancelled. No score recorded.', '本轮已作废，不计分。');
     else if (state.status === 'pending') say('Score awaiting confirmation. Retry saving before the next participant.', '成绩尚待确认。请重试保存后再交接下一位。');
-    else say(`Current participant: ${state.participant.name}`, `当前参与者：${state.participant.name}`);
+    else say('Challenge in progress. Return to the task to continue.', '挑战进行中，返回任务即可继续。');
     controls();
   }
   function verifyChild(win) {

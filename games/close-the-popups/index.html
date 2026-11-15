@@ -14,18 +14,31 @@
 <body>
   <button id="staff-toggle" aria-haspopup="dialog" aria-controls="station-header" aria-expanded="false">Staff</button>
   <dialog id="station-header" aria-labelledby="staff-title">
-    <div class="station-panel-heading"><strong id="staff-title">Station 2 · Staff</strong><button id="staff-close" aria-label="Close staff menu">×</button></div>
-    <span id="station-status" role="status" aria-live="polite">Connecting to Scamurai…</span>
-    <nav aria-label="Station controls">
-      <button id="retry" hidden>Retry save</button>
-      <button id="resume" hidden>Resume task</button>
-      <button id="personal" hidden>My scores</button>
-      <button id="survey" hidden>Exit survey</button>
-      <button id="next" hidden>Next participant</button>
-      <button id="void" hidden>Cancel round</button>
-      <button id="leaving" hidden>Leaving</button>
-    </nav>
-    <p id="personal-link" hidden></p>
+    <header class="station-panel-heading">
+      <div><span id="staff-eyebrow" class="station-eyebrow">STATION 02 / SCAMURAI</span><h1 id="staff-title">Staff desk</h1></div>
+      <button id="staff-close" aria-label="Close staff menu">×</button>
+    </header>
+    <div class="station-panel-body">
+      <section class="station-person" aria-labelledby="participant-label">
+        <span id="participant-label" class="station-label">CURRENT PARTICIPANT</span>
+        <strong id="participant-name">Ready for the next participant</strong>
+      </section>
+      <div class="station-score-grid" id="staff-scores" hidden>
+        <div><span id="round-score-label" class="station-label">THIS ROUND</span><p><strong id="staff-round-score">—</strong><small>/ 100</small></p></div>
+        <div><span id="best-score-label" class="station-label">STATION BEST</span><p><strong id="staff-best-score">—</strong><small>/ 100</small></p></div>
+      </div>
+      <p class="station-status-row"><span class="station-status-dot" aria-hidden="true"></span><span id="station-status" role="status" aria-live="polite">Connecting to Scamurai…</span></p>
+      <nav aria-label="Station controls">
+        <button id="next" hidden>Next participant</button>
+        <button id="retry" hidden>Retry save</button>
+        <button id="resume" hidden>Resume task</button>
+        <button id="personal" hidden>My scores</button>
+        <button id="survey" hidden>Exit survey</button>
+        <button id="void" hidden>Cancel round</button>
+        <button id="leaving" hidden>Leaving</button>
+      </nav>
+      <p id="personal-link" hidden></p>
+    </div>
   </dialog>
   <aside id="station-notice" role="alert" hidden><span id="notice-text"></span><button id="notice-action">Staff</button></aside>
   <iframe id="game" title="close the popups — 60-second challenge" allow="autoplay; fullscreen" hidden></iframe>
