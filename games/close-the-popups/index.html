@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Close the Popups — Scamurai Station 2. Complete a web task while managing distracting ads.">
+  <title>close the popups · Station 2</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="station.css">
+  <!-- Loaded in the head: station.js registers dashboard mode before DOMContentLoaded boots the SDK. -->
+  <script src="../../sdk.js" data-station="2"></script>
+  <script defer src="station.js"></script>
+</head>
+<body>
+  <header id="station-header">
+    <strong>close the popups <small>STATION 2</small></strong>
+    <span id="station-status" role="status" aria-live="polite">Connecting to Scamurai…</span>
+    <nav aria-label="Station controls">
+      <button id="retry" hidden>Retry save / 重试保存</button>
+      <button id="resume" hidden>Resume / 返回本轮</button>
+      <button id="personal" hidden>My scores / 我的成绩</button>
+      <button id="survey" hidden>Exit survey / 离场问卷</button>
+      <button id="next" hidden>Next participant / 下一位</button>
+      <button id="void" hidden>Cancel round / 作废本轮</button>
+      <button id="leaving" hidden>Leaving / 离场问卷</button>
+    </nav>
+  </header>
+  <p id="personal-link" hidden></p>
+  <iframe id="game" title="close the popups — 60-second challenge" allow="autoplay; fullscreen" hidden></iframe>
+  <dialog id="cancel-dialog">
+    <h2>Cancel this round? / 作废本轮？</h2>
+    <p>Use for equipment or loading problems. A cancelled round receives no score.<br>用于设备或加载问题。作废轮次不计分。</p>
+    <button id="confirm-void">Cancel round / 确认作废</button>
+    <button id="keep-playing">Keep playing / 继续挑战</button>
+  </dialog>
+  <noscript>JavaScript is needed to connect this game to the scoreboard.</noscript>
+</body>
+</html>
