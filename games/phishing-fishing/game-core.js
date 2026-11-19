@@ -12,7 +12,7 @@
     return result;
   }
   function evidenceChoices(email) {
-    return ['sender','subject',...email.body.flatMap((block,i)=>block.type==='link'?[`body:${i}`,`destination:${i}`]:[`body:${i}`]),...email.context.facts.map((_,i)=>`verification:${i}`)];
+    return ['sender','subject',...email.body.flatMap((block,i)=>(block.type==='link'||block.type==='button')?[`body:${i}`,`destination:${i}`]:[`body:${i}`]),...email.context.facts.map((_,i)=>`verification:${i}`)];
   }
   function validateBank(bank, settings) {
     if (!Number.isFinite(settings.roundSeconds) || settings.roundSeconds <= 0) throw new Error("roundSeconds must be positive.");
@@ -29,17 +29,20 @@
       if (!email.senderName || !email.senderEmail || !email.subject || !email.body?.length || !email.explanation || !email.indicators?.length) throw new Error("An email is missing required content.");
       if (!["Easy", "Medium", "Hard"].includes(email.difficulty)) throw new Error("Unknown email difficulty.");
       const institution = reference.find(item => item.id === email.institution);
-      if (!institution || !email.objective) throw new Error("Every email needs a reference institution and learning objective.");
-      if (!/^[^\s@]+@(?:[a-z0-9-]+\.)+example$/i.test(email.senderEmail) || !/^[^\s@]+@(?:[a-z0-9-]+\.)+example$/i.test(email.recipient || "student@xmum.example")) throw new Error("All email addresses must use reserved .example domains.");
+      if (!institution || !email.objective || !email.brand) throw new Error("Every email needs a reference institution, brand and learning objective.");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.senderEmail)) throw new Error("Every sender must have a well-formed email address.");
+      if (email.recipient && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.recipient)) throw new Error("A recipient, when present, must have a well-formed email address.");
       if (email.classification === "legitimate" && !belongsTo(email.senderEmail.split("@")[1], institution.domain)) throw new Error("A legitimate sender must use its reference institution's domain.");
+      if (!email.body[0] || email.body[0].type !== "banner" || !email.body[0].text?.trim()) throw new Error("The banner must be the first block of every email.");
       for (const block of email.body) {
-        if (!["paragraph", "detail", "link", "attachment"].includes(block.type) || typeof block.text !== "string") throw new Error("Unknown or incomplete email body block.");
-        if (block.type === "link") {
-          for (const address of [block.url, ...(/^https?:\/\//i.test(block.text) ? [block.text] : [])]) {
-            const url = new URL(address);
-            if (url.protocol !== "https:" || !url.hostname.endsWith(".example") || url.username || url.password || url.port) throw new Error("Simulated URLs must be HTTPS addresses on reserved .example domains, without credentials or ports.");
-          }
-          if (email.classification === "legitimate" && !belongsTo(new URL(block.url).hostname, institution.domain)) throw new Error("A legitimate destination must use its reference institution's domain.");
+        if (!["banner", "paragraph", "detail", "link", "button", "attachment", "footer"].includes(block.type) || typeof block.text !== "string" || !block.text.trim()) throw new Error("Unknown or incomplete email body block.");
+        if (block.type === "link" || block.type === "button") {
+          if (!block.url || !/^https:\/\//i.test(block.url)) throw new Error("Every destination must be an HTTPS link.");
+          const url = new URL(block.url);
+          if (url.protocol !== "https:" || url.username || url.password || url.port) throw new Error("Simulated destinations must be HTTPS addresses without credentials or ports.");
+          const host = url.hostname;
+          if (email.classification === "legitimate" && !belongsTo(host, institution.domain)) throw new Error("A legitimate destination must belong to its reference institution's domain.");
+          if (email.classification === "phishing" && belongsTo(host, institution.domain)) throw new Error("A phishing destination must not belong to its claimed institution's domain.");
         }
       }
       if (!Array.isArray(email.acceptedEvidence) || !email.acceptedEvidence.length || email.acceptedEvidence.some(id=>!evidenceChoices(email).includes(id))) throw new Error("Evidence keys must identify selectable details in the message or verification record.");

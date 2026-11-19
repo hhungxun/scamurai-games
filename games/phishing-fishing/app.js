@@ -176,14 +176,28 @@
   function emailContent(email, review = false) {
     const initials=email.senderName.split(/\s+/).slice(0,2).map(word=>word[0]).join('');
     return `<div class="email-heading"><span class="inbox-tag">Inbox</span><h${review?'4':'1'} ${review?'':'tabindex="-1"'}>${highlighted(email.subject,'subject',email,review,'subject')}</h${review?'4':'1'}></div>
-      <div class="sender-row"><span class="sender-avatar">${esc(initials)}</span><div class="sender-details"><div><strong>${esc(email.senderName)}</strong><span class="sender-address">&lt;${highlighted(email.senderEmail,'sender',email,review,'sender')}&gt;</span></div><small>to ${esc(email.recipient||'student@xmum.example')}</small></div></div>
+      <div class="sender-row"><span class="sender-avatar">${esc(initials)}</span><div class="sender-details"><div><strong>${esc(email.senderName)}</strong><span class="sender-address">&lt;${highlighted(email.senderEmail,'sender',email,review,'sender')}&gt;</span></div><small>to ${esc(email.recipient||'student@xmum.edu.my')}</small></div></div>
       <div class="email-body" ${review?'':'tabindex="0" role="region" aria-label="Email message; scroll to read the full text"'}>${email.body.map((block,i)=>{
-        if(block.type==='link') {
-          if(review)return `<div class="email-link-block"><span class="simulated-link">${highlighted(block.text,'body',email,true,'body:'+i)}</span><span class="link-destination review-destination"><small>ACTUAL SIMULATED DESTINATION</small>${highlighted(block.url,'body',email,true,'destination:'+i)}</span></div>`;
+        const bodyId = 'body:' + i, destinationId = 'destination:' + i;
+        if (block.type === 'banner') {
+          const variant = ['alert','warn','info','success','neutral','prize'].includes(block.variant) ? block.variant : 'info';
+          const subtext = block.subtext ? `<small>${highlighted(block.subtext,'body',email,review,bodyId)}</small>` : '';
+          return `<div class="email-banner banner-${variant}"><strong>${highlighted(block.text,'body',email,review,bodyId)}</strong>${subtext}</div>`;
+        }
+        if (block.type === 'button') {
+          if (review) return `<div class="email-link-block"><span class="simulated-link">${highlighted(block.text,'body',email,true,bodyId)}</span><span class="link-destination review-destination"><small>ACTUAL SIMULATED DESTINATION</small>${highlighted(block.url,'body',email,true,destinationId)}</span></div>`;
+          const did=`destination-${email.id}-${i}-play`;
+          return `<div class="email-link-block email-action" data-link-inspector><div class="link-controls"><button class="email-action-button" type="button" data-inspect-link aria-expanded="false" aria-controls="${did}"><span>${esc(block.text)}</span>${icon('arrow')}</button><button class="inspect-link" type="button" data-inspect-link aria-expanded="false" aria-controls="${did}" aria-label="Inspect destination for ${esc(block.text)}">${icon('eye')} <span>Inspect link</span></button></div><span id="${did}" class="link-destination" role="note" hidden><small>SIMULATED DESTINATION</small><span class="destination-url">${esc(block.url)}</span><span class="destination-note">Inspection only. Nothing will open.</span></span></div>`;
+        }
+        if (block.type === 'link') {
+          if (review) return `<div class="email-link-block"><span class="simulated-link">${highlighted(block.text,'body',email,true,bodyId)}</span><span class="link-destination review-destination"><small>ACTUAL SIMULATED DESTINATION</small>${highlighted(block.url,'body',email,true,destinationId)}</span></div>`;
           const did=`destination-${email.id}-${i}-play`;
           return `<div class="email-link-block" data-link-inspector><div class="link-controls"><button class="simulated-link" type="button" data-inspect-link aria-expanded="false" aria-controls="${did}">${esc(block.text)} ${icon('arrow')}</button><button class="inspect-link" type="button" data-inspect-link aria-expanded="false" aria-controls="${did}" aria-label="Inspect destination for ${esc(block.text)}">${icon('eye')} <span>Inspect link</span></button></div><span id="${did}" class="link-destination" role="note" hidden><small>SIMULATED DESTINATION</small><span class="destination-url">${esc(block.url)}</span><span class="destination-note">Inspection only. Nothing will open.</span></span></div>`;
         }
-        return `<div class="message-detail ${block.type==='detail'?'email-detail':block.type==='attachment'?'simulated-attachment':''}">${block.type==='attachment'?icon('paperclip'):''}<span>${highlighted(block.text,'body',email,review,'body:'+i)}</span></div>`;
+        if (block.type === 'footer') {
+          return `<div class="email-footer">${highlighted(block.text,'body',email,review,bodyId)}</div>`;
+        }
+        return `<div class="message-detail ${block.type==='detail'?'email-detail':block.type==='attachment'?'simulated-attachment':''}">${block.type==='attachment'?icon('paperclip'):''}<span>${highlighted(block.text,'body',email,review,bodyId)}</span></div>`;
       }).join('')}</div>`;
   }
   function bindLinkInspectors() {
@@ -370,7 +384,7 @@
       ${results.unanswered ? `<div class="timeout-note">${icon("clock")} ${results.unanswered} email${results.unanswered === 1 ? " was" : "s were"} unanswered.</div>` : ""}
       ${catchReport(results)}
       <section class="answer-review" aria-labelledby="review-title"><div class="review-heading"><div><span class="eyebrow">THE DETAILS MAKE THE DIFFERENCE</span><h2 id="review-title">Review Answers</h2></div><span>Open an email to see the clues ${icon("chevron")}</span></div>${results.reviews.map(reviewCard).join("")}</section>
-      <div class="takeaway"><span class="takeaway-icon">${icon("shield")}</span><div><strong>A familiar look is a clue. It isn't a guarantee.</strong><p>Sender addresses can be spoofed and genuine accounts compromised. Urgency, payment amounts and attachments do not automatically mean phishing. Inspect actual destinations, check permission requests, and verify through a known app, bookmark or contact. Never share passwords, PINs or one-time codes. The .example ending is used for every training message and is not a warning sign.</p></div></div>
+      <div class="takeaway"><span class="takeaway-icon">${icon("shield")}</span><div><strong>A familiar look is a clue. It isn't a guarantee.</strong><p>Sender addresses can be spoofed and genuine accounts compromised. Urgency, payment amounts and attachments do not automatically mean phishing. Inspect actual destinations, check permission requests, and verify through a known app, bookmark or contact. Never share passwords, PINs or one-time codes. Match every actual destination against the institution's real domain: a lookalike such as maybank2u-verify.com is not maybank2u.com.my.</p></div></div>
       <div class="results-bottom"><p>One smarter click can make a difference.</p><button class="button primary new-player" type="button">${icon("refresh")} New Player ${icon("arrow")}</button></div>`;
     main.querySelectorAll(".new-player").forEach(button => button.addEventListener("click", () => resetGame()));
     main.querySelectorAll('.review-card').forEach((card, index) => { card.id = `review-${index}`; });

@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const bank=require('../emails.js'),config=require('../config.js');
 const {Round,selectQuestions,validateBank,evidenceChoices}=require('../game-core.js');
 const fishing=require('../catch.js');
-validateBank(bank,config);assert.equal(bank.length,32);assert.equal(config.roundSeconds,60);
+validateBank(bank,config);assert.equal(bank.length,32);assert.equal(config.roundSeconds,90);
 let seed=7314;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
 const orders=new Set(),seen=new Set(),easyLegit=new Set();
 for(let i=0;i<1000;i++){
@@ -20,7 +20,7 @@ function play(a,c,settings=config){
   if(i%2===0)assert.ok(r.verify(q.id));
   assert.equal(r.answer(q.id,kind),true);assert.equal(r.answer(q.id,kind),false,'duplicate answer rejected');
  }
- if(r.status!=='finished'){now=61010;r.expire()}
+ if(r.status!=='finished'){now=91010;r.expire()}
  const out=r.results();assert.equal(out.correct,c);assert.equal(out.incorrect,a-c);
  assert.equal(out.score,Math.round(c*1000/settings.roundQuestions)/10);
  assert.deepEqual(Round.restore(bank,settings,r.snapshot(),{now:()=>now}).results(),out);return out;
@@ -36,7 +36,7 @@ const legacy=structuredClone(saved);legacy.version=2;legacy.draft={classificatio
 assert.equal(Round.restore(bank,config,legacy,{now:()=>now}).snapshot().version,4);
 r.answer(q.id,q.classification);const legacyAnswered=r.snapshot();legacyAnswered.version=2;legacyAnswered.answers[0].evidenceId='subject';
 assert.deepEqual(Round.restore(bank,config,legacyAnswered).answers[0],{classification:q.classification});
-now=61010;assert.equal(restored.answer(q.id,q.classification),false);assert.equal(restored.results().timeUsed,60);assert.equal(restored.endedAt,61000);
+now=91010;assert.equal(restored.answer(q.id,q.classification),false);assert.equal(restored.results().timeUsed,90);assert.equal(restored.endedAt,91000);
 const oldFinished=restored.snapshot();oldFinished.version=2;assert.throws(()=>Round.restore(bank,config,oldFinished));
 for(const mutate of [d=>d.version=1,d=>d.questionIds[1]=d.questionIds[0],d=>d.answers[2]={classification:'phishing'},d=>d.verified[0]='yes',d=>d.lastElapsed=-1]){const d=structuredClone(saved);mutate(d);assert.throws(()=>Round.restore(bank,config,d))}
 console.log('PASS: verification/deadline persist; active v2 migrates labels; historical v2 scores protected; late clicks/corrupt snapshots rejected');
@@ -62,8 +62,8 @@ assert.equal(previousResult.results().score,0,'finished rounds keep the original
 assert.equal(previousResult.results().rawScore,-20);
 assert.equal(previousResult.snapshot().version,3);
 console.log('PASS: open v3 rounds keep their answers and deadline and use new scoring; completed v3 scores remain reproducible');
-for(const mutate of [b=>b[1].id=b[0].id,b=>delete b[0].context,b=>b[0].reasoning.evidence='',b=>b[0].acceptedEvidence=['body:999'],b=>b[0].body.find(x=>x.type==='link').url='https://external.invalid/',b=>b[0].indicators[0].text='missing clue']){const b=structuredClone(bank);mutate(b);assert.throws(()=>validateBank(b,config))}
-console.log('PASS: exact evidence keys, rationale, reserved domains and content validation');
+for(const mutate of [b=>b[1].id=b[0].id,b=>delete b[0].context,b=>b[0].reasoning.evidence='',b=>b[0].acceptedEvidence=['body:999'],b=>{const block=b[0].body.find(x=>x.type==='link'||x.type==='button');block.url='https://maybank2u.com.my/'},b=>b[0].indicators[0].text='missing clue']){const b=structuredClone(bank);mutate(b);assert.throws(()=>validateBank(b,config))}
+console.log('PASS: exact evidence keys, rationale, destination domains and content validation');
 
 for(const email of bank.filter(e=>e.classification==='phishing'))assert.ok(fishing.lessons[email.lesson],email.id+' needs a known teaching category');
 const scam=bank.find(e=>e.classification==='phishing'),safe=bank.find(e=>e.classification==='legitimate');

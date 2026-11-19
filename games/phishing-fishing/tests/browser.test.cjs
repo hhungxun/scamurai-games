@@ -17,14 +17,14 @@ async function restart(p){await p.locator('.new-player').first().click({force:tr
  browser=await chromium.launch({headless:true,...(process.env.BROWSER_PATH?{executablePath:process.env.BROWSER_PATH}:{})});
  const c=await browser.newContext({viewport:{width:1366,height:900},offline:true,reducedMotion:'reduce'}),p=await c.newPage();watch(p);await p.clock.install();await p.goto(url);
  await screenshot(p,'welcome');
- assert.match(await p.locator('.round-facts').innerText(),/10 emails/);assert.match(await p.locator('.round-facts').innerText(),/60 seconds/);await p.locator('#start-game').click();
- assert.equal(await p.locator('#timer-value').innerText(),'1:00');assert.equal(await p.locator('.case-context').isVisible(),false);
+ assert.match(await p.locator('.round-facts').innerText(),/10 emails/);assert.match(await p.locator('.round-facts').innerText(),/90 seconds/);await p.locator('#start-game').click();
+ assert.equal(await p.locator('#timer-value').innerText(),'1:30');assert.equal(await p.locator('.case-context').isVisible(),false);
  assert.equal(await p.locator('[data-evidence],#submit-judgement,.evidence-pick').count(),0);
  assert.equal(await p.locator('.catch-report,.field-badges,.catch-fish').count(),0);
  await screenshot(p,'inbox');
- await p.locator('#verify-independent').click();assert.equal(await p.locator('.case-context').isVisible(),true);await p.clock.runFor(1000);assert.notEqual(await p.locator('#timer-value').innerText(),'1:00');
+ await p.locator('#verify-independent').click();assert.equal(await p.locator('.case-context').isVisible(),true);await p.clock.runFor(1000);assert.notEqual(await p.locator('#timer-value').innerText(),'1:30');
  await p.keyboard.down('p');await p.clock.runFor(350);await p.keyboard.down('p');await p.clock.runFor(350);assert.equal(await p.locator('.email-progress .answered').count(),1);await p.keyboard.up('p');
- await p.clock.fastForward(61000);assert.equal(await p.locator('.review-card').count(),10);
+ await p.clock.fastForward(91000);assert.equal(await p.locator('.review-card').count(),10);
  console.log('PASS: no evidence controls; optional verification keeps clock running; keyboard answers immediately and held keys do not skip messages');
  assert.equal(await p.locator('.catch-fish').count(),10);
  assert.equal(await p.locator('.catch-fish.untouched').count(),9);
@@ -43,7 +43,7 @@ async function restart(p){await p.locator('.new-player').first().click({force:tr
  assert.equal(await p.locator('.field-badges li').count(),lessons.size);
  console.log('PASS: offline play deals ten unique emails, five of each label, and ends after the tenth answer');
  await screenshot(p,'catch-report');
- await restart(p);for(let i=0;i<3;i++)await judgement(p);for(let i=0;i<2;i++)await judgement(p,{correct:false});await p.clock.fastForward(61000);assert.match(await p.locator('.score-circle strong').innerText(),/^30\s*\/\s*100$/);assert.match(await p.locator('.timeout-note').innerText(),/5 emails were unanswered/);
+ await restart(p);for(let i=0;i<3;i++)await judgement(p);for(let i=0;i<2;i++)await judgement(p,{correct:false});await p.clock.fastForward(91000);assert.match(await p.locator('.score-circle strong').innerText(),/^30\s*\/\s*100$/);assert.match(await p.locator('.timeout-note').innerText(),/5 emails were unanswered/);
  assert.match(await p.locator('.score-breakdown').innerText(),/3 correct × 10 = 30 \/ 100\. Wrong and unanswered emails earn 0 points/);
  console.log('PASS: three correct, two wrong and five unanswered display 30 points');
  assert.equal(await p.locator('.catch-fish.escaped,.catch-fish.miscast').count(),2);assert.equal(await p.locator('.catch-fish.untouched').count(),5);
@@ -77,7 +77,7 @@ async function restart(p){await p.locator('.new-player').first().click({force:tr
   await rig.evaluate(el=>el.getAnimations().find(animation=>animation.animationName==='reel-in').finish());
   await m.locator('.is-reeling').waitFor({state:'detached'});
  }
- await m.clock.fastForward(61000);await m.locator('.new-player').first().click();assert.equal(await m.locator('.catch-report,.field-badges').count(),0);
+ await m.clock.fastForward(91000);await m.locator('.new-player').first().click();assert.equal(await m.locator('.catch-report,.field-badges').count(),0);
  await motion.close();
  assert.equal(await p.locator('.catch-fish').first().evaluate(el=>getComputedStyle(el).animationName),'none');
  console.log('PASS: identical neutral reel animation for right/wrong answers; no early reveal; reset clears catches; reduced motion stays still');
