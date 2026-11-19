@@ -129,8 +129,8 @@ function summarise(p, rounds, now = Date.now()) {
   return {
     id: p.id, name: p.name, status, stationsDone, best, total, totalMs,
     roundsPlayed: rounds.filter(r => r.ended_at != null).length,
-    surveyDone: !!survey,
-    eligible: stationsDone.length === STATION_COUNT && !!survey,
+    surveyDone: !!survey && (survey.stationsDone || []).length === STATION_COUNT,
+    eligible: stationsDone.length === STATION_COUNT && !!survey && (survey.stationsDone || []).length === STATION_COUNT,
   };
 }
 const summaryOf = id => { const p = q.getP.get(id); return p && summarise(p, q.roundsOf.all(id)); };
@@ -142,23 +142,30 @@ function allSummaries() {
 const mask = (name, id) => `${String(name).trim().split(/\s+/)[0]} · …${id.slice(-3)}`;
 
 // ---- http helpers ----
-const failures = new Map();                 // ip -> [timestamps]
+const failures = new Map();                 // ip -> Map(wrong pin -> last attempt time)
 const clientIp = req => req.headers['cf-connecting-ip'] || req.socket.remoteAddress;
 // On this machine itself (not through the Cloudflare tunnel, which adds cf-connecting-ip).
 const isLocal = req => !req.headers['cf-connecting-ip'] && /^(127\.|::1$|::ffff:127\.)/.test(req.socket.remoteAddress || '');
-function tooManyFailures(ip) {
-  const now = Date.now(), list = (failures.get(ip) || []).filter(t => now - t < 10 * 60 * 1000);
-  failures.set(ip, list); return list.length >= 20;
+// Everyone on campus Wi-Fi shares one IP, so lock out on the number of DIFFERENT wrong PINs tried from it
+// (a guessing attack), not on repeated mistakes: staff retyping one wrong PIN, or a stale tablet repeating
+// one, count once. A correct PIN is never blocked unless 30 different wrong ones were tried in 10 minutes.
+const WINDOW = 10 * 60 * 1000, MAX_DISTINCT_WRONG = 30;
+function wrongPins(ip) {
+  const now = Date.now(); let m = failures.get(ip);
+  if (!m) failures.set(ip, m = new Map());
+  for (const [p, t] of m) if (now - t >= WINDOW) m.delete(p);
+  return m;
 }
+const tooManyFailures = ip => wrongPins(ip).size >= MAX_DISTINCT_WRONG;
 class HttpError extends Error { constructor(code, msg) { super(msg); this.code = code; } }
 const need = (cond, code, msg) => { if (!cond) throw new HttpError(code, msg); };
 
 function auth(req, roles) {
   const ip = clientIp(req);
-  need(!tooManyFailures(ip), 429, 'Too many wrong PINs. Wait 10 minutes.');
+  need(!tooManyFailures(ip), 429, 'Too many different wrong PINs from this network. Wait 10 minutes.');
   const pin = req.headers['x-pin'] || new URL(req.url, 'http://x').searchParams.get('pin');
   const who = pin && PINS[pin];
-  if (!who) { failures.get(ip).push(Date.now()); throw new HttpError(401, 'Wrong PIN'); }
+  if (!who) { wrongPins(ip).set(String(pin || ''), Date.now()); throw new HttpError(401, 'Wrong PIN'); }
   need(who.role === 'admin' || roles.includes(who.role), 403, 'This PIN cannot do that');
   return who;
 }
@@ -359,6 +366,26 @@ route('GET', '/api/rounds/:id/events', async (req, { id }) => {
   return { ended: r.ended_at != null, cancelled: !!r.cancelled, events: q.evs.all(r.id, after).map(e => ({ id: e.id, at: e.at, data: JSON.parse(e.data) })) };
 });
 
+// Exit Survey validation: only known questions, valid values, every scale/choice question answered.
+function validateSurvey(answers, stationsDone) {
+  need(answers && typeof answers === 'object' && !Array.isArray(answers), 400, 'Survey answers are required');
+  const qs = [...CONFIG.stations.filter(s => stationsDone.includes(s.n)).flatMap(s => s.questions), ...CONFIG.general];
+  const byId = new Map(qs.map(x => [x.id, x]));
+  for (const k of Object.keys(answers)) need(byId.has(k), 400, `Unknown survey question: ${clip(k, 20)}`);
+  const stationLabels = CONFIG.stations.filter(s => stationsDone.includes(s.n)).map(s => `${s.n}. ${s.name}`);
+  const clean = {};
+  for (const x of qs) {
+    const v = answers[x.id];
+    if (x.type === 'text') { const t = typeof v === 'string' ? v.trim() : ''; if (t) clean[x.id] = clip(t, 500); continue; }
+    const str = typeof v === 'number' ? String(v) : v;
+    if (x.type === 'scale') need(typeof str === 'string' && /^[1-5]$/.test(str), 400, `Answer 1 to 5 for: ${x.id}`);
+    else if (x.type === 'choice') need(typeof str === 'string' && x.options.includes(str), 400, `Pick one of the options for: ${x.id}`);
+    else if (x.type === 'station') need(typeof str === 'string' && stationLabels.includes(str), 400, `Pick one of your stations for: ${x.id}`);
+    clean[x.id] = str;
+  }
+  return clean;
+}
+
 // Check-out + Exit Survey
 route('POST', '/api/checkout', async req => {
   const who = auth(req, ['station', 'staff']);
@@ -366,10 +393,9 @@ route('POST', '/api/checkout', async req => {
   const id = cleanId(b.participantId);
   const p = q.getP.get(id);
   need(p, 404, 'Not registered');
-  const answers = b.answers && typeof b.answers === 'object' ? b.answers : {};
-  const clean = {};
-  for (const [k, v] of Object.entries(answers).slice(0, 60)) clean[clip(k, 20)] = clip(v, 1000);
   const s = summaryOf(id);
+  need(!s.surveyDone || who.role !== 'station', 409, 'Exit survey already submitted for this participant');
+  const clean = validateSurvey(b.answers, s.stationsDone);
   q.checkout.run(Date.now(), who.station || null, JSON.stringify({ stationsDone: s.stationsDone, answers: clean, at: Date.now() }), id);
   return { ok: true, stationsDone: s.stationsDone };
 });
