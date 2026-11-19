@@ -56,11 +56,13 @@ async function restart(p){await p.locator('.new-player').first().click({force:tr
  const motion=await browser.newContext({viewport:{width:1366,height:768},offline:true}),m=await motion.newPage();watch(m);await m.clock.install();await m.goto(url);await m.locator('#start-game').click();
  for(const correct of [true,false]){
   const id=await m.locator('[data-question]').first().getAttribute('data-question'),email=bank.find(e=>e.id===id),choice=correct?email.classification:email.classification==='phishing'?'legitimate':'phishing';
+  const envelope=m.locator('.fishing-mail');
+  assert.ok(await envelope.evaluate(el=>el.getBoundingClientRect().top>el.closest('.fishing-water').getBoundingClientRect().top+35));
   await m.locator(`[data-answer="${choice}"]`).click();
   assert.equal(await m.locator('.is-reeling').count(),1);assert.equal(await m.locator('.cast-feedback').innerText(),'Reeling in…');
   assert.equal(await m.locator('.catch-report,.field-badges,mark').count(),0);
-  const bobber=m.locator('.fishing-bobber');
-  const duration=await bobber.evaluate(el=>{
+  const rig=m.locator('.fishing-rig');
+  const duration=await rig.evaluate(el=>{
    const reel=el.getAnimations().find(animation=>animation.animationName==='reel-in');
    reel.pause();
    return reel.effect.getTiming().duration;
@@ -69,7 +71,9 @@ async function restart(p){await p.locator('.new-player').first().click({force:tr
   await m.clock.runFor(350);
   assert.notEqual(await m.locator('[data-question]').first().getAttribute('data-question'),id,'next email opens before reel finishes');
   assert.equal(await m.locator('.is-reeling').count(),1);
-  await bobber.evaluate(el=>el.getAnimations().find(animation=>animation.animationName==='reel-in').finish());
+  await rig.evaluate((el,peak)=>{el.getAnimations().find(animation=>animation.animationName==='reel-in').currentTime=peak},duration*.63);
+  assert.ok(await envelope.evaluate(el=>el.getBoundingClientRect().bottom<el.closest('.fishing-water').getBoundingClientRect().top+35));
+  await rig.evaluate(el=>el.getAnimations().find(animation=>animation.animationName==='reel-in').finish());
   await m.locator('.is-reeling').waitFor({state:'detached'});
  }
  await m.clock.fastForward(61000);await m.locator('.new-player').first().click();assert.equal(await m.locator('.catch-report,.field-badges').count(),0);
@@ -100,12 +104,22 @@ async function restart(p){await p.locator('.new-player').first().click({force:tr
  const originalStart=await h.evaluate(()=>JSON.parse(sessionStorage.getItem('test-round')).startedAt);
  await h.reload();await h.frameLocator('iframe').locator('[data-question]').first().waitFor();
  assert.equal(await h.evaluate(()=>JSON.parse(sessionStorage.getItem('test-round')).startedAt),originalStart);
+ const missed=new Set();
  for(let i=0;i<10;i++){
   const f=game(),id=await f.locator('[data-question]').first().getAttribute('data-question'),email=bank.find(e=>e.id===id);
-  const choice=i<8?email.classification:email.classification==='phishing'?'legitimate':'phishing';
+  let choice=email.classification;
+  if(!missed.has(email.classification)){
+   choice=email.classification==='phishing'?'legitimate':'phishing';
+   missed.add(email.classification);
+  }
   await f.locator(`[data-answer="${choice}"]`).click();await h.clock.runFor(350);
  }
- assert.equal(await game().locator('.catch-fish').count(),10);assert.equal(await game().locator('.catch-fish.escaped,.catch-fish.miscast').count(),2);
+ assert.equal(await game().locator('.catch-fish').count(),10);
+ const escaped=game().locator('.catch-fish.escaped'),safe=game().locator('.catch-fish.safe').first();
+ assert.equal(await escaped.count(),1);assert.equal(await game().locator('.catch-fish.miscast').count(),1);
+ assert.notEqual(await escaped.locator('.catch-symbol').innerHTML(),await safe.locator('.catch-symbol').innerHTML());
+ assert.equal(await escaped.evaluate(el=>getComputedStyle(el).borderStyle),'dashed');
+ assert.equal(await safe.evaluate(el=>getComputedStyle(el).borderStyle),'solid');
  assert.deepEqual(await h.evaluate(()=>finishes.map(f=>f.score)),[60]);
  await screenshot(h,'event-results');
  if(process.env.ARTIFACT_DIR)await game().locator('.catch-report').screenshot({path:path.join(process.env.ARTIFACT_DIR,'event-catch.png')});

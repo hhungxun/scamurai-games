@@ -11,6 +11,8 @@
   const referenceDialog = document.querySelector("#reference-dialog");
   const icons = {
     fish: '<path d="M3 12s4-6 10-6c4 0 7 6 7 6s-3 6-7 6c-6 0-10-6-10-6Zm0 0L1 7v10l2-5Zm10-6c-3 3-3 9 0 12"/><circle cx="16" cy="11" r=".8"/>',
+    escapedFish: '<path d="M9 12c3-3 5-5 8-5s5 3 6 5c-1 2-3 5-6 5s-5-2-8-5Zm0 0L5 8v8l4-4ZM2 9H.9M3 12H1m1 3H.9"/><circle cx="19" cy="11" r=".8"/>',
+    safeMail: '<path d="M11 19H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h15a2 2 0 0 1 2 2v5M2.5 6.5l9 6 9-6"/><circle cx="17.5" cy="17.5" r="5"/><path d="m15.4 17.5 1.4 1.4 2.8-2.8"/>',
     arrow: '<path d="M4 12h15m-6-6 6 6-6 6"/>',
     mail: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="m3 7 9 6 9-6"/>',
     check: '<path d="m5 12 4 4L19 6"/>',
@@ -31,6 +33,7 @@
   function icon(name, cls = "") {
     return `<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.mail}</svg>`;
   }
+  const catchIcons = { caught: 'fish', safe: 'safeMail', escaped: 'escapedFish', miscast: 'fish', untouched: 'mail' };
   function esc(value) {
     return String(value).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
   }
@@ -210,21 +213,24 @@
     main.innerHTML = `
       <div class="game-topbar"><div><span class="eyebrow">THE INBOX CHALLENGE</span><p>Email <strong id="email-number"></strong> of ${round.questions.length}</p></div>
         <div class="fishing-cast" aria-hidden="true">
-          <span class="fishing-water"><span class="fishing-ripple"></span><span class="fishing-bobber"></span></span>
+          <span class="fishing-water">
+            <span class="fishing-ripple"></span>
+            <span class="fishing-rig"><span class="fishing-hook"></span><span class="fishing-mail">${icon('mail')}</span></span>
+          </span>
           <span class="cast-feedback">Reeling in…</span>
         </div>
         <div class="timer" id="timer" role="timer" aria-live="off" aria-label="Time remaining">${icon("clock")}<div><small>TIME LEFT</small><strong id="timer-value">${formatClock(Math.ceil(round.remainingMs() / 1000))}</strong></div><span class="timer-unit">shared across<br>all ${round.questions.length} emails</span></div>
       </div>`;
-    const bobber = main.querySelector('.fishing-bobber');
-    const resetReel = () => bobber.closest('.fishing-cast').classList.remove('is-reeling');
-    bobber.addEventListener('animationend', resetReel);
-    bobber.addEventListener('animationcancel', resetReel);
+    const rig = main.querySelector('.fishing-rig');
+    const resetReel = () => rig.closest('.fishing-cast').classList.remove('is-reeling');
+    rig.addEventListener('animationend', resetReel);
+    rig.addEventListener('animationcancel', resetReel);
   }
   function renderEmail() {
     if (page !== "playing") return;
     const email = round.questions[round.index];
     main.className = "game-screen";
-    // Keep the top bar mounted so the float can finish moving as the next email opens.
+    // Keep the top bar mounted so the hook can finish moving as the next email opens.
     if (!main.querySelector('.game-topbar')) renderGameTopbar();
     main.querySelector('#email-number').textContent = round.index + 1;
     main.querySelector('.game-workspace')?.remove();
@@ -337,9 +343,9 @@
   function catchReport(results) {
     const report = FishingCatch.summarize(results.reviews);
     return `<section class="catch-report" aria-labelledby="catch-title">
-      <div class="catch-heading"><div><span class="eyebrow">THE DAY'S FISHING REPORT</span><h2 id="catch-title">Your catch.</h2></div><p>Every fish has a story. Choose one to inspect its email.</p></div>
+      <div class="catch-heading"><div><span class="eyebrow">THE DAY'S FISHING REPORT</span><h2 id="catch-title">Your catch.</h2></div><p>Choose a card to open its email explanation.</p></div>
       <dl class="catch-counts">${Object.entries(report.counts).map(([outcome, count])=>`<div class="catch-count ${outcome}"><dt>${FishingCatch.outcomes[outcome]}</dt><dd>${count}</dd></div>`).join('')}</dl>
-      <div class="catch-net" aria-label="Email catches">${report.catches.map(item=>`<button type="button" class="catch-fish ${item.outcome}" data-review-index="${item.index}" aria-controls="review-${item.index}" aria-label="Email ${item.index+1}: ${esc(item.email.subject)}. ${item.title}. Open explanation.">${icon(item.outcome==='untouched'?'mail':'fish')}<span><strong>${String(item.index+1).padStart(2,'0')}</strong><small>${item.title}</small></span>${icon('chevron')}</button>`).join('')}</div>
+      <div class="catch-net" aria-label="Email catches">${report.catches.map(item=>`<button type="button" class="catch-fish ${item.outcome}" data-review-index="${item.index}" aria-controls="review-${item.index}" aria-label="Email ${item.index+1}: ${esc(item.email.subject)}. ${item.title}. Open explanation.">${icon(catchIcons[item.outcome], 'catch-symbol')}<span><strong>${String(item.index+1).padStart(2,'0')}</strong><small>${item.title}</small></span>${icon('chevron')}</button>`).join('')}</div>
       <div class="field-badges" aria-label="Earned field badges"><h3>Field badges</h3>${report.badges.length ? `<ul>${report.badges.map(badge=>`<li>${icon('shield')}<div><strong>${badge.title}</strong><p>${badge.detail} <span>${badge.count} caught.</span></p></div></li>`).join('')}</ul>` : '<p>No badges this round. Catch a scam to earn a badge for the trick you spotted.</p>'}<p class="badge-note">Badges celebrate what you spotted. Your score is shown above.</p></div>
     </section>`;
   }

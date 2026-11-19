@@ -24,9 +24,9 @@ Final score is floored at 0 and displayed/submitted out of 100. The best complet
 
 ## Fishing and campus stories
 
-The game keeps Scamurai's paper, charcoal and red colours. After an answer, the float dips, rises and settles in about 0.8 seconds. The next email appears while the animation is playing. Reduced-motion preferences disable movement.
+The game keeps Scamurai's paper, charcoal and red colours. After an answer, the hook reels an envelope up from below the surface in about 0.8 seconds. The next email appears while the animation is playing. Reduced-motion preferences disable movement.
 
-The result screen shows scams caught, safe mail released, scams escaped, safe mail miscast and unchecked mail. Choose any fish to open and focus its email explanation. Field badges recognise correctly identified techniques, such as excessive permissions or unsafe attachments; they do not add points or affect event records.
+The result screen shows scams caught, safe mail released, scams escaped, safe mail miscast and unchecked mail. Choose any card to open and focus its email explanation. Field badges recognise correctly identified techniques, such as excessive permissions or unsafe attachments; they do not add points or affect event records.
 
 Eight cases include light campus humour across both classifications: a lost penguin, digital attendance assistant, cat mascot election, supper draw, study-room booking, desk-duck receipt and internship interview. Humour is not a clue. All 32 cases, classification totals, difficulty buckets, the 60-second deadline and scoring rules are retained.
 
