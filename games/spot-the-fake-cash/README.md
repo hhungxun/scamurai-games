@@ -1,15 +1,33 @@
 # Spot the Fake Cash · Station 1
 
-Open `/games/spot-the-fake-cash/` on a booth laptop. The shared Scamurai booth handles staff login, participant selection, saving, retries and next-participant handoff. Open `/games/spot-the-fake-cash/?demo=1` for unscored practice with no login. All resources come from the local Scamurai server. Internet access is unnecessary.
+Open `/games/spot-the-fake-cash/` on a booth laptop. The shared booth handles the Game Master PIN, participant selection, saving, retries and next-participant handoff. Use `/games/spot-the-fake-cash/?demo=1` to practise without a PIN or event score. The local Scamurai server serves the game, fonts and Three.js r128 without Internet access.
 
-## Round and scoring
+## Playing
 
-Inspect five shuffled samples in 60 seconds. Each round focuses once on each tool and contains two or three fakes with one or two simulated faults each. Tilt and Feel have sliders. Backlight, UV and Magnifier each have a toggle. Shortcuts **T / L / U / M / F** select the tools. **1** submits Real and **2** submits Fake. The timer continues during feedback. The result includes answer review and checks to try on real cash.
+Inspect ten shuffled RM50 banknotes in 120 seconds. Drag the note or use **WASD / ↑ / ↓** to rotate it. Select **Flip note** or press **F** to turn it over. Drag the purple torch across the note and toggle UV with **Space**. Scroll, pinch or use **+ / − / 0** to zoom or reset. Choose **PASS** (**P / ←**) for genuine and **REJECT** (**R / →**) for fake.
 
-A correct answer earns **20**, a wrong answer deducts **20**, and an unanswered sample earns **0**. The final score ranges from **0 to 100**. Progress and the original deadline survive a reload in the booth. Demo rounds never submit event scores.
+Correct verdicts earn 10 points. Wrong or unjudged notes earn zero. The timer keeps running during brief feedback after each verdict. The result shows score out of 100, accuracy among judged notes and a clue for every note. Reloading an active round preserves the shuffled order, verdicts and deadline.
 
-## Artwork and research
+Choose **Enter VR** on the start screen with a WebXR headset and compatible browser on HTTPS or localhost. Use the left stick to rotate or flip and the right stick to zoom. Point a controller at PASS or REJECT and pull its trigger. The right trigger toggles UV when aimed away from the verdict buttons. Squeeze the right grip to pick up or drop the torch. Exit VR to read the full note review.
 
-The abstract evidence diagrams are drawn locally with HTML and CSS. The game omits all real banknote images because we could not verify permission for reuse. See [sources and reproduction rules](assets/CREDITS.md) for the BNM references and artwork details.
+## RM50 image inventory
 
-Run the round logic tests with `node --test games/spot-the-fake-cash/tests/core.test.cjs` from the project root.
+**Present:** none. Place the owner's original files in `assets/notes/` using these exact, case-sensitive names. The game loads them automatically the next time the page opens. Keep the originals unaltered.
+
+| Filename | Status |
+| --- | --- |
+| `RM50 real.png` | Missing |
+| `RM50 uv real.png` | Missing |
+| `RM50 back clear.png` | Missing |
+| `uv back.jpeg` | Missing |
+| `RM50 rafflesia.png` | Missing |
+| `RM50 uv rafflesia.png` | Missing |
+| `RM50 Malaya Fake.png` | Missing |
+| `RM50 uv malaya.png` | Missing |
+| `RM50 uv fake.png` | Missing |
+| `RM50 back atom.png` | Missing |
+| `uv back fake atom.jpeg` | Missing |
+
+Labeled placeholders keep the 3D scene playable while images are missing. Use them to practise the controls. The actual visual clues require the image set.
+
+See [credits](assets/CREDITS.md) for the original game and Three.js sources. Run the round tests from the repo root with `node --test games/spot-the-fake-cash/tests/core.test.cjs`.

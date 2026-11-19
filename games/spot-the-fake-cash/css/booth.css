@@ -1,0 +1,4 @@
+#booth-player { margin-left: auto; }
+@media (max-width: 600px) {
+  #booth-player { width: 100%; margin-left: 0; }
+}
