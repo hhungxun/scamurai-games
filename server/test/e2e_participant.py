@@ -15,6 +15,17 @@ SERVER = Path(__file__).resolve().parents[1]
 BASE = 'http://127.0.0.1:3043'
 
 
+def full_survey():
+    import json, pathlib
+    cfg = json.loads((pathlib.Path(__file__).resolve().parent.parent / 'stations.json').read_text())
+    out = {}
+    for q in [q for st in cfg['stations'] for q in st['questions']] + cfg['general']:
+        if q['type'] == 'scale': out[q['id']] = '5'
+        elif q['type'] == 'choice': out[q['id']] = q['options'][0]
+        elif q['type'] == 'station': out[q['id']] = f"1. {cfg['stations'][0]['name']}"
+    return out
+
+
 def call(method, path, body=None, pin=None, participant=None, token=None):
     headers = {'Content-Type': 'application/json', 'cf-connecting-ip': '198.51.100.10'}
     if pin: headers['X-Pin'] = pin
@@ -114,7 +125,7 @@ def run():
                 page.click('#refresh')
                 page.wait_for_function("document.querySelector('[data-station=\"5\"] .playing')")
                 ok('POST', f'/api/rounds/{r5["roundId"]}/finish', {'score': 100, 'maxScore': 100}, pin='5005')
-                ok('POST', '/api/checkout', {'participantId': 'PORTAL001', 'answers': {'g1': '5'}}, pin='5005')
+                ok('POST', '/api/checkout', {'participantId': 'PORTAL001', 'answers': full_survey()}, pin='5005')
                 page.click('#refresh')
                 page.wait_for_function("document.body.innerText.includes('qualify for the prize ranking.') && document.body.innerText.includes('Checked out')")
                 p = ok('GET', '/api/participant/me', participant=participant_token)

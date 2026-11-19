@@ -18,6 +18,7 @@
     $('booth-survey').hidden = demo || state?.status !== 'saved' || !state.result?.surveyDue;
     $('booth-cancel').hidden = !open;
     $('booth-leaving').hidden = demo || !!state;
+    if (qrPanel && qrFor !== state?.participant?.id) closeQR();
     $('booth-select').disabled = busy || damaged || !ready;
     for (const id of ['booth-next','booth-retry','booth-cancel']) $(id).disabled = busy;
     $('booth-idle').hidden = !!state && state.status !== 'cancelled';
@@ -25,12 +26,27 @@
     frame.inert = busy || state?.status === 'cancelled';
   }
   function gameURL() { return `/games/${game}/game.html${demo ? '?demo=1' : ''}`; }
+  // The shared kiosk never opens a participant page itself (that would save the pass in this browser for the next player).
+  // "My scores" shows a QR to scan with the player's own phone, and is closed and wiped on every hand-over.
+  let qrPanel = null, qrFor = null;
+  function closeQR() { qrPanel?.remove(); qrPanel = null; qrFor = null; }
   async function personal() {
-    $('booth-personal').removeAttribute('href');
-    if (!demo && state) {
-      const id = state.participant.id;
-      try { const url = await Scamurai.participantURL(state.participant); if (state?.participant.id === id) $('booth-personal').href = url; } catch {}
-    }
+    closeQR();
+    const a = $('booth-personal');
+    a.removeAttribute('href'); a.setAttribute('role', 'button'); a.tabIndex = 0; a.style.display = demo ? 'none' : '';
+    try { localStorage.removeItem('scamurai.participant.token'); localStorage.removeItem('scamurai.s5.round'); } catch {}
+    a.onclick = async e => {
+      e.preventDefault();
+      if (demo || !state) return;
+      if (qrPanel) return closeQR();
+      qrFor = state.participant.id; qrPanel = document.createElement('div');
+      qrPanel.style.cssText = 'position:fixed;top:64px;right:12px;z-index:2147483000;background:#0b0b10;color:#fff;border:1px solid #555;border-radius:12px;padding:14px;max-width:min(320px,calc(100vw - 24px));font:14px system-ui;text-align:center';
+      const host = document.createElement('div'), close = document.createElement('button');
+      close.textContent = 'Close'; close.style.cssText = 'margin-top:8px;padding:10px 14px;min-height:44px;border-radius:10px';
+      close.onclick = closeQR; qrPanel.append(host, close); document.body.appendChild(qrPanel);
+      await Scamurai.personalQR(host, state.participant);
+    };
+    a.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') a.onclick(e); };
   }
   async function pick() {
     if (busy || damaged || !ready || state && !['saved','cancelled'].includes(state.status)) return;

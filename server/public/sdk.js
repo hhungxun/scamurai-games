@@ -145,7 +145,8 @@
   // ---------- 1. Station PIN ----------
   let stationName = null;
   // Single-player pages reload for the next player; a dashboard just closes the overlay.
-  const nextPlayer = () => dashCb ? hide() : location.reload();
+  // Dashboard mode: also settle a pick() still waiting, or the booth's Select button stays disabled for good.
+  const nextPlayer = () => { if (!dashCb) return location.reload(); hide(); if (pickRes) { const d = pickRes; pickRes = null; d(null); } };
   async function boot() {
     if (TEST) { if (dashCb) { hide(); return dashCb({ station: STATION, stationName: 'Test' }); } return showPicker(); }
     if (!STATION) return screen(`<p class="err">This game's script tag needs data-station="1…5".</p>`);
@@ -188,7 +189,7 @@
     return api('/api/participants');
   }
   function showPicker(stationName, startMode = 'play') {
-    let sel = null, mode = startMode;
+    let sel = null, mode = startMode, starting = false;
     const el = screen(`<h2 style="font:26px Anton,sans-serif;margin:6px 0">Station ${STATION}${stationName ? ' · ' + esc(stationName) : ''}</h2>
       <label>Type a student ID or name</label>
       <input class="find" autocomplete="off" placeholder="e.g. PHY2209123 or Aisyah">
@@ -204,6 +205,7 @@
     const leave = el.querySelector('.leave');
     if (mode === 'leave') { leave.textContent = 'Back to play'; go.style.background = C.dim; }
     function render() {
+      if (starting) return;   // a Round request is in flight: the list must not move under it
       const t = find.value.trim().toUpperCase();
       sel = sel ? list.find(p => p.id === sel.id) || null : list.find(p => p.id === t) || null;
       const rows = list.filter(p => !t || p.id.includes(t) || p.name.toUpperCase().includes(t))
@@ -218,37 +220,40 @@
       go.disabled = !sel || (mode === 'play' && !!sel.playingHere);
       go.textContent = mode === 'leave' ? (sel ? `Check out ${sel.name}` : 'Pick who is leaving') : (sel ? `Start round · ${sel.name}` : 'Start round');
     }
-    box.onclick = e => { const it = e.target.closest('.it[data-id]'); if (!it) return; sel = list.find(p => p.id === it.dataset.id); render(); };
-    find.oninput = () => { sel = null; const t = find.value.trim().toUpperCase(); const exact = list.find(p => p.id === t); if (exact) sel = exact; render(); };
+    box.onclick = e => { if (starting) return; const it = e.target.closest('.it[data-id]'); if (!it) return; sel = list.find(p => p.id === it.dataset.id); render(); };
+    find.oninput = () => { if (starting) return; sel = null; const t = find.value.trim().toUpperCase(); const exact = list.find(p => p.id === t); if (exact) sel = exact; render(); };
     find.onkeydown = e => { if (e.key === 'Enter' && sel) go.click(); };
     leave.onclick = () => { mode = mode === 'play' ? 'leave' : 'play'; leave.textContent = mode === 'leave' ? 'Back to play' : 'Leaving'; go.style.background = mode === 'leave' ? C.dim : ''; render(); };
     go.onclick = async () => {
-      if (!sel) return;
-      go.disabled = true; err.textContent = '';
-      if (mode === 'leave') { clearInterval(pollT); return survey(sel, sel.stationsDone, false); }
+      if (!sel || starting) return;
+      // The Round is for the person chosen at the tap. Slow replies, the 8s refresh or a changed search must never
+      // re-attribute it, so everything below uses `chosen`, never `sel`.
+      const chosen = { id: sel.id, name: sel.name, stationsDone: sel.stationsDone, playingHere: sel.playingHere };
+      go.disabled = true; err.textContent = ''; starting = true; find.disabled = true;
+      if (mode === 'leave') { clearInterval(pollT); return survey(chosen, chosen.stationsDone, false); }
       try {
-        const r = TEST ? { roundId: -Date.now(), token: 'test' } : await api('/api/rounds', { method: 'POST', body: { participantId: sel.id } });
+        const r = TEST ? { roundId: -Date.now(), token: 'test' } : await api('/api/rounds', { method: 'POST', body: { participantId: chosen.id } });
         clearInterval(pollT);
         if (pickRes) {   // dashboard: hand the new Round back, keep the page
           hide(); const done = pickRes; pickRes = null;
-          return done({ id: sel.id, name: sel.name, station: STATION, roundId: r.roundId, token: r.token, startedAt: Date.now() });
+          return done({ id: chosen.id, name: chosen.name, station: STATION, roundId: r.roundId, token: r.token, startedAt: Date.now() });
         }
-        participant = sel;
+        participant = chosen;
         round = { id: r.roundId, token: r.token, startedAt: Date.now() };
         hide();
-        participantButton(sel);
+        participantButton(chosen);
         if (startCb) startCb(Scamurai.player);
       } catch (e) {
         if (e.status === 409 && pickRes) {
           // Already playing here: the list was stale, another laptop started them, or the first tap's reply was lost.
           // Hand the open Round back so the dashboard shows its Join QR again, instead of a dead end.
           try {
-            const o = (await api('/api/rounds/open')).find(x => x.participant.id === sel.id);
+            const o = (await api('/api/rounds/open')).find(x => x.participant.id === chosen.id);
             if (o) { clearInterval(pollT); hide(); const done = pickRes; pickRes = null;
-              return done({ id: sel.id, name: sel.name, station: STATION, roundId: o.roundId, token: o.token, startedAt: o.startedAt, existing: true }); }
+              return done({ id: chosen.id, name: chosen.name, station: STATION, roundId: o.roundId, token: o.token, startedAt: o.startedAt, existing: true }); }
           } catch {}
         }
-        err.textContent = e.message; go.disabled = false;
+        err.textContent = e.message; starting = false; find.disabled = false; render();
       }
     };
     const refresh = async () => { try { list = await loadList(); render(); } catch (e) { if (e.status === 401) { setPin(''); clearInterval(pollT); askPin('PIN no longer valid'); } else err.textContent = 'Offline? ' + e.message; } };
@@ -330,7 +335,7 @@
     finish,
     get player() { return participant && { id: participant.id, name: participant.name, station: STATION, roundId: round.id, token: round.token }; },
     api, API, STATION,
-    participantURL,
+    participantURL, personalQR,
     resetPin() { setPin(''); location.reload(); },
     // ---- dashboard mode (several players at once) ----
     onDashboard(cb) { dashCb = cb; },
