@@ -124,14 +124,13 @@ window.REAL_OR_AI_QUESTIONS = [
     "id": "V01",
     "type": "voice",
     "answer": "real",
-    "title": "Meeting a friend",
+    "title": "Voice message",
     "subtitle": "VOICE • LISTEN CLOSELY",
-    "explanation": "Demo voice generated with synthetic speech. Its Real/AI answer is a temporary game-testing label, not a verified authenticity judgment. Replace with real or AI samples before the event.",
-    "clue": "Natural speech has uneven pacing, breaths and small hesitations, but good AI voices can copy these, so verify by another route.",
-    "script": "Hey, I just got here. I'm sitting by the window, near the entrance.",
+    "explanation": "This was a genuine recording of a real person, made with their consent. Natural speech has uneven pacing, breaths and small hesitations, though good AI voices can imitate them.",
+    "clue": "A natural recording with uneven pacing, breaths and small hesitations.",
     "src": "assets/audio/V01.mp3",
     "enabled": true,
-    "demo": true
+    "demo": false
   },
   {
     "id": "V02",
@@ -150,14 +149,13 @@ window.REAL_OR_AI_QUESTIONS = [
     "id": "V03",
     "type": "voice",
     "answer": "real",
-    "title": "Ordering coffee",
+    "title": "Quick question",
     "subtitle": "VOICE • LISTEN CLOSELY",
-    "explanation": "Demo voice generated with synthetic speech. Its Real/AI answer is a temporary game-testing label, not a verified authenticity judgment. Replace with real or AI samples before the event.",
-    "clue": "Natural speech has uneven pacing, breaths and small hesitations, but good AI voices can copy these, so verify by another route.",
-    "script": "Thanks for calling. Could you please tell me your order number?",
+    "explanation": "This was a genuine recording of a real person, made with their consent. Natural speech has uneven pacing, breaths and small hesitations, though good AI voices can imitate them.",
+    "clue": "A genuine recording: listen for room noise and irregular rhythm.",
     "src": "assets/audio/V03.mp3",
     "enabled": true,
-    "demo": true
+    "demo": false
   },
   {
     "id": "V04",
@@ -176,14 +174,13 @@ window.REAL_OR_AI_QUESTIONS = [
     "id": "V05",
     "type": "voice",
     "answer": "real",
-    "title": "Campus life",
+    "title": "Casual chat",
     "subtitle": "VOICE • LISTEN CLOSELY",
-    "explanation": "Demo voice generated with synthetic speech. Its Real/AI answer is a temporary game-testing label, not a verified authenticity judgment. Replace with real or AI samples before the event.",
-    "clue": "Natural speech has uneven pacing, breaths and small hesitations, but good AI voices can copy these, so verify by another route.",
-    "script": "I think we left the charger in the lab. Could you check?",
+    "explanation": "This was a genuine recording of a real person, made with their consent. Natural speech has uneven pacing, breaths and small hesitations, though good AI voices can imitate them.",
+    "clue": "A genuine recording of a real speaker, not synthetic speech.",
     "src": "assets/audio/V05.mp3",
     "enabled": true,
-    "demo": true
+    "demo": false
   },
   {
     "id": "V06",
@@ -202,14 +199,13 @@ window.REAL_OR_AI_QUESTIONS = [
     "id": "V07",
     "type": "voice",
     "answer": "real",
-    "title": "Quick question",
+    "title": "Short note",
     "subtitle": "VOICE • LISTEN CLOSELY",
-    "explanation": "Demo voice generated with synthetic speech. Its Real/AI answer is a temporary game-testing label, not a verified authenticity judgment. Replace with real or AI samples before the event.",
-    "clue": "Natural speech has uneven pacing, breaths and small hesitations, but good AI voices can copy these, so verify by another route.",
-    "script": "Can you send me the slides later? I missed the last part.",
+    "explanation": "This was a genuine recording of a real person, made with their consent. Natural speech has uneven pacing, breaths and small hesitations, though good AI voices can imitate them.",
+    "clue": "A genuine recording with natural pauses and breathing.",
     "src": "assets/audio/V07.mp3",
     "enabled": true,
-    "demo": true
+    "demo": false
   },
   {
     "id": "V08",
@@ -228,14 +224,13 @@ window.REAL_OR_AI_QUESTIONS = [
     "id": "V09",
     "type": "voice",
     "answer": "real",
-    "title": "Lost and found",
+    "title": "Heard in passing",
     "subtitle": "VOICE • LISTEN CLOSELY",
-    "explanation": "Demo voice generated with synthetic speech. Its Real/AI answer is a temporary game-testing label, not a verified authenticity judgment. Replace with real or AI samples before the event.",
-    "clue": "Natural speech has uneven pacing, breaths and small hesitations, but good AI voices can copy these, so verify by another route.",
-    "script": "I saw your water bottle on the table. Do you still need it?",
+    "explanation": "This was a genuine recording of a real person, made with their consent. Natural speech has uneven pacing, breaths and small hesitations, though good AI voices can imitate them.",
+    "clue": "A genuine recording with natural pitch changes and background sound.",
     "src": "assets/audio/V09.mp3",
     "enabled": true,
-    "demo": true
+    "demo": false
   },
   {
     "id": "V10",

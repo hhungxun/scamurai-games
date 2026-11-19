@@ -10,7 +10,7 @@ A self-contained **static website** designed for an event booth. Players identif
 - English interface, immediate next question, result page, answer review, replay.
 - No framework, no installation, no backend; relative paths work on GitHub Pages **and in a nested folder**.
 
-> ⚠️ DEMO-ONLY CONTENT: All 10 sample voice recordings are synthetic. Five of them use **temporary "Real" labels for UI testing**; those are NOT authenticated human recordings. All demo media must be replaced or cleared for reuse rights and provenance before public exhibition. Obtain consent before publishing images or recordings of classmates.
+> ⚠️ CONTENT PROVENANCE: The five "Real" voice clips (V01, V03, V05, V07, V09) are genuine recordings supplied by the organisers (19 Nov 2026). The five "AI" voice clips (V02, V04, V06, V08, V10) are still synthetic demo speech; replace them with verified AI-generated clips (with a generation record) before the event if possible. Obtain consent before publishing images or recordings of classmates.
 
 ## Booth integration (Station 4)
 
@@ -33,7 +33,7 @@ The game runs as **Station 4** of the Scamurai event flow, the same way Phishing
 
 ## Questions and clues
 
-Each question in `data/questions.js` has an optional `clue` (one line shown after the answer; falls back to `explanation`). Add it in the file or in Organizer Mode ("Clue" field). The voice clues are generic because the voice Real/AI labels are temporary test values.
+Each question in `data/questions.js` has an optional `clue` (one line shown after the answer; falls back to `explanation`). Add it in the file or in Organizer Mode ("Clue" field). The voice clues are generic because no transcripts are kept for the real recordings.
 
 ## Folder structure
 
