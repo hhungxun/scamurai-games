@@ -52,6 +52,9 @@
       </div>
     </header>`;
   }
+  function mountFullscreen() {
+    window.parent.CLOSE_POPUPS_HOST?.mountFullscreen?.(window, app.querySelector('.booth-header-right'), lang);
+  }
   const modeName = value => value === 'ads' ? t('Ad challenge', '广告挑战') : t('Difficulty test · no ads', '难度测试 · 无广告');
   const taskGroups = [
     {title:['Search & tools','搜索·工具'],ids:['minute3-search-official','minute2-tool-webp','minute2-wall-earthrise']},
@@ -110,6 +113,7 @@
         </section>
         ${staffHistory()}
       </main>`;
+    mountFullscreen();
     if (mode === 'ads' && !demo) {
       document.querySelector('.booth-collection').hidden = true;
       document.querySelector('.booth-advanced').hidden = true;
@@ -152,6 +156,7 @@
           <figure class="booth-brief-figure"><img class="booth-brief-photo" src="${esc(item.briefCover||item.cover)}" alt="" width="480" height="360">${item.coverNote?`<figcaption>${esc(txt(item.coverNote))}</figcaption>`:""}</figure>
         </section>
       </main>`;
+    mountFullscreen();
     document.getElementById('booth-start').addEventListener('click', async () => {
       if (starting) return;
       const button = document.getElementById('booth-start');
@@ -272,6 +277,7 @@
     const armed = round.status === 'armed';
     document.title = t('This round is not finished · close the popups', '本轮尚未结束 · 60秒任务挑战');
     app.innerHTML = `${header(t('ROUND STATUS', '轮次状态'), round)}<main id="booth-main" data-booth-view="${armed ? 'armed' : 'running'}" class="booth-main booth-recovery"><p class="booth-eyebrow">${esc(item.site)} / ${esc(modeName(round.mode))}</p><h1 id="booth-title">${armed ? t('Ready to start', '可以开始了') : t('Your timer is still running', '倒计时还在继续')}</h1><p>${armed ? t('Go to the task site. The timer starts when the page loads.', '打开任务网站。网页就绪后开始计时。') : t('Go back to the task site to finish or submit. Opening this page keeps the timer running.', '回到任务网站继续做题或交卷。打开这个页面时，倒计时还在继续。')}</p><div class="booth-recovery-task"><strong>${esc(txt(item.title))}</strong><span>${esc(txt(item.brief))}</span></div><a class="booth-button booth-button-primary" id="booth-resume" href="${esc(localisedURL(api.entryURL(round)))}">${armed ? t('Continue to the website', '继续前往网站') : t('Return to this round', '返回本轮任务')}<span aria-hidden="true">↗</span></a><a class="booth-text-link" href="${esc(chooseURL())}">${t('Back to task selection', '返回选题')}</a></main>`;
+    mountFullscreen();
   }
   function exportResult(round, item) {
     const assessment = validAssessment(round);
@@ -349,6 +355,7 @@
           </div>
         </details>
       </main>`;
+    mountFullscreen();
     window.BROWSE_BOOTH_ENDING?.result(round, score);
     const select = document.getElementById('booth-judgement');
     select.value = ['complete','partial','incomplete'].includes(round.judgement) ? round.judgement : 'unreviewed';
@@ -376,6 +383,7 @@
     const unavailable = kind === 'runtime';
     document.title = t('Round unavailable · close the popups', '轮次不可用 · 60秒任务挑战');
     app.innerHTML = `${header(t('LET’S RESET THE ENTRY', '重新找到入口'))}<main id="booth-main" data-booth-view="error" class="booth-main booth-recovery"><p class="booth-eyebrow">${t('NOT A RESULT', '这不是本轮结果')}</p><h1 id="booth-title">${unavailable ? t('The activity could not load.', '活动未能加载。') : t('We can’t find that round.', '找不到这轮记录。')}</h1><p>${unavailable ? t('The activity runtime is unavailable. Reload the page before starting. No challenge has started here.', '活动组件暂时不可用。请重新加载后再开始，这里尚未启动挑战。') : t('The link is missing, invalid or no longer stored in this tab. We will not guess a previous participant’s result or add more time to an old round.', '链接缺失、无效，或记录已不在此标签页中。这里不会猜测上一位的结果，也不会为旧轮次重开计时。')}</p><a class="booth-button booth-button-primary" href="${esc(chooseURL())}">${t('Return to task selection', '返回选题')}<span aria-hidden="true">↗</span></a>${unavailable ? `<button class="booth-text-link" type="button" id="booth-reload">${t('Reload page', '重新加载')}</button>` : ''}</main>`;
+    mountFullscreen();
     document.getElementById('booth-reload')?.addEventListener('click', () => location.reload());
   }
   document.documentElement.lang = lang === 'en' ? 'en' : 'zh-Hans';
