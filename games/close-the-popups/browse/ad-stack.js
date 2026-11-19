@@ -4,7 +4,7 @@
   window.BROWSE_AD_STACK = C => {
     const {root,seed,t,esc,read,write,ads,adVisual,adDescription,adURL,redirectURL,wireAds,deck,chosen,adOffer,campaignSite,boothAds}=C;
     const KEY='br-run-v9:'+seed, MISSING=Symbol('missing'), AUTO_MAX=boothAds?60:30, ID_MAX=boothAds?70:40, REVEAL_MS=10000;
-    const GAPS=boothAds?[1500,2000,1750,2500,2000,2250]:[2200,2800,2500,3200,2300,3000];
+    const GAPS=boothAds?[1000,1400,1200,1600,1300,1500]:[2200,2800,2500,3200,2300,3000];
     const FORMATS=['bounce','robot','dodge','player-error','bonus','captcha','tiny','drawer','panel','newsletter'];
     const formats=boothAds?['tiny','drawer','dodge','bounce','panel','newsletter']:FORMATS;
     const firstAt=boothAds?1000:3000, rampAt=4000;
@@ -67,7 +67,7 @@
     const save=()=>{if(!suspended&&!destroyed)C.rawWrite(KEY,state);};
     const burstActive=()=>state.pending.some(p=>p.burst===true);
     const phone=()=>matchMedia('(max-width: 640px)').matches;
-    const limit=()=>boothAds?(state.activeMs<rampAt?(phone()?2:3):(phone()?3:5)):burstActive()?(phone()?5:10):(phone()?2:4);
+    const limit=()=>boothAds?(state.activeMs<rampAt?(phone()?3:4):(phone()?4:6)):burstActive()?(phone()?5:10):(phone()?2:4);
     const pressure=window.BROWSE_AD_PRESSURE({root,lang:C.lang,t,esc,adURL,read,write,adOffer,campaignSite,campus:Boolean(boothAds)});
     const foreground=()=>!destroyed&&!suspended&&!externalModal&&!document.hidden&&document.hasFocus();
     const snapshot=()=>({activeMs:state.activeMs,quietUntil:state.quietUntil,active:foreground(),modalOpen:externalModal||modalId!==null,externalModal,suspended,restoring,shown:state.shown,pending:state.pending.length,burstUsed:state.burstUsed,burstActive:burstActive()});

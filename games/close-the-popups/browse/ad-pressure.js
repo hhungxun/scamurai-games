@@ -9,7 +9,7 @@
     const tr=typeof t==='function'?t:(en,zh)=>lang==='zh'?zh:en;
     const escape=typeof esc==='function'?esc:value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const key='ad-pressure-v1', ids=['ticker','leaderboard','rail','inline-desk','inline-stock'];
-    const startsAt=campus?4000:1000;
+    const startsAt=campus?2500:1000;
     let destroyed=false, activeMs=0, quietUntil=0;
     const featuredSite=['corn','desk','stock','game','security','player','software','prize','coupon','parcel'].includes(campaignSite)?campaignSite:'coupon';
     const featured=()=>typeof adOffer==='function'?adOffer(featuredSite,0):{brand:'Perk Basket',title:tr('A RM100 voucher could be yours','了解 RM100 购物券'),cta:tr('See offer','查看优惠'),eyebrow:tr('Member perks','会员优惠'),description:tr('Explore shopping rewards and member offers.','浏览购物奖励与会员优惠。')};
@@ -73,7 +73,7 @@
     function onClick(event){
       const button=event.target.closest?.('[data-pressure-close]');if(!button||destroyed)return;
       const id=button.dataset.pressureClose;if(!ids.includes(id))return;
-      const fresh=state();fresh.dismissedUntil[id]=activeMs+10000;
+      const fresh=state();fresh.dismissedUntil[id]=activeMs+6000;
       try{write?.(key,fresh);}catch{}
       apply();
       window.dispatchEvent(new CustomEvent('browse:ad-dismiss',{detail:{site:'ambient'}}));

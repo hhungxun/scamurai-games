@@ -249,7 +249,7 @@ async function main() {
       fin = await ok(call('POST', `/api/rounds/${r.roundId}/finish`, { pin: st(n), body: { score: 1, maxScore: 2 } }));
     }
     assert.equal(fin.surveyDue, true);   // station 5 was played in the big run
-    await ok(call('POST', '/api/checkout', { pin: st(4), body: { participantId: D, answers: { q1: '5' } } }));
+    await ok(call('POST', '/api/checkout', { pin: st(4), body: { participantId: D, answers: { s1q1: '5', s2q1: 'Checking where buttons and links lead', s2q2: '4', s3q1: '4', s4q1: '3', s5q1: 'The web address', s5q2: '4', s5q3: '5', g1: '5', g3: '1. Spot the Fake Cash' } } }));
     const lb = await ok(call('GET', '/api/leaderboard'));
     assert.ok(lb.rows.some(r => r.eligible));
   });
@@ -277,11 +277,12 @@ async function main() {
     assert.equal((await fetch(`${BASE}/games/%E0%A4%A`)).status, 404);   // malformed escape: no crash
   });
 
-  await check('wrong PINs: the 21st attempt is locked out (429) (run last)', async () => {
+  await check('wrong PINs: repeating one wrong PIN never locks; 30 distinct wrong PINs do (429) (run last)', async () => {
+    for (let i = 0; i < 40; i++) assert.equal((await call('POST', '/api/auth', { pin: '0000' })).status, 401);
     const res = [];
-    for (let i = 0; i < 21; i++) res.push((await call('POST', '/api/auth', { pin: '0000' })).status);
+    for (let i = 0; i < 35; i++) res.push((await call('POST', '/api/auth', { pin: String(2000 + i) })).status);
     const k = res.indexOf(429);
-    assert.equal(k, 20, `lock at the wrong attempt: ${res}`);
+    assert.ok(k >= 28 && k <= 30, `lock at the wrong attempt: ${res}`);
     assert.ok(res.slice(0, k).every(x => x === 401) && res.slice(k).every(x => x === 429), String(res));
     assert.equal((await call('POST', '/api/auth', { pin: PINS.admin })).status, 429);   // even a right PIN waits
   });
