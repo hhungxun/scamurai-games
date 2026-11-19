@@ -52,6 +52,9 @@
       </div>
     </header>`;
   }
+  function mountFullscreen() {
+    window.parent.CLOSE_POPUPS_HOST?.mountFullscreen?.(window, app.querySelector('.booth-header-right'), lang);
+  }
   const modeName = value => value === 'ads' ? t('Ad challenge', '广告挑战') : t('Difficulty test · no ads', '难度测试 · 无广告');
   const taskGroups = [
     {title:['Search & tools','搜索·工具'],ids:['minute3-search-official','minute2-tool-webp','minute2-wall-earthrise']},
@@ -90,16 +93,34 @@
     document.title = mode === 'clean' ? t('Difficulty test · close the popups', '难度测试 · 一分钟') : t('close the popups · Web challenge', '一分钟 · 网页挑战');
     app.innerHTML = `${header(mode === 'clean' ? t('01 / Pick a task', '01 / 选题') : t('01 / Draw a task', '01 / 随机抽题'))}
       <main id="booth-main" data-booth-view="choose" class="booth-main">
-        <section class="booth-hero" aria-labelledby="booth-title">
-          <div>
-            <p class="booth-eyebrow">${mode === 'clean' ? t('Staff test · ads off', '工作人员测试 · 无广告') : t('Web challenge', '网页挑战')}</p>
+        <section class="${mode === 'clean' ? 'booth-hero' : 'booth-welcome'}" aria-labelledby="booth-title">
+          ${mode === 'ads' ? '<div class="booth-welcome-bar" aria-hidden="true"><i></i><i></i><i></i></div>' : ''}
+          <div class="${mode === 'ads' ? 'booth-welcome-copy' : ''}">
+            ${mode === 'clean' ? `<p class="booth-eyebrow">${t('Staff test · ads off', '工作人员测试 · 无广告')}</p>` : ''}
             <h1 id="booth-title">${t('One minute.', '一分钟挑战')}</h1>
             <p>${mode === 'clean'
               ? t('Try a task without interruptions to check its difficulty.', '先关掉广告，试一试题目难不难。')
-              : t('You have 60 seconds to finish a task. Watch out for pop-up ads.', '你有 60 秒做完任务，小心别点进弹窗广告。')}</p>
+              : t('Finish a web task in 60 seconds while pop-up ads try to distract you.', '在 60 秒内完成一项网页任务，小心突然出现的广告。')}</p>
             <button id="booth-random" class="booth-button booth-button-inverse" type="button">${t('Draw a task', '随机抽题')} <span aria-hidden="true">→</span></button>
+            ${mode === 'ads' ? `<p class="booth-welcome-note">${t('Read the brief before the clock starts.', '先读题，再开始计时。')}</p>` : ''}
           </div>
-          <span class="booth-hero-clock" aria-hidden="true">1:00</span>
+          ${mode === 'clean' ? '<span class="booth-hero-clock" aria-hidden="true">1:00</span>' : `
+            <figure class="booth-welcome-art">
+              <div class="booth-welcome-sponsor">
+                <span>Scamurai</span>
+                <div><strong>RM5,000</strong><span>${t('Event sponsorship', '赛事赞助')}</span></div>
+              </div>
+              <div class="booth-welcome-popup" aria-hidden="true">
+                <div class="booth-welcome-popup-bar"><span>${t('Prize alert', '中奖通知')}</span><span>×</span></div>
+                <span class="booth-welcome-pointer"></span>
+                <div class="booth-welcome-popup-copy">
+                  <span>${t('YOU WON!', '你中奖了！')}</span>
+                  <strong>RM1,000</strong>
+                  <span class="booth-welcome-claim">${t('Claim prize →', '领取奖品 →')}</span>
+                </div>
+              </div>
+              <figcaption>${t('Simulated ad', '模拟广告')}</figcaption>
+            </figure>`}
         </section>
         <section class="booth-collection" aria-labelledby="booth-task-heading">
           <div class="booth-collection-heading">
@@ -110,6 +131,7 @@
         </section>
         ${staffHistory()}
       </main>`;
+    mountFullscreen();
     if (mode === 'ads' && !demo) {
       document.querySelector('.booth-collection').hidden = true;
       document.querySelector('.booth-advanced').hidden = true;
@@ -152,6 +174,7 @@
           <figure class="booth-brief-figure"><img class="booth-brief-photo" src="${esc(item.briefCover||item.cover)}" alt="" width="480" height="360">${item.coverNote?`<figcaption>${esc(txt(item.coverNote))}</figcaption>`:""}</figure>
         </section>
       </main>`;
+    mountFullscreen();
     document.getElementById('booth-start').addEventListener('click', async () => {
       if (starting) return;
       const button = document.getElementById('booth-start');
@@ -272,6 +295,7 @@
     const armed = round.status === 'armed';
     document.title = t('This round is not finished · close the popups', '本轮尚未结束 · 60秒任务挑战');
     app.innerHTML = `${header(t('ROUND STATUS', '轮次状态'), round)}<main id="booth-main" data-booth-view="${armed ? 'armed' : 'running'}" class="booth-main booth-recovery"><p class="booth-eyebrow">${esc(item.site)} / ${esc(modeName(round.mode))}</p><h1 id="booth-title">${armed ? t('Ready to start', '可以开始了') : t('Your timer is still running', '倒计时还在继续')}</h1><p>${armed ? t('Go to the task site. The timer starts when the page loads.', '打开任务网站。网页就绪后开始计时。') : t('Go back to the task site to finish or submit. Opening this page keeps the timer running.', '回到任务网站继续做题或交卷。打开这个页面时，倒计时还在继续。')}</p><div class="booth-recovery-task"><strong>${esc(txt(item.title))}</strong><span>${esc(txt(item.brief))}</span></div><a class="booth-button booth-button-primary" id="booth-resume" href="${esc(localisedURL(api.entryURL(round)))}">${armed ? t('Continue to the website', '继续前往网站') : t('Return to this round', '返回本轮任务')}<span aria-hidden="true">↗</span></a><a class="booth-text-link" href="${esc(chooseURL())}">${t('Back to task selection', '返回选题')}</a></main>`;
+    mountFullscreen();
   }
   function exportResult(round, item) {
     const assessment = validAssessment(round);
@@ -349,6 +373,7 @@
           </div>
         </details>
       </main>`;
+    mountFullscreen();
     window.BROWSE_BOOTH_ENDING?.result(round, score);
     const select = document.getElementById('booth-judgement');
     select.value = ['complete','partial','incomplete'].includes(round.judgement) ? round.judgement : 'unreviewed';
@@ -376,6 +401,7 @@
     const unavailable = kind === 'runtime';
     document.title = t('Round unavailable · close the popups', '轮次不可用 · 60秒任务挑战');
     app.innerHTML = `${header(t('LET’S RESET THE ENTRY', '重新找到入口'))}<main id="booth-main" data-booth-view="error" class="booth-main booth-recovery"><p class="booth-eyebrow">${t('NOT A RESULT', '这不是本轮结果')}</p><h1 id="booth-title">${unavailable ? t('The activity could not load.', '活动未能加载。') : t('We can’t find that round.', '找不到这轮记录。')}</h1><p>${unavailable ? t('The activity runtime is unavailable. Reload the page before starting. No challenge has started here.', '活动组件暂时不可用。请重新加载后再开始，这里尚未启动挑战。') : t('The link is missing, invalid or no longer stored in this tab. We will not guess a previous participant’s result or add more time to an old round.', '链接缺失、无效，或记录已不在此标签页中。这里不会猜测上一位的结果，也不会为旧轮次重开计时。')}</p><a class="booth-button booth-button-primary" href="${esc(chooseURL())}">${t('Return to task selection', '返回选题')}<span aria-hidden="true">↗</span></a>${unavailable ? `<button class="booth-text-link" type="button" id="booth-reload">${t('Reload page', '重新加载')}</button>` : ''}</main>`;
+    mountFullscreen();
     document.getElementById('booth-reload')?.addEventListener('click', () => location.reload());
   }
   document.documentElement.lang = lang === 'en' ? 'en' : 'zh-Hans';

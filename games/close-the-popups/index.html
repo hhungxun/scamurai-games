@@ -8,10 +8,17 @@
   <link rel="stylesheet" href="station.css">
   <!-- Loaded in the head: station.js registers dashboard mode before DOMContentLoaded boots the SDK. -->
   <script src="../../sdk.js" data-station="2" data-demo-param="demo"></script>
-  <script defer src="station.js"></script>
+  <script defer src="station.js?v=round-brand1"></script>
 <link rel="stylesheet" href="../shared/theme.css"><link rel="icon" href="/assets/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/assets/apple-touch-icon.png"></head>
 <body>
   <div id="booth-brand"><a href="/">SCAM<span>URAI</span></a><span>02 / CLOSE THE POPUPS</span><strong id="booth-player">Choose participant</strong><a id="demo-link" href="?demo=1&amp;lang=en">Try the demo</a></div>
+  <template id="fullscreen-control">
+    <button id="station-fullscreen" type="button">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path/>
+      </svg>
+    </button>
+  </template>
   <div id="demo-banner" hidden><span id="demo-note">Practice round. Your score won’t count toward the event.</span> <a id="event-link" href="?lang=en">Back to the event →</a></div>
   <button id="staff-toggle" aria-haspopup="dialog" aria-controls="station-header" aria-expanded="false">Staff</button>
   <dialog id="station-header" aria-labelledby="staff-title">

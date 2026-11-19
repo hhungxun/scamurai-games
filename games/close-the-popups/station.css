@@ -62,3 +62,5 @@ body{display:flex;flex-direction:column;overflow:hidden}
 @media(max-width:480px){#booth-brand{gap:10px;padding:8px 10px;font-size:9px}}
 
 #booth-player{margin-left:auto;font-size:11px;letter-spacing:normal;overflow-wrap:anywhere}#booth-brand #booth-player+a{margin-left:0}@media(max-width:600px){#booth-brand{flex-wrap:wrap}#booth-player{order:4;width:100%;margin-left:0}#booth-brand>a:last-child{margin-left:auto}}
+
+html:fullscreen #booth-brand,html:fullscreen #demo-banner{display:none}

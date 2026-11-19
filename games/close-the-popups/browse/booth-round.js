@@ -450,6 +450,7 @@
     observer=new MutationObserver(syncControls);observer.observe(document.body,{attributes:true,attributeFilter:['inert','open','hidden','aria-modal'],childList:true,subtree:true});
     const soundButton=document.createElement('button');soundButton.type='button';soundButton.dataset.boothSound='';
     bar.querySelector('.br-booth-actions').prepend(soundButton);
+    window.parent.CLOSE_POPUPS_HOST?.mountFullscreen?.(window, bar.querySelector('.br-booth-actions'), record.lang);
     countdown=window.BROWSE_COUNTDOWN_SOUND?.({button:soundButton,readRound:current,isLive:()=>Boolean(active&&!suspended&&!restoring&&!redirecting),lang:record.lang});
     syncControls();
   };

@@ -14,6 +14,40 @@
   let ownedPreparation = false;
   let message = ['Connecting to Scamurai…','正在连接活动系统…'];
   const say = (en, zh) => { message=[en,zh]; status.textContent = lang === 'zh' ? zh : en; };
+
+  function syncFullscreen(button) {
+    if (!button) return;
+    const zh = button.lang === 'zh-Hans';
+    const active = document.fullscreenElement === document.documentElement;
+    const label = active
+      ? (zh ? '退出全屏' : 'Exit full screen')
+      : (zh ? '进入全屏' : 'Enter full screen');
+    button.setAttribute('aria-label', label);
+    button.title = label;
+    button.querySelector('path').setAttribute('d', active
+      ? 'M3 8h5V3m8 0v5h5M8 21v-5H3m13 5v-5h5'
+      : 'M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5');
+  }
+  function syncCurrentFullscreen() {
+    syncFullscreen(frame.contentDocument?.getElementById('station-fullscreen'));
+  }
+  function mountFullscreen(win, controls, language) {
+    if (!document.fullscreenEnabled || win !== frame.contentWindow || !safeURL(win.location.href)) return;
+    const button = win.document.importNode($('fullscreen-control').content.firstElementChild, true);
+    button.lang = language === 'zh' ? 'zh-Hans' : 'en';
+    syncFullscreen(button);
+    button.addEventListener('click', async () => {
+      try {
+        if (document.fullscreenElement) await document.exitFullscreen();
+        // Fullscreen the host so task and result navigation can keep it open.
+        else await document.documentElement.requestFullscreen();
+      } catch {
+        win.alert(language === 'zh' ? '暂时无法切换全屏。' : 'Couldn’t switch full screen.');
+      }
+    });
+    controls.append(button);
+    win.addEventListener('pageshow', syncCurrentFullscreen);
+  }
   function localise() {
     document.documentElement.lang=lang==='zh'?'zh-Hans':'en';
     const labels={
@@ -86,7 +120,12 @@
     if (state) sessionStorage.setItem(KEY, JSON.stringify(state));
     else sessionStorage.removeItem(KEY);
   }
+  function syncRoundBrand() {
+    // Only a live task mounts the round HUD. Advertiser tabs leave that document in place.
+    $('booth-brand').hidden = !frame.hidden && Boolean(frame.contentDocument?.getElementById('br-booth-bar'));
+  }
   function controls() {
+    syncRoundBrand();
     $('void').hidden = !ready || !state || !['open','pending'].includes(state.status);
     // A pending finish must be retried, not cancelled: the server may have saved it.
     $('void').disabled = busy || state?.status === 'pending';
@@ -251,7 +290,7 @@
       openPanel();
     } finally { picking = false; frame.inert = state?.status === 'cancelled'; controls(); }
   }
-  window.CLOSE_POPUPS_HOST = {prepare,bind,result,demo:DEMO,
+  window.CLOSE_POPUPS_HOST = {prepare,bind,result,mountFullscreen,demo:DEMO,
     async draw(win, ids) {
       verifyChild(win);
       const pool = [...new Set(ids)].filter(id => typeof id === 'string' && /^minute[234]-[a-z-]+$/.test(id));
@@ -270,6 +309,7 @@
     canNext(win) { verifyChild(win); return next(); },
     async abort(win) { verifyChild(win); if (ownedPreparation && state?.localId === null) await cancel(false); ownedPreparation = false; }
   };
+  document.addEventListener('fullscreenchange', syncCurrentFullscreen);
   $('staff-toggle').onclick=openPanel;
   $('notice-action').onclick=openPanel;
   $('staff-close').onclick=closePanel;
@@ -293,6 +333,8 @@
     } catch { say('Could not open the participant page. Try again.', '成绩页暂不可用，请重试。'); }
   };
   frame.addEventListener('load', () => {
+    syncRoundBrand();
+    if (frame.contentDocument) frame.contentWindow.addEventListener('pageshow', syncRoundBrand);
     try { const u=new URL(frame.contentWindow.location.href);if(safeURL(u.href)){lang=u.searchParams.get('lang')==='zh'?'zh':'en';localise();inlineStatus();} } catch {}
     if (practice) {
       try { const url=safeURL(frame.contentWindow.location.href); if(url && new URL(url).searchParams.get('round')===practice.localId){practice.url=url;sessionStorage.setItem(KEY+':practice',JSON.stringify(practice));} } catch {}

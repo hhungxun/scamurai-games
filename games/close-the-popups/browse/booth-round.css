@@ -19,6 +19,8 @@ html.br-booth-running .br-ad.br-stack-card.br-stack-modal > .br-ad-scroll { max-
 #br-booth-bar button[data-booth-submit] { background:#e5141d; color:#fff; border-color:#e5141d; }
 #br-booth-bar button[data-booth-submit]:hover { background:#ff2630; }
 #br-booth-bar button[data-booth-void] { border-color:transparent; color:#ffffff8c; font-size:10px; padding-inline:4px; }
+#br-booth-bar #station-fullscreen { display:grid; place-items:center; flex:none; width:34px; min-height:34px; padding:0; border-width:1px; border-radius:2px; box-shadow:none; }
+#br-booth-bar #station-fullscreen:hover { border-color:#ffd200; color:#ffd200; }
 #br-booth-bar [inert] { opacity:.55; }
 #br-booth-bar button:focus-visible, #br-booth-task-dialog button:focus-visible { outline:3px solid #ffd200; outline-offset:3px; }
 #br-booth-bar[data-urgent="true"] .br-booth-time strong { color:#ff5a3c; animation:br-booth-pulse 1s steps(2,jump-none) infinite; }
