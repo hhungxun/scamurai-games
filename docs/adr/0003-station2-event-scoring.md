@@ -23,3 +23,7 @@ Validation uses pure scoring checks plus local browser tests with throwaway part
 ## Amendment 2026-11-19: guaranteed warm-up floor
 
 User request: every participant must be able to reach at least 20/100 per Station 2 game. Each task dialog now carries an untimed, retryable warm-up (tap this task's own top-bar label among three options). Completing it sets `round.guaranteed`; when the Round has ended, `total = max(task + speed + safe, 20)`. The cap stays 100 and weights stay 60/20/20. No warm-up and no evidence still scores 0, and void Rounds never score. This reverses the "no participation floor" consequence above, but only for participants who complete the warm-up. Covered by `node server/test/popup-score.js`.
+
+## Amendment 2026-11-19: restore 40/40/20
+
+Station 2 returns to the original 40 task / 40 speed / 20 safe interaction formula. With automatic scoring checks, the task score starts at 10. Valid timing earns a 20-point base plus a speed bonus. With an ad log, safety starts at 10, adds two for every real close, and subtracts one for each fake-close click. An untouched round with complete scoring data can therefore earn 40. The warm-up still guarantees a total of at least 20, which a valid timed round already reaches through its speed points. Keep the current task assignment and checks, including sponsored-search avoidance, and the server tie-break. See the [current rules](../../games/close-the-popups/docs/SCORING.md).

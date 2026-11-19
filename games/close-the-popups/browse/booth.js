@@ -147,7 +147,7 @@
               <ol>${item.goals.map(goal => `<li>${taskText(goal, item)}</li>`).join('')}</ol>
             </div>
             <button id="booth-start" type="button" class="booth-button booth-button-primary">${t('Start task', '开始任务')} <span aria-hidden="true">→</span></button>
-            <p id="booth-start-note" class="booth-note" role="status">${t('You have 60 seconds once the site loads. The clock keeps running if you switch tabs. Finish and submit within 30 seconds for full speed points. You can earn 60 points for the task, 20 for speed and 20 for safe browsing.', '网页打开后有 60 秒，切换标签页也照常计时。30 秒内做完并交卷，速度分拿满。任务 60 分，速度和安全操作各 20 分。')}</p>
+            <p id="booth-start-note" class="booth-note" role="status">${t('You have 60 seconds once the site loads. The clock keeps running if you switch tabs. Finish and submit within 30 seconds for full speed points. The task and speed are worth up to 40 points each. Closing pop-ups safely helps you earn the other 20.', '网页打开后有 60 秒，切换标签页也照常计时。30 秒内做完并交卷，速度分拿满。任务和速度各占 40 分，安全关闭弹窗也能得分，最多 20 分。')}</p>
           </div>
           <figure class="booth-brief-figure"><img class="booth-brief-photo" src="${esc(item.briefCover||item.cover)}" alt="" width="480" height="360">${item.coverNote?`<figcaption>${esc(txt(item.coverNote))}</figcaption>`:""}</figure>
         </section>
@@ -236,25 +236,25 @@
   function scoreBlock(score, round) {
     if (!score) return '';
     const r = score.resilience, time = score.time;
-    const rows = r ? [[t('Misleading ads clicked (including blocked tabs)', '误点广告次数（含被拦截的）'), r.unsafeClicks], [t('Pop-ups closed safely', '正确关掉的弹窗'), r.cleanCloses], [t('Fake close buttons clicked', '误点假关闭按钮'), r.decoys],
+    const rows = r ? [[t('Ad clicks recorded (including blocked tabs)', '广告点击记录（含被拦截的）'), r.unsafeClicks], [t('Pop-ups closed safely', '正确关掉的弹窗'), r.cleanCloses], [t('Fake close buttons clicked', '误点假关闭按钮'), r.decoys],
       [t('Chased close buttons (no points)', '追逐关闭按钮次数（不计分）'), r.dodges], [t('Close buttons revealed after 10 seconds (no points)', '10 秒后出现辅助关闭按钮（不计分）'), r.revealed],
       [t('Ad tabs opened', '打开的广告标签页'), r.opened]] : [];
     return `<section class="booth-score" aria-labelledby="booth-score-title">
         <h2 id="booth-score-title" class="booth-sr">${t('Round score', '本轮得分')}</h2>
         <div class="booth-score-total"><strong>${score.total}</strong><span>/ 100</span></div>
         <dl class="booth-score-split">
-          <div><dt>${t('Task', '任务完成')}</dt><dd>${score.task.score} / 60</dd><small>${t(`${score.task.met} of ${score.task.total} items checked off`, `已记录 ${score.task.met} / ${score.task.total} 项`)}</small></div>
-          <div><dt>${t('Speed', '速度')}</dt><dd>${time ? `${time.score} / 20` : '—'}</dd><small>${time ? t('Based on time and task progress', '按用时和任务进度计算') : t('No time recorded', '没有用时记录')}</small></div>
-          <div><dt>${t('Safe interaction', '安全操作')}</dt><dd>${r ? `${r.score} / 20` : '—'}</dd><small>${r ? t('Lose 5 points each time you click a misleading ad.', '每误点一次广告扣 5 分。') : unavailableResilience(round)}</small></div>
-          <div><dt>${t('Warm-up floor', '热身保底')}</dt><dd>${score.guaranteed && score.guaranteed.done ? '20 / 100' : '—'}</dd><small>${score.guaranteed && score.guaranteed.done ? (score.guaranteed.applied ? t('Warm-up done: the round total was lifted to 20', '已完成热身：本轮总分提升至 20') : t('Warm-up done: the 20-point floor was already exceeded', '已完成热身：实际得分已高于 20 分保底')) : t('Warm-up not completed, so no floor applies', '未完成热身，无保底分')}</small></div>
+          <div><dt>${t('Task', '任务完成')}</dt><dd>${score.task.score} / 40</dd><small>${t(`${score.task.met} of ${score.task.total} items checked off`, `已记录 ${score.task.met} / ${score.task.total} 项`)}</small></div>
+          <div><dt>${t('Speed', '速度')}</dt><dd>${time ? `${time.score} / 40` : '—'}</dd><small>${time ? t('Based on time and task progress', '按用时和任务进度计算') : t('No time recorded', '没有用时记录')}</small></div>
+          <div><dt>${t('Safe interaction', '安全操作')}</dt><dd>${r ? `${r.score} / 20` : '—'}</dd><small>${r ? t('+2 for each real close, −1 for each fake close clicked.', '每正确关闭一次加 2 分，每误点一次假关闭扣 1 分。') : unavailableResilience(round)}</small></div>
+          <div><dt>${t('Warm-up floor', '热身保底')}</dt><dd>${score.guaranteed && score.guaranteed.done ? '20 / 100' : '—'}</dd><small>${score.guaranteed && score.guaranteed.done ? (score.guaranteed.applied ? t('Warm-up done: the round total was lifted to 20', '已完成热身：本轮总分提升至 20') : t('Warm-up done: your total was already at least 20', '已完成热身：本轮本来就有至少 20 分')) : t('Warm-up not completed, so no floor applies', '未完成热身，无保底分')}</small></div>
         </dl>
         ${rows.length ? `<ul class="booth-score-detail">${rows.map(([label, value]) => `<li><span>${esc(label)}</span><b>${value}</b></li>`).join('')}</ul>` : ''}
         <p class="booth-note">${t('The task score uses the items we could check automatically. A staff member can verify the others below.', '任务分按系统能自动核对的项目计算。下方还有些项目需要工作人员确认。')}</p>
         <details class="booth-score-rules">
           <summary>${t('How scoring works', '查看计分规则')}</summary>
-          <p>${t('Warm-up floor: every task opens with a simple warm-up (tap the label shown in the top bar). Completing it guarantees at least 20 / 100 for the round once it ends; it is never timed and can be retried. Skipping it adds nothing, and a round with no warm-up and no evidence still scores zero.', '热身保底：每道任务都附带一个简单热身（点击顶部栏显示的任务标签）。完成后，本轮结束时总分至少为 20 / 100；热身不计时、可重试。未完成热身则无保底，且没有热身也没有证据的一轮仍为零分。')}</p>
-          <p>${t('The task is worth up to 60 points. The more you finish, the more you earn. Speed is worth up to 20 points and also depends on how much you finish. After 30 seconds, your available speed points drop to zero at 60 seconds. If you complete none of the checks, your total is zero.', '任务最多 60 分，完成得越多，分数越高。速度最多 20 分，也按完成进度计算。超过 30 秒后，能拿到的速度分会逐渐降低，到 60 秒降为 0。所有项目都没完成，本轮就是 0 分。')}</p>
-          <p>${t('Safe browsing is worth up to 20 points, based on how much of the task you finish. Each misleading-ad click costs 5 points, even if your browser blocks the tab. Closing the ad does not undo the deduction. This part of your score cannot go below zero. If there is no ad log, you get no safety points. Staff practice does not count toward the event.', '安全操作最多 20 分，也按任务完成进度计算。每误点一次广告扣 5 分，即使标签页被拦截也算。关掉广告不会退回扣分，最低扣到 0 分。没有广告记录就没有安全分。工作人员练习不计入活动成绩。')}</p>
+          <p>${t('Open View task and pick the label shown in the top bar. You can try again while the clock is running. Completing the warm-up guarantees at least 20 points for the round.', '在「查看任务」里选出顶部栏显示的标签。倒计时结束前可以重试。做完热身，本轮总分至少 20 分。')}</p>
+          <p>${t('The task score starts at 10 when there are items to check and can reach 40. Speed starts at 20. You can earn up to 20 more based on how much you finish. The bonus starts to drop after 30 seconds and reaches zero at 60 seconds.', '有计分项时，任务分最低 10 分，最高 40 分。速度有 20 分基础分，按任务进度最多再奖 20 分。超过 30 秒后，奖励逐渐减少，到 60 秒时只剩基础分。')}</p>
+          <p>${t('With an ad log, you start with 10 safety points. Each real close adds 2. Each fake close you click costs 1. This part stays between 0 and 20. Staff practice does not count toward the event.', '有广告记录时，安全操作从 10 分起算。每正确关闭一次加 2 分，每误点一次假关闭扣 1 分，最低 0 分，最高 20 分。工作人员练习不计入活动成绩。')}</p>
         </details>
       </section>`;
   }
@@ -277,8 +277,8 @@
     const assessment = validAssessment(round);
     const score = scoreData(round);
     const lines = [t('ONE MINUTE — ROUND RECORD', '一分钟 — 本轮记录'), '', `${t('Round', '轮次')}: ${round.id}`, `Seed: ${round.seed}`, `${t('Task', '题目')}: ${txt(item.title)} (${item.id})`, `${t('Memory anchor', '任务要点')}: ${txt(item.badge || item.title)}`, `${t('Second-level hint', '二级提示')}: ${round.usedSecondHint ? t('Used', '已使用') : t('Not used', '未使用')}`, `${t('Website', '网站')}: ${item.site}`, `${t('Mode', '环境')}: ${modeName(round.mode)}`, `${t('Status', '状态')}: ${reasonText(round)}`, `${t('Time used', '实际用时')}: ${elapsedText(round)}`,       ...(score ? [`${t('Score', '得分')}: ${score.total} / 100`,
-        `${t('Task', '任务完成')}: ${score.task.score} / 60 (${score.task.met}/${score.task.total})`,
-        `${t('Speed', '速度')}: ${score.time ? `${score.time.score} / 20 (${t('base', '基础')} ${score.time.base} + ${t('speed bonus', '速度奖励')} ${score.time.bonus})` : '—'}`,
+        `${t('Task', '任务完成')}: ${score.task.score} / 40 (${score.task.met}/${score.task.total})`,
+        `${t('Speed', '速度')}: ${score.time ? `${score.time.score} / 40 (${t('base', '基础')} ${score.time.base} + ${t('speed bonus', '速度奖励')} ${score.time.bonus})` : '—'}`,
         `${t('Safe interaction', '安全操作')}: ${score.resilience ? `${score.resilience.score} / 20` : `— (${unavailableResilience(round)})`}`,
         `${t('Warm-up floor', '热身保底')}: ${score.guaranteed && score.guaranteed.done ? (score.guaranteed.applied ? t('done, total lifted to 20', '已完成，总分提升至 20') : t('done, not needed', '已完成，未触发')) : t('not completed', '未完成')}`,
         ...(score.resilience ? [`${t('Clean closes / false closes / evasions / assists', '干净关闭 / 假关闭 / 闪避 / 辅助')}: ${score.resilience.cleanCloses} / ${score.resilience.decoys} / ${score.resilience.dodges} / ${score.resilience.revealed}`, `${t('Ad tabs opened', '打开的广告标签页')}: ${score.resilience.opened}`] : [])] : []),
