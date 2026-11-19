@@ -2,13 +2,19 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { BANKNOTE_SETS, DURATION_MS, NOTE_COUNT, Round } = require('../js/game-core.js');
 
-test('shuffles all ten original notes exactly once, with corrected labels and review clues', () => {
+test('draws ten distinct notes from the twelve sets, with labels and review clues', () => {
   const round = new Round({ random: () => 0 });
-  assert.deepEqual(round.order, [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]);
+  assert.deepEqual(round.order, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   assert.equal(NOTE_COUNT, 10);
+  assert.equal(BANKNOTE_SETS.length, 12);
   assert.deepEqual(BANKNOTE_SETS.map(note => note.isReal), [
-    true, false, false, true, false, false, false, false, true, false
+    true, false, false, false, false, false, false, false, true, false, true, true
   ]);
+  for (const seed of [0, 0.3, 0.7, 0.999]) {
+    const order = new Round({ random: () => seed }).order;
+    assert.equal(new Set(order).size, NOTE_COUNT);
+    assert.ok(order.every(id => id >= 0 && id < BANKNOTE_SETS.length));
+  }
   assert.ok(BANKNOTE_SETS.every(note => note.reason.length > 0));
 });
 

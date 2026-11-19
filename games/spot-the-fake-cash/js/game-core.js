@@ -1,103 +1,42 @@
-/* Original note set and pure round logic shared by the 3D game and Node tests. */
+/* Note sets and pure round logic shared by the 3D game and Node tests. */
 (function (root) {
   'use strict';
 
+  const set = (name, frontDay, frontUV, backDay, backUV, isReal, reason) => ({
+    name, frontDay: frontDay + '.jpg', frontUV: frontUV + '.jpg', backDay: backDay + '.jpg', backUV: backUV + '.jpg', isReal, reason
+  });
+
   const BANKNOTE_SETS = [
-    {
-      name: 'Banknote 01',
-      frontDay: 'RM50 real.png',
-      frontUV:  'RM50 uv real.png',
-      backDay:  'RM50 back clear.png',
-      backUV:   'uv back.jpeg',
-      isReal: true,
-      reason: 'Both sides use the genuine RM50 designs and matching UV patterns.'
-    },
-    {
-      name: 'Banknote 02',
-      frontDay: 'RM50 rafflesia.png',
-      frontUV:  'RM50 uv rafflesia.png',
-      backDay:  'RM50 back clear.png',
-      backUV:   'uv back.jpeg',
-      isReal: false,
-      reason: 'The Rafflesia front design and its UV pattern differ from the genuine RM50.'
-    },
-    {
-      name: 'Banknote 03',
-      frontDay: 'RM50 Malaya Fake.png',
-      frontUV:  'RM50 uv malaya.png',
-      backDay:  'RM50 back clear.png',
-      backUV:   'uv back.jpeg',
-      isReal: false,
-      reason: 'The Malaya front print and its UV pattern differ from the genuine RM50.'
-    },
-    {
-      name: 'Banknote 04',
-      frontDay: 'RM50 real.png',
-      frontUV:  'RM50 uv real.png',
-      backDay:  'RM50 back clear.png',
-      backUV:   'uv back.jpeg',
-      isReal: true,
-      reason: 'The front, back and UV patterns match the genuine RM50.'
-    },
-    {
-      name: 'Banknote 05',
-      frontDay: 'RM50 real.png',
-      frontUV:  'RM50 uv malaya.png',
-      backDay:  'RM50 back clear.png',
-      backUV:   'uv back.jpeg',
-      isReal: false,
-      reason: 'The front looks genuine in daylight, but its UV pattern is wrong.'
-    },
-    {
-      name: 'Banknote 06',
-      frontDay: 'RM50 real.png',
-      frontUV:  'RM50 uv fake.png',
-      backDay:  'RM50 back clear.png',
-      backUV:   'uv back.jpeg',
-      isReal: false,
-      reason: 'The front UV pattern does not match a genuine RM50.'
-    },
-    {
-      name: 'Banknote 07',
-      frontDay: 'RM50 Malaya Fake.png',
-      frontUV:  'RM50 uv real.png',
-      backDay:  'RM50 back atom.png',
-      backUV:   'uv back fake atom.jpeg',
-      isReal: false,
-      reason: 'The front has the fake Malaya design and the back has the fake atom design.'
-    },
-    {
-      name: 'Banknote 08',
-      frontDay: 'RM50 real.png',
-      frontUV:  'RM50 rafflesia.png',
-      backDay:  'RM50 back clear.png',
-      backUV:   'uv back fake atom.jpeg',
-      isReal: false,
-      reason: 'The front UV image shows the Rafflesia design and the back UV uses the fake atom pattern.'
-    },
-    {
-      name: 'Banknote 09',
-      frontDay: 'RM50 real.png',
-      frontUV:  'RM50 uv real.png',
-      backDay:  'RM50 back clear.png',
-      backUV:   'uv back.jpeg',
-      isReal: true,
-      reason: 'Both sides match the genuine RM50 in daylight and under UV.'
-    },
-    {
-      name: 'Banknote 10',
-      frontDay: 'RM50 real.png',
-      frontUV:  'RM50 uv real.png',
-      backDay:  'RM50 back atom.png',
-      backUV:   'uv back fake atom.jpeg',
-      isReal: false,
-      reason: 'The back uses the fake atom design and the wrong UV pattern.'
-    }
+    set('Genuine RM50 (A)', 'front-real', 'front-uv-real', 'back-clear', 'back-uv', true,
+      'Both sides use the genuine RM50 designs, and both UV patterns match.'),
+    set('Rafflesia front', 'front-rafflesia', 'front-uv-rafflesia', 'back-clear', 'back-uv', false,
+      'The front shows a Rafflesia design that is not on the genuine RM50, and its UV pattern is different too.'),
+    set('Malaya front', 'front-malaya-fake', 'front-uv-malaya', 'back-clear', 'back-uv', false,
+      'The front print uses the fake Malaya design, and its UV pattern does not match the genuine note.'),
+    set('Faint back UV', 'front-real', 'front-uv-real', 'back-clear', 'back-uv-fake-light', false,
+      'Everything looks genuine in daylight, but the back glows with the wrong, faint UV pattern.'),
+    set('Wrong front UV (Malaya)', 'front-real', 'front-uv-malaya', 'back-clear', 'back-uv', false,
+      'The front looks genuine in daylight, but under UV it shows the Malaya pattern instead of the real one.'),
+    set('Wrong front UV', 'front-real', 'front-uv-fake', 'back-clear', 'back-uv', false,
+      'The front looks genuine in daylight, but its UV pattern does not match a genuine RM50.'),
+    set('Malaya front, atom back', 'front-malaya-fake', 'front-uv-real', 'back-fake', 'back-uv-fake-atom', false,
+      'The front has the fake Malaya design and the back has the fake atom design and UV pattern.'),
+    set('Rafflesia UV, atom back UV', 'front-real', 'front-uv-rafflesia', 'back-clear', 'back-uv-fake-atom', false,
+      'Both sides look genuine in daylight, but the front UV shows the Rafflesia pattern and the back UV shows the fake atom pattern.'),
+    set('Genuine RM50 (B)', 'front-real', 'front-uv-real', 'back-clear', 'back-uv', true,
+      'Both sides match the genuine RM50 in daylight and under UV.'),
+    set('Atom back', 'front-real', 'front-uv-real', 'back-fake', 'back-uv-fake-light', false,
+      'The front is genuine, but the back uses the fake atom design and the wrong UV pattern.'),
+    set('Genuine RM50 (C)', 'front-real', 'front-uv-real', 'back-clear', 'back-uv', true,
+      'Front, back and both UV patterns all match the genuine RM50.'),
+    set('Genuine RM50 (D)', 'front-real', 'front-uv-real', 'back-clear', 'back-uv', true,
+      'Every check passes: genuine designs on both sides and the correct UV glow.')
   ];
 
   const DURATION_MS = 120_000;
-  const NOTE_COUNT = BANKNOTE_SETS.length;
+  const NOTE_COUNT = 10; // notes per round, drawn at random from the sets above
   const POINTS_PER_NOTE = 10;
+  const SNAPSHOT_VERSION = 3;
 
   function shuffleNotes(random) {
     const order = BANKNOTE_SETS.map((_, index) => index);
@@ -105,7 +44,7 @@
       const j = Math.floor(random() * (i + 1));
       [order[i], order[j]] = [order[j], order[i]];
     }
-    return order;
+    return order.slice(0, NOTE_COUNT);
   }
 
   class Round {
@@ -163,7 +102,7 @@
 
     snapshot() {
       return {
-        version: 2,
+        version: SNAPSHOT_VERSION,
         deadline: this.deadline,
         order: [...this.order],
         answers: [...this.answers],
@@ -173,10 +112,10 @@
     }
 
     static restore(data, { now = Date.now } = {}) {
-      if (data?.version !== 2 || !Number.isFinite(data.deadline)
+      if (data?.version !== SNAPSHOT_VERSION || !Number.isFinite(data.deadline)
         || !Array.isArray(data.order) || data.order.length !== NOTE_COUNT
         || new Set(data.order).size !== NOTE_COUNT
-        || !data.order.every(id => Number.isInteger(id) && id >= 0 && id < NOTE_COUNT)
+        || !data.order.every(id => Number.isInteger(id) && id >= 0 && id < BANKNOTE_SETS.length)
         || !Array.isArray(data.answers) || data.answers.length > NOTE_COUNT
         || !data.answers.every(choice => typeof choice === 'boolean')) {
         throw new Error('Invalid round snapshot');
@@ -193,7 +132,7 @@
     }
   }
 
-  const core = { BANKNOTE_SETS, DURATION_MS, NOTE_COUNT, Round };
+  const core = { BANKNOTE_SETS, DURATION_MS, NOTE_COUNT, SNAPSHOT_VERSION, Round };
   if (typeof module === 'object' && module.exports) module.exports = core;
   else root.FakeCashCore = core;
 })(globalThis);

@@ -4,7 +4,7 @@
   let scene, camera, renderer;
   let banknoteMesh, uvTorchMesh, spotLight, torchBeamCone, banknoteMaterial;
   const $ = id => document.getElementById(id);
-  const { BANKNOTE_SETS, DURATION_MS, NOTE_COUNT, Round } = FakeCashCore;
+  const { BANKNOTE_SETS, DURATION_MS, NOTE_COUNT, SNAPSHOT_VERSION, Round } = FakeCashCore;
   const booth = window.parent !== window ? window.parent.ScamuraiBooth : null;
   const demo = new URLSearchParams(location.search).get('demo') === '1';
   const FEEDBACK_MS = 1700;
@@ -183,13 +183,17 @@
 
   function startGame() {
     if (!initialized || round) return;
-    if (!booth && !demo) {
-      setStatus('Open the station page to choose a participant.');
-      return;
+    try {
+      round = new Round();
+      saveProgress();
+      showRound();
+    } catch (error) {
+      console.error(error);
+      round = null;
+      setStatus('Could not start the round: ' + (error.message || error));
+      $('start-overlay').hidden = false;
+      $('start-game-btn').disabled = false;
     }
-    round = new Round();
-    saveProgress();
-    showRound();
   }
 
   function showFatalError(error) {
@@ -766,10 +770,6 @@
   }
 
   async function enterVR() {
-    if (!booth && !demo) {
-      setStatus('Open the station page to choose a participant.');
-      return;
-    }
     if (!navigator.xr) {
       setStatus('WebXR requires a supported browser and localhost or HTTPS.');
       return;
@@ -946,7 +946,7 @@
       setupDesktopInteraction();
 
       $('flip-btn').addEventListener('click', flipNote);
-      $('again-btn').textContent = demo ? 'Play again' : 'Next participant';
+      $('again-btn').textContent = demo || !booth ? 'Play again' : 'Next participant';
       $('again-btn').addEventListener('click', () => {
         if (demo && booth) booth.restartDemo(window);
         else if (booth) booth.next(window);
@@ -965,20 +965,30 @@
 
       renderer.setAnimationLoop(animate);
       initialized = true;
-      const snapshot = booth?.snapshot(window);
-      if (snapshot?.version === 1 && snapshot.status === 'finished') {
+      let snapshot = null;
+      try {
+        snapshot = booth?.snapshot(window) ?? null;
+      } catch (error) {
+        console.warn('Booth snapshot unavailable', error);
+      }
+      let restored = null;
+      if (snapshot?.version === SNAPSHOT_VERSION) {
+        try { restored = Round.restore(snapshot); } catch (error) { console.warn('Saved round ignored', error); }
+      }
+      if (!restored && [1, 2].includes(snapshot?.version) && snapshot.status === 'finished') {
         $('start-overlay').hidden = true;
         $('result-title').textContent = 'Round complete';
         $('result-accuracy').textContent = 'This round used an earlier version. The booth header shows its saved result.';
         $('review-list').previousElementSibling.hidden = true;
         $('review-list').hidden = true;
         $('result-overlay').hidden = false;
-      } else if (snapshot?.version === 2) {
-        round = Round.restore(snapshot);
+      } else if (restored) {
+        round = restored;
         showRound();
       } else {
         $('start-game-btn').disabled = false;
         $('enter-vr-btn').disabled = false;
+        if (!booth && !demo) setStatus('Practice mode: open the station page to save a score for a participant.');
       }
     } catch (error) {
       showFatalError(error);
