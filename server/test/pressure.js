@@ -5,6 +5,7 @@
 const { spawn } = require('node:child_process');
 const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
 const assert = require('node:assert/strict');
+const { writeFixture } = require('./fixture-keys');
 
 const PORT = 3100 + (process.pid % 500);
 const BASE = `http://127.0.0.1:${PORT}`;
@@ -13,7 +14,7 @@ const PLAYERS = +process.env.PLAYERS || 50;
 
 const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'scamurai-test-'));
 const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], {
-  env: { ...process.env, PORT, DATA_DIR: dataDir, ADMIN_PIN: PINS.admin, STAFF_PIN: PINS.staff,
+  env: { ...process.env, PORT, DATA_DIR: dataDir, KEYS_FILE: writeFixture(dataDir), ADMIN_PIN: PINS.admin, STAFF_PIN: PINS.staff,
     STATION_PINS: Object.entries(PINS.s).map(([n, p]) => `${n}:${p}`).join(',') },
   stdio: ['ignore', 'ignore', 'pipe'],
 });
@@ -30,6 +31,9 @@ async function call(method, url, { pin, token, body, raw } = {}) {
 const ok = async p => { const r = await p; assert.ok(r.status < 300, `expected 2xx, got ${r.status} ${JSON.stringify(r.json)}`); return r.json; };
 const st = n => PINS.s[n];
 const points = (correct, ms) => correct ? Math.round(60 + 40 * Math.max(0, 1 - ms / 30000)) : -100;   // as S5.points (no timeouts here)
+const GAME_STATION = new Set([1, 3, 4]);   // question games: the server deals and scores; Station 2 and 5 self-score
+const deal = (r, n) => ok(call('POST', `/api/rounds/${r.roundId}/deal`, { pin: st(n) }));
+const scan = r => ok(call('POST', `/api/rounds/${r.roundId}/events`, { token: r.token, body: { data: { t: 'scan' } } }));
 
 let passed = 0;
 async function check(name, fn) {
@@ -106,23 +110,29 @@ async function main() {
       body: { id, name: `Finisher ${id}`, ageGroup: reg.ageGroup, pbbAccount: false, scamExposure: reg.scamExposure, consent: true } }));
     const start = (id, n) => ok(call('POST', '/api/rounds', { pin: st(n), body: { participantId: id } }));
     const finish = (r, n, score = 0) => ok(call('POST', `/api/rounds/${r.roundId}/finish`, { pin: st(n), body: { score, maxScore: 100 } }));
+    const play = async (id, n, score = 0) => {   // deal question games and record a scan, then finish
+      const r = await start(id, n);
+      if (GAME_STATION.has(n)) await deal(r, n);
+      if (n === 5) await scan(r);
+      return finish(r, n, score);
+    };
     const board = () => ok(call('GET', '/api/leaderboard'));
     await register('LB001');
-    for (const n of [1, 2, 3, 4]) await finish(await start('LB001', n), n);
-    await finish(await start('LB001', 1), 1, 50); // Five rounds at four games still do not qualify.
+    for (const n of [1, 2, 3, 4]) await play('LB001', n);
+    await play('LB001', 2, 50); // Five rounds at four games still do not qualify (best of Station 2 is 50).
     assert.deepEqual((await board()).rows, []);
     const cancelled = await start('LB001', 5);
     assert.deepEqual((await board()).rows, []); // An open final game is not completed.
     await ok(call('POST', `/api/rounds/${cancelled.roundId}/cancel`, { pin: st(5) }));
     assert.deepEqual((await board()).rows, []);
-    await finish(await start('LB001', 5), 5);
+    await play('LB001', 5);
     const first = await board();
     assert.equal(first.rows.length, 1);
     assert.equal(first.rows[0].total, 50);
     assert.equal(first.rows[0].eligible, false);
     assert.equal(first.rows[0].prize, null);
     await register('LB002');
-    for (const n of [1, 2, 3, 4, 5]) await finish(await start('LB002', n), n);
+    for (const n of [1, 2, 3, 4, 5]) await play('LB002', n);
     const lb = await board();
     assert.equal(lb.registered, 2);
     assert.deepEqual(lb.rows.map(r => r.total), [50, 0]);
@@ -146,6 +156,7 @@ async function main() {
 
   await check('the same player can play other stations meanwhile', async () => {
     const r1 = await ok(call('POST', '/api/rounds', { pin: st(1), body: { participantId: A } }));
+    await deal(r1, 1);
     await ok(call('POST', `/api/rounds/${r1.roundId}/finish`, { pin: st(1), body: { score: 5, maxScore: 10 } }));
   });
 
@@ -174,6 +185,7 @@ async function main() {
   });
 
   await check('two laptops finishing the same round at once: one result, the other gets it back as already', async () => {
+    await scan(ra);
     const res = await Promise.all([300, 500].map(score => ok(call('POST', `/api/rounds/${ra.roundId}/finish`, { pin: st(5), body: { score, maxScore: 800 } }))));
     assert.equal(res.filter(r => r.already).length, 1);
     assert.equal(res[0].pct, res[1].pct);
@@ -186,6 +198,7 @@ async function main() {
 
   await check('after finishing, the player can start a fresh round', async () => {
     const r = await ok(call('POST', '/api/rounds', { pin: st(5), body: { participantId: A } }));
+    await scan(r);
     await ok(call('POST', `/api/rounds/${r.roundId}/finish`, { pin: st(5), body: { score: 0, maxScore: 800 } }));
   });
 
@@ -206,12 +219,13 @@ async function main() {
   await check('cancel racing finish (30 rounds): each ends exactly one way, never NaN', async () => {
     const rs = [];
     for (const id of ids.slice(10, 40)) rs.push(await ok(call('POST', '/api/rounds', { pin: st(4), body: { participantId: id } })));
+    for (const r of rs) await deal(r, 4);   // question game: dealt, nothing answered -> scores 0
     await Promise.all(rs.map(async r => {
       const [f, c] = await Promise.all([
         call('POST', `/api/rounds/${r.roundId}/finish`, { pin: st(4), body: { score: 7, maxScore: 10 } }),
         call('POST', `/api/rounds/${r.roundId}/cancel`, { pin: st(4) })]);
       assert.equal([f.status, c.status].filter(s => s === 200).length, 1, `finish ${f.status} cancel ${c.status}`);
-      if (f.status === 200) assert.equal(f.json.pct, 70);
+      if (f.status === 200) assert.equal(f.json.pct, 0);
     }));
   });
 
@@ -246,6 +260,7 @@ async function main() {
     let fin;
     for (const n of [1, 2, 3, 4]) {
       const r = await ok(call('POST', '/api/rounds', { pin: st(n), body: { participantId: D } }));
+      if (GAME_STATION.has(n)) await deal(r, n);
       fin = await ok(call('POST', `/api/rounds/${r.roundId}/finish`, { pin: st(n), body: { score: 1, maxScore: 2 } }));
     }
     assert.equal(fin.surveyDue, true);   // station 5 was played in the big run

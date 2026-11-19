@@ -6,6 +6,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const Database = require('better-sqlite3');
+const { loadKeys } = require('./keys');
+const scoring = require('./scoring');
 
 const PORT = +process.env.PORT || 3030;
 const HOST = process.env.HOST || '127.0.0.1';
@@ -71,6 +73,13 @@ CREATE TABLE IF NOT EXISTS participant_passes (
 `);
 // Migration: a cancelled Round is closed without counting towards anything.
 if (!db.prepare('PRAGMA table_info(rounds)').all().some(c => c.name === 'cancelled')) db.exec('ALTER TABLE rounds ADD COLUMN cancelled INTEGER NOT NULL DEFAULT 0');
+// Migration: server-side scoring keeps each Round's deal (question ids + time dealt) and the answers given.
+for (const col of ['deal', 'answers']) {
+  if (!db.prepare('PRAGMA table_info(rounds)').all().some(c => c.name === col)) db.exec(`ALTER TABLE rounds ADD COLUMN ${col} TEXT`);
+}
+let KEYS = null;
+try { KEYS = loadKeys(); } catch (e) { console.error('[keys]', e.message); }
+if (!KEYS) console.warn('[keys] no answer key loaded: Stations 1, 3 and 4 cannot deal or score. Run: node scripts/build-keys.js');
 const MAX_EVENTS = 200;                     // per Round; Station 5 needs about 10
 
 const q = {
@@ -88,6 +97,8 @@ const q = {
   nEvents: db.prepare('SELECT COUNT(*) n FROM events WHERE round_id=?'),
   getR: db.prepare('SELECT * FROM rounds WHERE id = ?'),
   insR: db.prepare('INSERT INTO rounds (participant_id,station,started_at,token) VALUES (?,?,?,?)'),
+  setDeal: db.prepare('UPDATE rounds SET deal=? WHERE id=? AND deal IS NULL AND ended_at IS NULL'),
+  setAnswers: db.prepare('UPDATE rounds SET answers=? WHERE id=? AND ended_at IS NULL'),
   endR: db.prepare('UPDATE rounds SET ended_at=?, score=?, max_score=? WHERE id=? AND ended_at IS NULL'),
   insE: db.prepare('INSERT INTO events (round_id,at,data) VALUES (?,?,?)'),
   evs: db.prepare('SELECT id,at,data FROM events WHERE round_id=? AND id>? ORDER BY id'),
@@ -315,17 +326,88 @@ route('POST', '/api/rounds/:id/cancel', async (req, { id }) => {
   return { ok: true };
 });
 
-route('POST', '/api/rounds/:id/finish', async (req, { id }) => {
+// ---- Server-side scoring (Stations 1, 3, 4) ----
+// The browser gets the deal (question ids only) and, for Cash and Real-or-AI, a verdict per answer. It never gets the key.
+function ownRound(req, id) {
   const who = auth(req, ['station']);
   const r = q.getR.get(+id);
   need(r, 404, 'No such round');
   need(who.role === 'admin' || r.station === who.station, 403, 'Not your station\'s round');
+  return r;
+}
+function gameOf(r) {
+  const game = scoring.STATION_GAME[r.station];
+  need(game, 400, 'This station scores on its own');
+  need(KEYS && KEYS.games[game], 503, 'Answer key not loaded on the server');
+  return game;
+}
+
+route('POST', '/api/rounds/:id/deal', async (req, { id }) => {
+  const r = ownRound(req, id);
+  const game = gameOf(r);
+  need(!r.cancelled && r.ended_at == null, 409, 'Round is over');
+  if (!r.deal) {
+    const ids = scoring.dealers[game](KEYS.games[game], Math.random);
+    q.setDeal.run(JSON.stringify({ ids, at: Date.now() }), r.id);
+  }
+  const cur = q.getR.get(r.id);
+  need(cur.deal, 409, 'Round is over');
+  const d = JSON.parse(cur.deal);
+  return { ids: d.ids, seconds: scoring.DURATION_MS[game] / 1000, answered: Object.keys(JSON.parse(cur.answers || '{}')).length };
+});
+
+route('POST', '/api/rounds/:id/answer', async (req, { id }) => {
   const b = await readJson(req);
-  const score = Number(b.score), max = Number(b.maxScore);
-  need(Number.isFinite(score) && Number.isFinite(max) && max > 0 && score >= 0, 400, 'score and maxScore must be numbers, maxScore > 0');
+  const r = ownRound(req, id);
+  const game = gameOf(r);
+  need(r.deal && !r.cancelled && r.ended_at == null, 409, 'Round is not open');
+  const d = JSON.parse(r.deal);
+  const qid = String(b.qid), choice = b.choice;
+  need(d.ids.map(String).includes(qid), 400, 'Not in this deal');
+  need(scoring.CHOICES[game].includes(choice), 400, 'Bad choice');
+  const answers = JSON.parse(r.answers || '{}');
+  const key = KEYS.games[game];
+  const lookup = game === 'real-or-ai' || game === 'phishing-fishing' ? qid : +qid;
+  if (!(qid in answers)) {
+    need(Date.now() - d.at <= scoring.DURATION_MS[game] + scoring.GRACE_MS, 409, 'Time is up');
+    answers[qid] = choice;
+    q.setAnswers.run(JSON.stringify(answers), r.id);
+  }
+  const j = scoring.judges[game](key, lookup, answers[qid]);
+  return { ok: true, already: answers[qid] !== choice || undefined, ...(j.reveal ? { correct: j.correct, ...j.reveal } : {}) };
+});
+
+// Phishing Fishing explains each email only after the Round, so the verdicts cannot be used to cheat mid-Round.
+route('GET', '/api/rounds/:id/review', async (req, { id }) => {
+  const r = ownRound(req, id);
+  const game = gameOf(r);
+  need(game === 'phishing-fishing', 400, 'No review for this game');
+  need(r.ended_at != null && !r.cancelled, 409, 'Round is not finished');
+  return { review: scoring.reviewOf(game, JSON.parse(r.deal).ids, JSON.parse(r.answers || '{}'), KEYS) };
+});
+
+// Stations 2 (Pop-ups) and 5 (Scan Me) score in the browser; the server fixes the maximum and clamps the claim.
+const SELF_SCORED_MAX = { 2: 100, 5: 800 };
+
+route('POST', '/api/rounds/:id/finish', async (req, { id }) => {
+  const r = ownRound(req, id);
+  const b = await readJson(req);
   need(!r.cancelled, 409, 'Round was cancelled');
+  let score, max;
+  if (scoring.STATION_GAME[r.station]) {
+    const game = gameOf(r);
+    need(r.deal, 409, 'This Round was never dealt');
+    const res = scoring.scoreOf(game, JSON.parse(r.deal).ids, JSON.parse(r.answers || '{}'), KEYS);
+    score = res.score; max = scoring.maxOf(game);      // the browser's numbers are ignored
+  } else {
+    max = SELF_SCORED_MAX[r.station];
+    score = Number(b.score);
+    need(Number.isFinite(score) && score >= 0, 400, 'score must be a non-negative number');
+    if (r.station === 5) need(q.nEvents.get(r.id).n > 0, 409, 'No scan events recorded for this round');
+    score = Math.min(score, max);
+  }
   // Idempotent: a second laptop (or a retry) finishing the same Round gets the stored result.
-  const changed = q.endR.run(Date.now(), Math.min(score, max), max, r.id).changes;
+  const changed = q.endR.run(Date.now(), score, max, r.id).changes;
   const s = summaryOf(r.participant_id);
   if (!changed) {
     const cur = q.getR.get(r.id);
