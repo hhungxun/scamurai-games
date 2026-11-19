@@ -31,15 +31,15 @@ SimCards.register({
     <div class="top"><svg width="26" height="26" viewBox="0 0 24 24"><path d="M12 21s-8-5.3-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.700-8 11-8 11z" fill="#e5384f"/></svg><b>My<span>Sejahtera</span></b></div>
     <div class="hero">
       <div class="app"><svg width="48" height="48" viewBox="0 0 24 24"><path d="M12 21s-8-5.3-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.700-8 11-8 11z" fill="#e5384f"/><path d="M7 11h3l1.500-3 2 6 1.500-3h2" fill="none" stroke="#fff" stroke-width="1.5"/></svg></div>
-      <h1>Kemas Kini Wajib / Mandatory Update</h1><p>MySejahtera versi 2.0 kini tersedia</p></div>
-    <div class="card"><h2>Versi lama tidak lagi disokong</h2>
-      <p style="font-size:14px;line-height:1.5;margin:0 0 10px">Mulai 1 Dis 2026, akaun yang tidak dikemas kini akan <b>dinyahaktifkan</b> dan status kesihatan serta rekod vaksin anda mungkin tidak dapat diakses.</p>
-      <div class="warn">Selepas memuat turun, benarkan "Pasang aplikasi tidak dikenali" (Install unknown apps) dalam Tetapan telefon anda.</div>
-      <a class="dl" data-sim-alert="Download started: MySejahtera_v2.apk (18.4 MB). Simulation only: no file is downloaded.">Muat Turun MySejahtera_v2.apk</a>
-      <div class="meta"><span>Saiz: 18.4 MB</span><span>Android 8.0+</span></div></div>
-    <div class="card"><h2>Cara pemasangan</h2><ol><li>Muat turun fail APK di atas</li><li>Buka fail dan tekan <b>Pasang</b></li><li>Benarkan semua kebenaran (SMS, kenalan, akses aksesibiliti)</li></ol></div>
-    <div class="foot">Kementerian Kesihatan Malaysia &middot; MySejahtera<br><a href="/privasi" style="color:#7a8da6">Dasar Privasi</a> &middot; <a href="/bantuan" style="color:#7a8da6">Bantuan</a></div>`,
-    '/404': `<div class="card"><p>Halaman tidak dijumpai.</p><a href="/">Kembali</a></div>`,
+      <h1>Mandatory Update</h1><p>MySejahtera version 2.0 is now available</p></div>
+    <div class="card"><h2>Old versions are no longer supported</h2>
+      <p style="font-size:14px;line-height:1.5;margin:0 0 10px">From 1 Dec 2026, accounts that are not updated will be <b>deactivated</b> and your health status and vaccine records may no longer be accessible.</p>
+      <div class="warn">After downloading, allow "Install unknown apps" in your phone Settings.</div>
+      <a class="dl" data-sim-alert="Download started: MySejahtera_v2.apk (18.4 MB). Simulation only: no file is downloaded.">Download MySejahtera_v2.apk</a>
+      <div class="meta"><span>Size: 18.4 MB</span><span>Android 8.0+</span></div></div>
+    <div class="card"><h2>How to install</h2><ol><li>Download the APK file above</li><li>Open the file and tap <b>Install</b></li><li>Allow all permissions (SMS, contacts, accessibility access)</li></ol></div>
+    <div class="foot">Ministry of Health Malaysia &middot; MySejahtera<br><a href="/privasi" style="color:#7a8da6">Privacy Policy</a> &middot; <a href="/bantuan" style="color:#7a8da6">Help</a></div>`,
+    '/404': `<div class="card"><p>Page not found.</p><a href="/">Back</a></div>`,
   },
   tells: [
     'The real site is mysejahtera.gov.my, but here that name is only the start of a longer address that ends in app-update.co. The part just before the first single slash decides who owns the site.',

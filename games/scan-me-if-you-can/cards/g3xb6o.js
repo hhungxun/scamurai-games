@@ -19,7 +19,7 @@ SimCards.register({
   "/result": {
    "snap": "nlbk49pi.html"
   },
-  "/404": "<div class=\"box\"><p>Halaman tidak dijumpai.</p><a href=\"/\">Kembali</a></div>"
+  "/404": "<div class=\"box\"><p>Page not found.</p><a href=\"/\">Back</a></div>"
  },
  "tells": [
   "The address is semakmule-rmp.com. The real Semak Mule portal is semakmule.rmp.gov.my; Malaysian government sites end in .gov.my, not .com.",
