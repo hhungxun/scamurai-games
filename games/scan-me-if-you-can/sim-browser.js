@@ -25,7 +25,7 @@
       });
     },
     // Download a card's snapshot pages before the timer starts, so a megabyte page loading over booth Wi-Fi
-    // can be warmed while the Participant is finding a QR. Later-card clocks still start at scan time.
+    // can be warmed while the Participant is finding a QR. Later-card clocks start only after the site has loaded (c.html onReady).
     // Same URL as the frame uses, so the frame then revalidates from the cache (304).
     prefetch(card) {
       const snaps = Object.values(card.pages || {}).filter(p => p && typeof p === 'object' && p.snap);

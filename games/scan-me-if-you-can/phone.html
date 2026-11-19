@@ -75,7 +75,7 @@ async function render() {
       app.innerHTML = H + `<div class="box">${over === 'cancelled' ? "The Game Master cancelled this round (it doesn't count)." : 'This round has ended at the laptop.'} Ask them for a new Join QR.</div>`;
     } else if (n) {
       app.innerHTML = H + `<div class="box" style="text-align:center"><p class="muted" style="margin:0">Find this QR on the board</p><div class="big">#${n}</div>
-        <p class="muted">${S5.SECS} seconds per site. Only your first site has a Start timer button. After that, scanning starts the timer immediately.</p></div>
+        <p class="muted">${S5.SECS} seconds per site. Only your first site has a Start timer button. After that, the timer starts by itself once the site has finished loading.</p></div>
         <div id="scanner"></div><div class="chips">${chips}</div>
         <p class="muted" style="text-align:center">${Object.keys(r.done).length} of ${r.cards.length} done · ${score} pts</p>`;
       S5.warm(r);

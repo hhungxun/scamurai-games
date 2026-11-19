@@ -5,7 +5,7 @@ window.S5Scanner = {
     if (!n) return { stop() {} };
     return ScamuraiScanner.mount(host, {
       title: `Scan QR <span>#${n}</span>`,
-      description: r.firstCard && r.done[r.firstCard] ? `The next site starts its ${S5.SECS} seconds as soon as you scan.` : 'Allow the camera, then point it at this number on the board. You can start the first site when you are ready.',
+      description: r.firstCard && r.done[r.firstCard] ? `The next site's ${S5.SECS} seconds start once it has finished loading.` : 'Allow the camera, then point it at this number on the board. You can start the first site when you are ready.',
       hint: `Point the camera at QR #${n}. Keep the whole code in view.`,
       onCode(raw, at) {
         const number = S5.boardNumber(raw);

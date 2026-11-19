@@ -51,10 +51,11 @@ function play() {
   const leftAt = () => startedAt() ? Math.max(0, S5.SECS - (Date.now() - startedAt()) / 1000) : S5.SECS;
   let card = null, browser = null, bar = null, tick = null, over = false, scanner = null;
   let onPop = null;
-  const automatic = !!startedAt();
+  const automatic = !!startedAt();            // clock already running (reload mid-card)
+  const later = r.firstCard !== bn;           // later cards start themselves once the site is usable
   say(`<div class="box" style="text-align:center"><div class="big">#${bn}</div>
     <p>Is this site <b>REAL</b> or <b>FAKE</b>?</p>
-    <p class="muted">${automatic ? 'Your 12 seconds started when you scanned this QR.' : 'You get 12 seconds. Tap Start timer when you are ready. Later sites start immediately when scanned.'}</p></div>
+    <p class="muted">${automatic ? 'Your 12 seconds are already running.' : later ? 'You get 12 seconds. The timer starts when the site has finished loading.' : 'You get 12 seconds. Tap Start timer when you are ready.'}</p></div>
     <button class="btn" id="go" disabled>Loading the site…</button><p class="muted" id="lerr" style="text-align:center"></p>`);
   const go = document.getElementById('go'), lerr = document.getElementById('lerr');
   // Server checks never hold up a running clock, even on poor Wi-Fi.
@@ -90,6 +91,7 @@ function play() {
     app.innerHTML = '';
     browser = SimBrowser(sim, card, { bottomInset: 140, onReady: () => {
       if (over) return;
+      stamp(); clock();
       if (leftAt() <= 0) return verdict('timeout');
       bar.querySelectorAll('button').forEach(b => b.disabled = false);
     } });
@@ -97,13 +99,16 @@ function play() {
     onPop = () => { if (over) return; history.pushState({ s5: 1 }, ''); browser?.back(); };
     addEventListener('popstate', onPop);
   }
-  function start() {
-    if (over) return;
+  function stamp() {
+    if (startedAt()) return;
     const cur = current();
     if (!cur) return;
-    cur.started = { ...(cur.started || {}), [bn]: startedAt() || Date.now() };
+    cur.started = { ...(cur.started || {}), [bn]: Date.now() };
     S5.save(cur); r.started = cur.started;
-    clock(); showSite();
+  }
+  function start() {
+    if (over) return;
+    stamp(); clock(); showSite();
   }
   async function prepare() {
     if (over) return;
@@ -112,14 +117,14 @@ function play() {
     catch (e) {
       if (over) return;
       go.disabled = false; go.textContent = 'Retry loading'; go.onclick = prepare;
-      lerr.textContent = `Could not load this site. Check your internet.${automatic ? ' The timer is still running.' : ''}`;
+      lerr.textContent = `Could not load this site. Check your internet. Your timer has not started.`;
       return;
     }
     if (over) return;
-    if (startedAt()) return showSite();
+    if (startedAt() || later) return showSite();   // timer starts in onReady, after the first frame loads
     go.disabled = false; go.textContent = 'Start timer'; go.onclick = start;
   }
-  // No extra tap or load grace period on a later card, including after a reload.
+  // A card already stamped (reload) resumes its running clock at once; otherwise the clock waits for the site.
   if (automatic) clock();
   if (!over) prepare();
 

@@ -31,14 +31,14 @@ window.S5 = {
       return n >= 1 && n <= 25 ? n : null;
     } catch { return null; }
   },
-  // Claim the first scanned card once per Round. Later scans start the clock BEFORE navigation/loading.
+  // Claim the first scanned card once per Round. Scanning never starts a clock: c.html starts it
+  // (writes started[n]) only once the site has loaded and its first frame is usable.
   // Also used by c.html so opening a printed QR in the system camera follows the same rules.
   scan(r, n, at = Date.now()) {
     if (!r || !r.deal || !r.cards.includes(n)) return `QR #${n} isn't one of yours. Find QR #${r && r.cards && this.next(r) || '—'}.`;
     if (r.done[n]) return `You already judged QR #${n}. Find QR #${this.next(r) || '—'}.`;
     r.firstCard = r.firstCard || Number(Object.keys(r.started || {}).sort((a, b) => r.started[a] - r.started[b])[0]) || Number(Object.keys(r.done)[0]) || n;
     if (n !== r.firstCard && !r.done[r.firstCard]) return `Finish QR #${r.firstCard} first.`;
-    if (n !== r.firstCard) r.started = { ...(r.started || {}), [n]: (r.started || {})[n] || at };
     if (!this.save(r)) return 'This browser is blocking game storage. Allow site storage before playing.';
     return null;
   },
