@@ -46,7 +46,7 @@ real-or-ai-game/
 ├── css/styles.css             # Look & feel
 ├── js/game.js                 # Timer, randomized gameplay, score, editor
 ├── data/questions.js          # ADD / EDIT YOUR QUESTIONS HERE
-├── assets/images/P01.jpg ... # Demo photos
+├── assets/images/P01.jpg ... # Photos (real: own snapshots, AI: generated)
 ├── assets/audio/V01.mp3 ...  # Demo audio
 ├── .nojekyll                  # Simple GitHub Pages static publishing
 └── README.md
