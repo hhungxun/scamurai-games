@@ -84,7 +84,9 @@ body[data-game="scan"] .sb-nav{border-radius:3px;color:var(--game-muted)}
 @media(prefers-reduced-motion:reduce){body[data-game] *{scroll-behavior:auto;transition:none!important}}
 /* Same station chrome and staff controls outside the embedded game. */
 #booth-brand,.booth-top{background:var(--game-ink);border-bottom-color:var(--game-red);font-family:var(--game-font)}
-#demo-banner,#booth-demo{background:var(--game-soft);color:var(--game-ink);border-bottom:1px solid var(--game-line);font-family:var(--game-font)}
+#demo-banner{background:var(--game-soft);color:var(--game-ink);border-bottom:1px solid var(--game-line);font-family:var(--game-font)}
+#booth-demo-pill{background:var(--game-soft);color:var(--game-ink);border:1px solid var(--game-line);border-radius:3px;font-family:var(--game-font);font-weight:600}
+#booth-demo-pill a{color:var(--game-ink)}
 #station-header,#cancel-dialog{--ink:var(--game-ink);--paper:var(--game-paper);--accent:var(--game-red);--line:var(--game-line);background:var(--game-paper);color:var(--game-ink);border:1px solid var(--game-line);border-radius:3px;box-shadow:var(--game-shadow);font-family:var(--game-font)}
 #station-header .station-panel-heading{background:var(--game-ink);border-bottom:3px solid var(--game-red)}
 #station-header .station-eyebrow{color:var(--game-paper)}

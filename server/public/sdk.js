@@ -55,10 +55,12 @@
   document.head.appendChild(fonts);
   const css = document.createElement('style');
   css.textContent = `
-  .scm{position:fixed;inset:0;z-index:2147483000;background:${C.bg} url(${API}/assets/bg-dark.jpg) center/cover;color:#fff;
-    font:16px/1.45 Lexend,system-ui,sans-serif;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 16px}
+  .scm{position:fixed;inset:0;z-index:2147483000;background:rgba(8,8,8,.66);color:#fff;
+    font:16px/1.45 Lexend,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:24px 16px}
   .scm *{box-sizing:border-box}
-  .scm-card{width:100%;max-width:560px;background:rgba(23,22,22,.88);border:2px solid ${C.surf};border-radius:18px;padding:22px;margin:auto 0}
+  .scm-card{position:relative;width:100%;max-width:560px;max-height:calc(100vh - 48px);overflow:auto;background:rgba(23,22,22,.97);border:2px solid ${C.surf};border-radius:18px;padding:22px}
+  .scm .scm-close{position:absolute;top:12px;right:12px;min-height:40px;min-width:40px;padding:0;display:inline-flex;align-items:center;justify-content:center;background:transparent;border:1px solid ${C.dim};color:${C.grey};border-radius:3px;font:18px/1 Lexend,sans-serif;cursor:pointer;text-transform:none;letter-spacing:0}
+  .scm .scm-close:hover{border-color:${C.yellow};color:#fff}
   .scm-top{display:flex;align-items:center;gap:14px;margin-bottom:14px}
   .scm-top img{width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid ${C.red}}
   .scm h1{font:400 34px/1 Anton,Impact,sans-serif;letter-spacing:.5px;margin:0;text-transform:uppercase}
@@ -92,7 +94,7 @@
   .scm .muted{color:${C.grey};font-size:14px}
   .scm hr{border:0;border-top:1px solid ${C.dim};margin:18px 0}`;
   css.textContent += `
-    .scm{background:${C.bg} url(${API}/assets/brand/charcoal.webp) center/cover}
+    .scm{background:rgba(8,8,8,.66)}
     .scm-card{border:1px solid ${C.dim};border-top:5px solid ${C.red};border-radius:4px;padding:26px}
     .scm-top{padding-bottom:22px;border-bottom:1px solid ${C.dim};margin-bottom:24px}.scm-top img{border:1px solid ${C.dim};border-radius:3px}
     .scm .scm-home{display:inline-block;margin-bottom:18px;font-size:12px;color:${C.grey}}
@@ -103,15 +105,17 @@
   `;
   document.head.appendChild(css);
 
-  let root = null;
+  let root = null, escCancel = null;
   function screen(html) {
+    escCancel = null;
     if (!root) { root = h('<div class="scm"></div>'); document.body.appendChild(root); }
     root.style.display = 'flex';
     root.innerHTML = `<div class="scm-card"><a class="scm-home" href="${API}/">← Scamurai home</a><div class="scm-top"><img src="${API}/assets/logo.jpg" alt="">
       <div><h1>Scam<em>urai</em></h1><p class="tag">Forewarned is forearmed</p></div></div>${html}</div>`;
     return root.firstChild;
   }
-  const hide = () => { if (root) root.style.display = 'none'; };
+  const hide = () => { escCancel = null; if (root) root.style.display = 'none'; };
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && escCancel) escCancel(); });
   let qrLibrary = null;
   async function participantURL(p) {
     if (TEST) return API + '/participant.html';
@@ -199,8 +203,11 @@
       <div class="row"><span class="muted">Not on the list? Send them to the front desk to register.</span>
       <button class="ghost leave">Leaving</button></div>
       ${dashCb ? '<div class="row"><span></span><button class="ghost close">Back to dashboard</button></div>' : ''}`);
+    function cancel() { if (!dashCb && !pickRes) return; clearInterval(pollT); hide(); if (pickRes) { const d = pickRes; pickRes = null; d(null); } }
+    escCancel = cancel;
     const close = el.querySelector('.close');
-    if (close) close.onclick = () => { clearInterval(pollT); hide(); if (pickRes) { pickRes(null); pickRes = null; } };
+    if (close) close.onclick = cancel;
+    if (dashCb) { const closeX = h('<button type="button" class="scm-close" aria-label="Cancel">✕</button>'); el.appendChild(closeX); closeX.onclick = cancel; }
     const find = el.querySelector('.find'), box = el.querySelector('.list'), go = el.querySelector('.go'), err = el.querySelector('.err');
     const leave = el.querySelector('.leave');
     if (mode === 'leave') { leave.textContent = 'Back to play'; go.style.background = C.dim; }

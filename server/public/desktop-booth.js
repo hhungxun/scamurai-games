@@ -9,7 +9,15 @@
   const $ = id => document.getElementById(id), frame = $('booth-frame');
   let state = null, busy = false, damaged = false, ready = false;
   function persist() { state ? sessionStorage.setItem(key, JSON.stringify(state)) : sessionStorage.removeItem(key); }
-  function status(text, error = false) { $('booth-status').textContent = text; $('booth-status').dataset.error = String(error); }
+  let statusTimer = null;
+  function status(text, error = false, sticky = false) {
+    const el = $('booth-status');
+    clearTimeout(statusTimer);
+    el.textContent = text;
+    el.dataset.error = String(error);
+    el.hidden = false;
+    if (!sticky && !error) statusTimer = setTimeout(() => { el.hidden = true; }, 6000);
+  }
   function controls() {
     const open = state?.status === 'open', pending = state?.status === 'pending', done = ['saved','cancelled'].includes(state?.status);
     $('booth-identity').textContent = demo ? 'Demo / no event score' : state ? `${state.participant.name} · ${state.participant.id}` : 'Choose your registered name';
@@ -134,7 +142,8 @@
   $('booth-select').onclick = pick; $('booth-next').onclick = pick; $('booth-retry').onclick = flush; $('booth-cancel').onclick = cancel;
   $('booth-survey').onclick = () => { if (!demo && state?.status === 'saved') Scamurai.survey(state.participant,state.result.stationsDone); };
   $('booth-leaving').onclick = () => { if (!demo && !state) Scamurai.leaving(); };
-  $('booth-demo').hidden = !demo;
+  $('booth-demo-pill').hidden = !demo;
+  for (const a of document.querySelectorAll('.try-demo')) a.hidden = demo;
   Scamurai.onDashboard(() => {
     ready = true;
     try {
@@ -148,7 +157,7 @@
     } catch { damaged = true; state = null; status('This laptop’s saved Round is unavailable. Ask the Game Master to check active Rounds before clearing storage.',true); controls(); return; }
     if (state) {
       if (!state.existing && state.status !== 'cancelled') frame.src = gameURL();
-      status(state.status === 'saved' ? (demo ? 'Demo complete. No event score was saved.' : `Score saved: ${state.result.pct} / 100`) : state.existing ? 'Resume this Round on its original laptop, or cancel it here.' : 'Round restored. Its original deadline still applies.');
+      status(state.status === 'saved' ? (demo ? 'Demo complete. No event score was saved.' : `Score saved: ${state.result.pct} / 100`) : state.existing ? 'Resume this Round on its original laptop, or cancel it here.' : 'Round restored. Its original deadline still applies.', false, !!state.existing);
       personal(); controls(); if (state.status === 'pending') flush();
     } else { status(demo ? (script.dataset.demoStatus || 'Try every email in an unscored demo.') : 'Choose your registered name to begin on this laptop.'); controls(); pick(); }
   });
