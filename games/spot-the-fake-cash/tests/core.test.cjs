@@ -2,20 +2,33 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { BANKNOTE_SETS, DURATION_MS, NOTE_COUNT, Round } = require('../js/game-core.js');
 
-test('draws ten distinct notes from the twelve sets, with labels and review clues', () => {
+test('draws ten distinct notes, five real and five fake, with labels and review clues', () => {
   const round = new Round({ random: () => 0 });
-  assert.deepEqual(round.order, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  assert.equal(round.order.length, 10);
+  // balanced draw: exactly five genuine and five fake, so blind guessing scores 50%
+  assert.equal(round.review().filter(item => item.note.isReal).length, NOTE_COUNT / 2);
+  assert.equal(round.review().filter(item => !item.note.isReal).length, NOTE_COUNT / 2);
   assert.equal(NOTE_COUNT, 10);
-  assert.equal(BANKNOTE_SETS.length, 12);
+  assert.equal(BANKNOTE_SETS.length, 18);
+  // six genuine (one per denomination), then twelve fakes
   assert.deepEqual(BANKNOTE_SETS.map(note => note.isReal), [
-    true, false, false, false, false, false, false, false, true, false, true, true
+    true, true, true, true, true, true,
+    false, false, false, false, false, false,
+    false, false, false, false, false, false,
   ]);
   for (const seed of [0, 0.3, 0.7, 0.999]) {
     const order = new Round({ random: () => seed }).order;
     assert.equal(new Set(order).size, NOTE_COUNT);
     assert.ok(order.every(id => id >= 0 && id < BANKNOTE_SETS.length));
+    assert.equal(order.filter(id => BANKNOTE_SETS[id].isReal).length, NOTE_COUNT / 2);
   }
-  assert.ok(BANKNOTE_SETS.every(note => note.reason.length > 0));
+  assert.ok(BANKNOTE_SETS.every(note => note.reason.length > 0 && note.reasonZh.length > 0));
+  assert.ok(BANKNOTE_SETS.every(note => note.front.endsWith('.png') && note.back.endsWith('.png')));
+  assert.equal(new Set(BANKNOTE_SETS.map(note => note.denomination)).size, 6);
+  assert.equal(BANKNOTE_SETS.filter(note => note.isReal).length, 6);
+  assert.equal(BANKNOTE_SETS.filter(note => !note.isReal).length, 12);
+  // only genuine notes are named "Genuine" and carry no defects
+  assert.ok(BANKNOTE_SETS.every(note => note.isReal === (note.defects.length === 0 && note.name.startsWith('Genuine'))));
 });
 
 test('scores ten points per correct answer and closes the round after the tenth verdict', () => {

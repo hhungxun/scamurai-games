@@ -48,7 +48,11 @@ const dealers = {
     return out;
   },
   'spot-the-fake-cash'(keys, random) {
-    return shuffle(keys.sets.map((_, i) => i), random).slice(0, ROUND_QUESTIONS);
+    // Even real/fake split so blind guessing scores 50%, mirroring the offline deal.
+    const pool = keys.sets.map((set, i) => ({ i, isReal: set.isReal }));
+    const half = ROUND_QUESTIONS / 2;
+    const pick = want => shuffle(pool.filter(q => q.isReal === want), random).slice(0, half).map(q => q.i);
+    return shuffle([...pick(true), ...pick(false)], random);
   },
   'phishing-fishing'(keys, random) {
     const emails = Object.entries(keys.emails).map(([id, e]) => ({ id, ...e }));

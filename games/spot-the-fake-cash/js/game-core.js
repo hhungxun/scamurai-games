@@ -1,50 +1,118 @@
-/* Note sets and pure round logic shared by the 3D game and Node tests. */
+/* Note sets and pure round logic shared by the game and Node tests.
+ *
+ * Six Malaysian ringgit denominations, three sets each (genuine / mismatched
+ * sides / UV defect) = eighteen sets, using the real BNM note images in
+ * assets/notes/. `defects` describes the UV overlay that js/game.js draws.
+ *
+ * server/scripts/build-keys.js loads this file in a VM and reads
+ * module.exports.BANKNOTE_SETS (isReal + reason) to build the private answer
+ * key, so the data stays in this one file and the key is never shipped here.
+ */
 (function (root) {
   'use strict';
 
-  const set = (name, frontDay, frontUV, backDay, backUV, isReal, reason) => ({
-    name, frontDay: frontDay + '.jpg', frontUV: frontUV + '.jpg', backDay: backDay + '.jpg', backUV: backUV + '.jpg', isReal, reason
+  const note = (id, denomination, name, nameZh, front, back, isReal, defects, reason, reasonZh) => ({
+    id,
+    denomination,
+    name,
+    nameZh,
+    front,
+    back,
+    isReal,
+    defects: defects || [],
+    reason,
+    reasonZh,
   });
 
   const BANKNOTE_SETS = [
-    set('Genuine RM50 (A)', 'front-real', 'front-uv-real', 'back-clear', 'back-uv', true,
-      'Both sides use the genuine RM50 designs, and both UV patterns match.'),
-    set('Rafflesia front', 'front-rafflesia', 'front-uv-rafflesia', 'back-clear', 'back-uv', false,
-      'The front shows a Rafflesia design that is not on the genuine RM50, and its UV pattern is different too.'),
-    set('Malaya front', 'front-malaya-fake', 'front-uv-malaya', 'back-clear', 'back-uv', false,
-      'The front print uses the fake Malaya design, and its UV pattern does not match the genuine note.'),
-    set('Faint back UV', 'front-real', 'front-uv-real', 'back-clear', 'back-uv-fake-light', false,
-      'Everything looks genuine in daylight, but the back glows with the wrong, faint UV pattern.'),
-    set('Wrong front UV (Malaya)', 'front-real', 'front-uv-malaya', 'back-clear', 'back-uv', false,
-      'The front looks genuine in daylight, but under UV it shows the Malaya pattern instead of the real one.'),
-    set('Wrong front UV', 'front-real', 'front-uv-fake', 'back-clear', 'back-uv', false,
-      'The front looks genuine in daylight, but its UV pattern does not match a genuine RM50.'),
-    set('Malaya front, atom back', 'front-malaya-fake', 'front-uv-real', 'back-fake', 'back-uv-fake-atom', false,
-      'The front has the fake Malaya design and the back has the fake atom design and UV pattern.'),
-    set('Rafflesia UV, atom back UV', 'front-real', 'front-uv-rafflesia', 'back-clear', 'back-uv-fake-atom', false,
-      'Both sides look genuine in daylight, but the front UV shows the Rafflesia pattern and the back UV shows the fake atom pattern.'),
-    set('Genuine RM50 (B)', 'front-real', 'front-uv-real', 'back-clear', 'back-uv', true,
-      'Both sides match the genuine RM50 in daylight and under UV.'),
-    set('Atom back', 'front-real', 'front-uv-real', 'back-fake', 'back-uv-fake-light', false,
-      'The front is genuine, but the back uses the fake atom design and the wrong UV pattern.'),
-    set('Genuine RM50 (C)', 'front-real', 'front-uv-real', 'back-clear', 'back-uv', true,
-      'Front, back and both UV patterns all match the genuine RM50.'),
-    set('Genuine RM50 (D)', 'front-real', 'front-uv-real', 'back-clear', 'back-uv', true,
-      'Every check passes: genuine designs on both sides and the correct UV glow.')
+    // ── Genuine (one per denomination) ────────────────────────────────────
+    note('rm1', 'RM1', 'Genuine RM1', '真钞 RM1', 'RM1-f.png', 'RM1-b.png', true, [],
+      'Front, back, watermark, security thread and UV pattern all match a genuine RM1.',
+      '正反面、水印、安全线及紫外荧光图案均与真钞 RM1 一致。'),
+    note('rm5', 'RM5', 'Genuine RM5', '真钞 RM5', 'RM5-f.png', 'RM5-b.png', true, [],
+      'Front, back, watermark, security thread and UV pattern all match a genuine RM5.',
+      '正反面、水印、安全线及紫外荧光图案均与真钞 RM5 一致。'),
+    note('rm10', 'RM10', 'Genuine RM10', '真钞 RM10', 'RM10-f.png', 'RM10-bk.png', true, [],
+      'Front, back, watermark, security thread and UV pattern all match a genuine RM10.',
+      '正反面、水印、安全线及紫外荧光图案均与真钞 RM10 一致。'),
+    note('rm20', 'RM20', 'Genuine RM20', '真钞 RM20', 'RM20-f.png', 'RM20-b.png', true, [],
+      'Front, back, watermark, security thread and UV pattern all match a genuine RM20.',
+      '正反面、水印、安全线及紫外荧光图案均与真钞 RM20 一致。'),
+    note('rm50', 'RM50', 'Genuine RM50', '真钞 RM50', 'RM50-f.png', 'RM50-b.png', true, [],
+      'Front, back, watermark, security thread and UV pattern all match a genuine RM50.',
+      '正反面、水印、安全线及紫外荧光图案均与真钞 RM50 一致。'),
+    note('rm100', 'RM100', 'Genuine RM100', '真钞 RM100', 'RM100-f.png', 'RM100-b.png', true, [],
+      'Front, back, watermark, security thread and UV pattern all match a genuine RM100.',
+      '正反面、水印、安全线及紫外荧光图案均与真钞 RM100 一致。'),
+
+    // ── Mismatched sides (front from a different denomination) ────────────
+    note('rm1-mismatch', 'RM1', 'RM1 with an RM5 front', '正反面错配的 RM1', 'RM5-f.png', 'RM1-b.png', false, [],
+      'The back is a genuine RM1, but the front is the RM5 design — the two sides of a real note always match.',
+      '背面是真实的 RM1，但正面却是 RM5 的图案——真钞的两面一定是一致的。'),
+    note('rm5-mismatch', 'RM5', 'RM5 with an RM10 front', '正反面错配的 RM5', 'RM10-f.png', 'RM5-b.png', false, [],
+      'The back is a genuine RM5, but the front is the RM10 design — a real RM5 never pairs with that face.',
+      '背面是真实的 RM5，但正面却是 RM10 的图案——真钞 RM5 绝不会搭配这样的正面。'),
+    note('rm10-mismatch', 'RM10', 'RM10 with an RM20 front', '正反面错配的 RM10', 'RM20-f.png', 'RM10-bk.png', false, [],
+      'The back is a genuine RM10, but the front is the RM20 design — the two sides do not match.',
+      '背面是真实的 RM10，但正面却是 RM20 的图案——两面并不一致。'),
+    note('rm20-mismatch', 'RM20', 'RM20 with an RM50 front', '正反面错配的 RM20', 'RM50-f.png', 'RM20-b.png', false, [],
+      'The back is a genuine RM20, but the front is the RM50 design — a real RM20 has a different face.',
+      '背面是真实的 RM20，但正面却是 RM50 的图案——真钞 RM20 的正面与此不同。'),
+    note('rm50-mismatch', 'RM50', 'RM50 with an RM10 front', '正反面错配的 RM50', 'RM10-f.png', 'RM50-b.png', false, [],
+      'The back is a genuine RM50, but the front is the RM10 design — the two sides do not match.',
+      '背面是真实的 RM50，但正面却是 RM10 的图案——两面并不一致。'),
+    note('rm100-mismatch', 'RM100', 'RM100 with an RM20 front', '正反面错配的 RM100', 'RM20-f.png', 'RM100-b.png', false, [],
+      'The back is a genuine RM100, but the front is the RM20 design — a real RM100 has its own face.',
+      '背面是真实的 RM100，但正面却是 RM20 的图案——真钞 RM100 的正面与此不同。'),
+
+    // ── UV defects (correct daylight images, a broken UV feature) ─────────
+    note('rm1-no-thread', 'RM1', 'RM1 missing the UV thread', '缺安全线的 RM1', 'RM1-f.png', 'RM1-b.png', false,
+      [{ feature: 'thread', how: 'missing' }],
+      'Looks genuine in daylight, but under UV the vertical security thread is missing — a genuine RM1 glows a continuous thread.',
+      '日光下看似真钞，但紫外线下竖排安全线缺失——真钞 RM1 应有一条连续发光的安全线。'),
+    note('rm5-numeral', 'RM5', 'RM5 with the wrong UV numeral', '紫外面额错误的 RM5', 'RM5-f.png', 'RM5-b.png', false,
+      [{ feature: 'numeral', how: 'value', value: '1' }],
+      'Under UV the glowing denomination reads “1” instead of “5” — the wrong value is a classic counterfeit slip.',
+      '紫外线下发光的面额数字是“1”而非“5”——面额错误是典型的假钞破绽。'),
+    note('rm10-flat', 'RM10', 'RM10 photocopy with no UV glow', '无荧光的 RM10 复印品', 'RM10-f.png', 'RM10-bk.png', false,
+      [{ feature: 'all', how: 'none' }],
+      'Under UV the note stays dark with no fluorescence — a genuine RM10 glows bright patterns, but a photocopy does not.',
+      '紫外线下整张钞票一片漆黑、毫无荧光——真钞 RM10 会发出明亮荧光，复印品则不会。'),
+    note('rm20-no-thread', 'RM20', 'RM20 missing the UV thread', '缺安全线的 RM20', 'RM20-f.png', 'RM20-b.png', false,
+      [{ feature: 'thread', how: 'missing' }],
+      'Daylight looks right, but under UV the security thread is absent — a genuine RM20 carries a glowing vertical thread.',
+      '日光下正常，但紫外线下安全线缺失——真钞 RM20 应有一条发光的竖排安全线。'),
+    note('rm50-crest', 'RM50', 'RM50 with a copy-mark crest', '徽记被替换的 RM50', 'RM50-f.png', 'RM50-b.png', false,
+      [{ feature: 'crest', how: 'copy' }],
+      'Under UV the crest is replaced by a ✕ mark — a genuine RM50 glows the proper crest, never a copy stamp.',
+      '紫外线下徽记被 ✕ 标记取代——真钞 RM50 应显示正确徽记，绝不会出现复印标记。'),
+    note('rm100-numeral', 'RM100', 'RM100 with the wrong UV numeral', '紫外面额错误的 RM100', 'RM100-f.png', 'RM100-b.png', false,
+      [{ feature: 'numeral', how: 'value', value: '50' }],
+      'Under UV the glowing denomination reads “50” instead of “100” — a wrong denomination under UV is a clear fake.',
+      '紫外线下发光的面额数字是“50”而非“100”——紫外下的面额错误是明显的假钞特征。'),
   ];
 
   const DURATION_MS = 120_000;
-  const NOTE_COUNT = 10; // notes per round, drawn at random from the sets above
+  const NOTE_COUNT = 10; // notes per round, split evenly between real and fake
   const POINTS_PER_NOTE = 10;
   const SNAPSHOT_VERSION = 3;
 
-  function shuffleNotes(random) {
-    const order = BANKNOTE_SETS.map((_, index) => index);
-    for (let i = order.length - 1; i > 0; i--) {
+  function shuffleInPlace(items, random) {
+    for (let i = items.length - 1; i > 0; i--) {
       const j = Math.floor(random() * (i + 1));
-      [order[i], order[j]] = [order[j], order[i]];
+      [items[i], items[j]] = [items[j], items[i]];
     }
-    return order.slice(0, NOTE_COUNT);
+    return items;
+  }
+
+  // Draw an even real/fake split so the notes carry the test, not the odds:
+  // guessing one verdict blindly scores 50%, never more.
+  function shuffleNotes(random) {
+    const reals = [], fakes = [];
+    BANKNOTE_SETS.forEach((set, index) => (set.isReal ? reals : fakes).push(index));
+    const half = NOTE_COUNT / 2;
+    const pick = pool => shuffleInPlace([...pool], random).slice(0, Math.min(half, pool.length));
+    return shuffleInPlace([...pick(reals), ...pick(fakes)], random);
   }
 
   class Round {
@@ -107,7 +175,7 @@
         order: [...this.order],
         answers: [...this.answers],
         status: this.status,
-        endReason: this.endReason
+        endReason: this.endReason,
       };
     }
 

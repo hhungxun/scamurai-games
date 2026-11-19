@@ -3,67 +3,99 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Spot the Fake Cash · Scamurai</title>
+  <meta name="description" content="Spot the Fake Cash — Scamurai Station 1. Inspect ten banknotes under a UV torch and judge real or fake.">
+  <title>Spot the Fake Cash · Scamurai Station 1</title>
+  <link rel="stylesheet" href="../shared/theme.css">
   <link rel="stylesheet" href="./css/styles.css">
-  <script defer src="./vendor/three.min.js"></script>
+  <link rel="icon" href="/assets/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
   <script defer src="./js/game-core.js"></script>
   <script defer src="./js/game.js"></script>
 </head>
-<body>
-  <div id="canvas-container"></div>
-  <main id="ui-layer">
-    <header class="hud-header">
-      <div class="hud-stats">
-        <span id="note-display">Note 1 / 10</span>
-        <span class="time-box" id="time-display" aria-label="Time remaining">02:00</span>
-        <span id="score-display">Score 0 / 100</span>
-        <span id="streak-display">Streak 0</span>
-      </div>
-      <span id="status" role="status"></span>
-    </header>
-    <div class="actions">
-      <div id="feedback" role="status" hidden>
-        <strong id="feedback-title"></strong>
-        <span id="feedback-reason"></span>
-      </div>
-      <div class="action-bar" id="action-bar" aria-label="Inspection controls" hidden>
-        <button class="btn btn-uv" id="uv-btn" type="button" aria-pressed="true"><span id="uv-label">UV on</span> <kbd>Space</kbd></button>
-        <button class="btn" id="flip-btn" type="button">Flip note <kbd>F</kbd></button>
-        <div class="zoom-controls" aria-label="Zoom controls">
-          <button class="btn" id="zoom-in-btn" type="button" aria-label="Zoom in">Zoom <kbd>+</kbd></button>
-          <button class="btn" id="zoom-out-btn" type="button" aria-label="Zoom out"><kbd>−</kbd></button>
-          <button class="btn" id="zoom-reset-btn" type="button">Reset <kbd>0</kbd></button>
+<body data-game="cash">
+  <header class="hud" id="hud">
+    <div class="hud-stats">
+      <span class="stat" id="note-display">Note 1 / 10</span>
+      <span class="stat time-box" id="time-display">02:00</span>
+      <span class="stat" id="score-display">Score 0 / 100</span>
+      <span class="stat" id="streak-display">Streak 0</span>
+    </div>
+    <div class="hud-tools">
+      <button class="tool-btn" id="lang-btn" type="button" title="Switch language / 切换语言">中文</button>
+      <button class="tool-btn" id="fullscreen-btn" type="button" aria-label="Enter fullscreen">⛶</button>
+    </div>
+  </header>
+
+  <main class="stage" id="stage">
+    <div class="note-frame" id="note-frame">
+      <div class="note-pan-zoom" id="note-pan-zoom">
+        <div class="note-flip" id="note-flip">
+          <div class="note-surface" id="note-surface">
+            <img class="note-day" id="note-day" alt="" draggable="false">
+            <canvas class="note-uv" id="note-uv" aria-hidden="true"></canvas>
+          </div>
         </div>
-        <button class="btn btn-pass" id="pass-btn" type="button" title="Pass as genuine">PASS <kbd>P / ←</kbd></button>
-        <button class="btn btn-reject" id="reject-btn" type="button" title="Reject as fake">REJECT <kbd>R / →</kbd></button>
+      </div>
+      <canvas class="beam" id="beam" aria-hidden="true"></canvas>
+    </div>
+
+    <div class="feedback" id="feedback" role="status" hidden>
+      <strong id="feedback-title"></strong>
+      <span id="feedback-reason"></span>
+    </div>
+
+    <p class="status" id="status" role="status"></p>
+
+    <div class="verdict-bar" id="action-bar" hidden>
+      <div class="control-group">
+        <button class="btn btn-uv" id="uv-btn" type="button" aria-pressed="true"><span id="uv-label">UV on</span> <kbd>Space</kbd></button>
+        <button class="btn" id="flip-btn" type="button"><span data-i18n="flip"></span> <kbd>F</kbd></button>
+        <div class="zoom-group" role="group" aria-label="Zoom">
+          <button class="btn" id="zoom-out-btn" type="button" aria-label="Zoom out">−</button>
+          <button class="btn" id="zoom-reset-btn" type="button"><span data-i18n="reset"></span></button>
+          <button class="btn" id="zoom-in-btn" type="button" aria-label="Zoom in">+</button>
+        </div>
+      </div>
+      <div class="verdict-group">
+        <button class="btn btn-pass" id="pass-btn" type="button"><span data-i18n="pass"></span> <kbd>P / ←</kbd></button>
+        <button class="btn btn-reject" id="reject-btn" type="button"><span data-i18n="reject"></span> <kbd>R / →</kbd></button>
       </div>
     </div>
   </main>
+
   <div class="overlay" id="start-overlay">
     <section class="panel" aria-labelledby="game-title">
+      <p class="eyebrow">SCAMURAI · STATION 1</p>
       <h1 id="game-title">Spot the Fake Cash</h1>
-      <p>Judge 10 banknotes in 120 seconds. Earn 10 points for each correct verdict.</p>
-      <ol>
-        <li>Drag the note to rotate it, or use WASD or ↑ / ↓. Press F to flip.</li>
-        <li>Drag the torch to sweep the note. Press Space to toggle UV.</li>
-        <li>Choose PASS for genuine or REJECT for fake.</li>
+      <p class="intro" data-i18n="intro"></p>
+      <ol class="steps">
+        <li data-i18n="step1"></li>
+        <li data-i18n="step2"></li>
+        <li data-i18n="step3"></li>
       </ol>
-      <p id="asset-status" class="asset-status" hidden></p>
-      <button class="btn btn-primary" id="start-game-btn" type="button" disabled>Start round</button>
-      <button class="btn" id="enter-vr-btn" type="button" disabled>Enter VR</button>
-      <p id="vr-status" role="status" hidden></p>
+      <p class="asset-status" id="asset-status" hidden></p>
+      <button class="btn btn-primary" id="start-game-btn" type="button" disabled><span data-i18n="start"></span></button>
     </section>
   </div>
+
   <div class="overlay" id="result-overlay" hidden>
-    <section class="panel" aria-labelledby="result-title">
-      <h2 id="result-title" tabindex="-1"></h2>
-      <p class="result-score" id="result-score"></p>
-      <p id="result-accuracy"></p>
-      <h3>Note review</h3>
-      <ol id="review-list"></ol>
-      <button class="btn btn-primary" id="again-btn" type="button">Next participant</button>
+    <section class="panel results-panel" aria-labelledby="result-title">
+      <header class="results-head">
+        <p class="eyebrow">SCAMURAI · STATION 1</p>
+        <h2 id="result-title" tabindex="-1"></h2>
+        <p class="result-score" id="result-score"></p>
+        <p class="result-accuracy" id="result-accuracy"></p>
+      </header>
+      <div class="results-scroll">
+        <h3 data-i18n="reviewHeading"></h3>
+        <ol id="review-list"></ol>
+      </div>
+      <footer class="results-foot">
+        <button class="btn btn-primary" id="again-btn" type="button"><span id="again-label"></span></button>
+      </footer>
     </section>
   </div>
+
   <div id="error-panel" role="alert" hidden></div>
 </body>
 </html>

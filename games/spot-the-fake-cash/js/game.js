@@ -1,126 +1,164 @@
 (() => {
   'use strict';
 
-  let scene, camera, renderer;
-  let banknoteMesh, uvTorchMesh, spotLight, torchBeamCone, banknoteMaterial;
   const $ = id => document.getElementById(id);
-  const { BANKNOTE_SETS, DURATION_MS, NOTE_COUNT, SNAPSHOT_VERSION, Round } = FakeCashCore;
+  const { BANKNOTE_SETS, DURATION_MS, NOTE_COUNT, SNAPSHOT_VERSION, Round } = window.FakeCashCore;
   const booth = window.parent !== window ? window.parent.ScamuraiBooth : null;
   const demo = new URLSearchParams(location.search).get('demo') === '1';
+
   const FEEDBACK_MS = 1700;
   const MIN_BANKNOTE_ZOOM = 1;
   const MAX_BANKNOTE_ZOOM = 2.6;
   const ZOOM_STEP = 0.15;
-  const DESKTOP_TORCH_POSITION = [0.25, 1.18, -0.18];
-  const noteTextures = new Map();
-  const fallbackTextures = new Map();
-  let textureLoader;
+  const ASSET_BASE = 'assets/notes/';
+  const LANG_KEY = 'scamurai.cash.lang';
+
+  const images = new Map(); // filename -> { el, ok }
+  let lang = localStorage.getItem(LANG_KEY) === 'zh' ? 'zh' : 'en';
   let round = null;
-  let gameTimerInterval;
+  let currentNote = null;
+  let side = 'front';
+  let gameTimerInterval = null;
   let feedback = null;
   let initialized = false;
   let isUVOn = true;
-  let vrHUDCanvas, vrHUDTexture, vrHUDContext, vrHUDPanel;
-  let banknoteZoom = 1;
-  let flip = null;
+  let flipping = false;
+  let zoom = 1;
+  let pan = { x: 0, y: 0 };
+  let torch = { x: 0.5, y: 0.5, visible: false };
+  let refreshFullscreen = () => {};
 
+  const I18N = {
+    en: {
+      intro: 'Judge ten banknotes in 120 seconds. Earn 10 points for every correct real-or-fake verdict.',
+      step1: 'Shine the UV torch on the note (hover or drag) to reveal its glow pattern. Press Space to toggle UV.',
+      step2: 'Flip the note (F) to check the other side, and zoom with + / − / 0, the mouse wheel or a pinch.',
+      step3: 'Choose PASS for a genuine note and REJECT for a fake.',
+      start: 'Start round',
+      uvOn: 'UV on',
+      uvOff: 'UV off',
+      flip: 'Flip note',
+      reset: 'Reset',
+      pass: 'PASS',
+      reject: 'REJECT',
+      next: 'Next participant',
+      playAgain: 'Play again',
+      reviewHeading: 'Note review',
+      roundComplete: 'Round complete',
+      timeUp: 'Time is up',
+      correctPlus: 'Correct · +10',
+      wrongPlus: 'Wrong · +0',
+      hint: 'Shine the UV torch on the note · Flip (F) to inspect the back',
+      practice: 'Practice mode: open the station page to save a score for a participant.',
+      saveFail: 'Progress could not be saved on this laptop: ',
+      scoreFail: 'Could not send the score to the booth: ',
+      startFail: 'Could not start the round: ',
+      earlier: 'This round used an earlier version. The booth header shows its saved result.',
+      missing: ' images missing or unreadable. Placeholders demonstrate the controls.',
+      fatal: 'The game could not start. Check that the images and scripts loaded correctly.',
+      genuine: 'genuine',
+      fake: 'fake',
+      correct: 'Correct',
+      wrong: 'Wrong',
+      unjudged: 'Unjudged',
+      chose: 'You chose',
+      fullscreenEnter: 'Enter fullscreen',
+      fullscreenExit: 'Exit fullscreen',
+    },
+    zh: {
+      intro: '在 120 秒内鉴定 10 张钞票，每正确判断一次真伪可得 10 分。',
+      step1: '将紫外手电照在钞票上（悬停或拖动）以显现荧光图案，按空格键切换紫外灯。',
+      step2: '按 F 翻面检查另一侧，用 + / − / 0、鼠标滚轮或双指捏合来缩放。',
+      step3: '真钞选择 PASS，假钞选择 REJECT。',
+      start: '开始',
+      uvOn: '紫外灯开',
+      uvOff: '紫外灯关',
+      flip: '翻面',
+      reset: '复位',
+      pass: 'PASS',
+      reject: 'REJECT',
+      next: '下一位参与者',
+      playAgain: '再玩一次',
+      reviewHeading: '逐张回顾',
+      roundComplete: '本轮完成',
+      timeUp: '时间到',
+      correctPlus: '正确 · +10',
+      wrongPlus: '错误 · +0',
+      hint: '把紫外手电照在钞票上 · 按 F 翻面检查背面',
+      practice: '练习模式：请打开站点页面，以便为参与者保存成绩。',
+      saveFail: '本机无法保存进度：',
+      scoreFail: '无法将成绩发送到展台：',
+      startFail: '无法开始本轮：',
+      earlier: '本轮使用的是旧版本，展台页头显示其已保存的成绩。',
+      missing: ' 张图片缺失或无法读取，已用占位图演示操作。',
+      fatal: '游戏无法启动，请确认图片与脚本已正确加载。',
+      genuine: '真钞',
+      fake: '假钞',
+      correct: '正确',
+      wrong: '错误',
+      unjudged: '未判定',
+      chose: '你选了',
+      fullscreenEnter: '进入全屏',
+      fullscreenExit: '退出全屏',
+    },
+  };
+  const t = key => I18N[lang][key];
+
+  /* ── text / language ─────────────────────────────────────────────── */
   function setStatus(message) {
     $('status').textContent = message;
-    $('vr-status').textContent = message;
-    $('vr-status').hidden = !message;
   }
 
+  function setAgainLabel() {
+    $('again-label').textContent = t(demo || !booth ? 'playAgain' : 'next');
+  }
+
+  function applyLang() {
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+    document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+    $('lang-btn').textContent = lang === 'zh' ? 'EN' : '中文';
+    setAgainLabel();
+    applyUVState();
+    refreshFullscreen();
+    updateGameDisplays();
+    if (feedback) {
+      $('feedback-title').textContent = t(feedback.correct ? 'correctPlus' : 'wrongPlus');
+      $('feedback-reason').textContent = lang === 'zh' ? feedback.note.reasonZh : feedback.note.reason;
+    }
+    if (round?.status === 'finished' && !$('result-overlay').hidden) showResults();
+  }
+
+  /* ── timing & HUD ────────────────────────────────────────────────── */
   function formatTime(seconds) {
     const safe = Math.max(0, seconds);
-    const minutes = Math.floor(safe / 60);
-    const secs = safe % 60;
-    return String(minutes).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+    return String(Math.floor(safe / 60)).padStart(2, '0') + ':' + String(safe % 60).padStart(2, '0');
   }
 
   function updateGameDisplays() {
     const timeRemaining = Math.ceil((round?.remainingMs() ?? DURATION_MS) / 1000);
-    const timeText = formatTime(timeRemaining);
+    $('time-display').textContent = formatTime(timeRemaining);
+    $('time-display').classList.toggle('warning', timeRemaining <= 15);
     const score = round?.score ?? 0;
     const streak = round?.streak ?? 0;
     const noteNumber = Math.min(NOTE_COUNT, (round?.index ?? 0) + (feedback ? 0 : 1));
-    const noteText = 'Note ' + noteNumber + ' / ' + NOTE_COUNT;
-    $('time-display').textContent = timeText;
-    $('time-display').classList.toggle('warning', timeRemaining <= 15);
-    $('score-display').textContent = 'Score ' + score + ' / 100';
-    $('streak-display').textContent = 'Streak ' + streak;
-    $('note-display').textContent = noteText;
+    $('score-display').textContent = (lang === 'zh' ? '得分 ' : 'Score ') + score + ' / 100';
+    $('streak-display').textContent = (lang === 'zh' ? '连对 ' : 'Streak ') + streak;
+    $('note-display').textContent = (lang === 'zh' ? '第 ' : 'Note ') + noteNumber + ' / ' + NOTE_COUNT;
     setVerdictAvailability();
-    if (vrHUDContext && vrHUDTexture) {
-      const ctx = vrHUDContext;
-      const w = vrHUDCanvas.width, h = vrHUDCanvas.height;
-      ctx.clearRect(0, 0, w, h);
-      ctx.save();
-      const x = 20, y = 20, pw = w - 40, ph = h - 40, r = 42;
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + pw - r, y);
-      ctx.quadraticCurveTo(x + pw, y, x + pw, y + r);
-      ctx.lineTo(x + pw - 18, y + ph - r);
-      ctx.quadraticCurveTo(x + pw - 18, y + ph, x + pw - r - 18, y + ph);
-      ctx.lineTo(x + r + 18, y + ph);
-      ctx.quadraticCurveTo(x + 18, y + ph, x + 18, y + ph - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
-      ctx.fillStyle = '#242221';
-      ctx.fill();
-      ctx.strokeStyle = '#e52521';
-      ctx.lineWidth = 10;
-      ctx.stroke();
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.font = 'bold 44px Arial, sans-serif';
-      ctx.fillStyle = '#f3efe5';
-      ctx.fillText('01 / SPOT THE FAKE CASH', 78, 94);
-      ctx.font = 'bold 43px Arial, sans-serif';
-      ctx.fillStyle = timeRemaining <= 15 ? '#ff8e88' : '#edcf61';
-      ctx.fillText('TIME  ' + timeText, 78, 184);
-      ctx.fillText('SCORE  ' + score + ' / 100', 390, 184);
-      ctx.fillStyle = '#f3efe5';
-      ctx.fillText(noteText + '     ·     Streak ' + streak, 78, 267);
-      if (feedback) {
-        ctx.fillStyle = feedback.correct ? '#edcf61' : '#ff8e88';
-        ctx.fillText(feedback.correct ? 'Correct  +10' : 'Wrong  +0', 78, 363);
-        ctx.font = '30px Arial, sans-serif';
-        const words = feedback.reason.split(' ');
-        let line = '';
-        let y = 420;
-        for (const word of words) {
-          if (ctx.measureText(line + word).width > 744) {
-            ctx.fillText(line, 78, y);
-            line = '';
-            y += 40;
-          }
-          line += word + ' ';
-        }
-        ctx.fillText(line, 78, y);
-      } else if (round?.status === 'finished') {
-        ctx.fillText(round.endReason === 'time' ? 'Time is up' : 'Round complete', 78, 363);
-        ctx.font = '30px Arial, sans-serif';
-        ctx.fillText('Exit VR to review your verdicts.', 78, 420);
-      }
-      ctx.restore();
-      vrHUDTexture.needsUpdate = true;
-    }
   }
 
   function setVerdictAvailability() {
     const enabled = round?.status === 'playing' && !feedback;
     $('pass-btn').disabled = !enabled;
     $('reject-btn').disabled = !enabled;
-    setVRActionPanelVisible(enabled && renderer.xr.isPresenting);
   }
 
+  /* ── round lifecycle ─────────────────────────────────────────────── */
   function saveProgress() {
     try {
       booth?.update(window, round.snapshot());
     } catch (error) {
-      setStatus('Progress could not be saved on this laptop: ' + error.message);
+      setStatus(t('saveFail') + error.message);
     }
   }
 
@@ -131,7 +169,7 @@
     try {
       booth?.finish(window, round.snapshot(), round.score);
     } catch (error) {
-      setStatus('Could not send the score to the booth: ' + error.message);
+      setStatus(t('scoreFail') + error.message);
     }
     if (!feedback) showResults();
   }
@@ -139,19 +177,32 @@
   function showResults() {
     const answered = round.index;
     const accuracy = answered ? Math.round(round.correct * 100 / answered) : 0;
-    $('result-title').textContent = round.endReason === 'time' ? 'Time is up' : 'Round complete';
+    $('result-title').textContent = round.endReason === 'time' ? t('timeUp') : t('roundComplete');
     $('result-score').textContent = round.score + ' / 100';
-    $('result-accuracy').textContent = accuracy + '% accuracy · ' + round.correct + ' correct out of ' +
-      answered + ' judged · ' + (NOTE_COUNT - answered) + ' unjudged';
-    $('review-list').replaceChildren(...round.review().map(({ note, choice, correct }) => {
-      const item = document.createElement('li');
-      const title = document.createElement('strong');
-      const verdict = note.isReal ? 'genuine' : 'fake';
-      const answer = choice === undefined ? 'Unjudged' : (correct ? 'Correct' : 'Wrong') +
-        ' · You chose ' + (choice ? 'PASS' : 'REJECT');
-      title.textContent = answer + ' · ' + note.name + ' was ' + verdict;
-      item.append(title, note.reason);
-      return item;
+    $('result-accuracy').textContent = lang === 'zh'
+      ? `${accuracy}% 准确率 · 判定 ${answered} 张中对 ${round.correct} 张 · ${NOTE_COUNT - answered} 张未判定`
+      : `${accuracy}% accuracy · ${round.correct} correct out of ${answered} judged · ${NOTE_COUNT - answered} unjudged`;
+    $('review-list').replaceChildren(...round.review().map(({ note, choice, correct }, i) => {
+      const li = document.createElement('li');
+      const num = document.createElement('span');
+      num.className = 'review-num';
+      num.textContent = String(i + 1) + '.';
+      const body = document.createElement('div');
+      body.className = 'review-body';
+      const name = document.createElement('div');
+      name.className = 'review-name';
+      name.textContent = lang === 'zh' ? note.nameZh : note.name;
+      const verdict = document.createElement('span');
+      verdict.className = 'review-verdict ' + (choice === undefined ? 'unjudged' : correct ? 'correct' : 'wrong');
+      verdict.textContent = choice === undefined
+        ? t('unjudged')
+        : (correct ? t('correct') : t('wrong')) + ' · ' + t('chose') + ' ' + (choice ? 'PASS' : 'REJECT');
+      const reason = document.createElement('div');
+      reason.className = 'review-reason';
+      reason.textContent = lang === 'zh' ? note.reasonZh : note.reason;
+      body.append(name, verdict, reason);
+      li.append(num, body);
+      return li;
     }));
     $('action-bar').hidden = true;
     $('result-overlay').hidden = false;
@@ -169,12 +220,10 @@
       endGame();
       return;
     }
-
-    buildBanknote(round.note);
+    buildNote(round.note);
     $('action-bar').hidden = false;
-    setStatus('Drag the note or torch · Scroll or pinch to zoom');
+    setStatus(t('hint'));
     updateGameDisplays();
-    renderer.domElement.focus();
     gameTimerInterval = setInterval(() => {
       if (round.expire()) endGame();
       else updateGameDisplays();
@@ -190,624 +239,25 @@
     } catch (error) {
       console.error(error);
       round = null;
-      setStatus('Could not start the round: ' + (error.message || error));
+      setStatus(t('startFail') + (error.message || error));
       $('start-overlay').hidden = false;
-      $('start-game-btn').disabled = false;
-    }
-  }
-
-  function showFatalError(error) {
-    console.error(error);
-    const panel = $('error-panel');
-    panel.hidden = false;
-    panel.textContent = 'The 3D scene could not start. Check that the browser has WebGL enabled.\n' +
-      (error.message || error);
-  }
-
-  function makeFallbackTexture(label, uvMode) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1024;
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d');
-    const wash = ctx.createLinearGradient(0, 0, 1024, 512);
-    wash.addColorStop(0, uvMode ? '#242353' : '#94c6c5');
-    wash.addColorStop(1, uvMode ? '#101529' : '#c5dfd5');
-    ctx.fillStyle = wash;
-    ctx.fillRect(0, 0, 1024, 512);
-
-    const ink = uvMode ? '#9e86ed' : '#337379';
-    ctx.strokeStyle = ink;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(20, 20, 984, 472);
-    ctx.strokeRect(32, 32, 960, 448);
-    for (let i = 0; i < 24; i++) {
-      ctx.beginPath();
-      ctx.ellipse(778, 248, 182, 90, i * Math.PI / 24, 0, 2 * Math.PI);
-      ctx.stroke();
-    }
-
-    ctx.fillStyle = uvMode ? '#f6b7fc' : '#164a56';
-    ctx.font = 'bold 108px sans-serif';
-    ctx.fillText('50', 68, 180);
-    ctx.font = 'bold 40px sans-serif';
-    ctx.fillText(label, 72, 280);
-    ctx.font = '26px sans-serif';
-    ctx.fillText('PLACEHOLDER TEXTURE', 72, 405);
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    return texture;
-  }
-
-  async function preloadNoteTextures() {
-    const names = new Set(BANKNOTE_SETS.flatMap(note => [note.frontDay, note.frontUV, note.backDay, note.backUV]));
-    await Promise.all([...names].map(async name => {
-      let url;
-      try {
-        const response = await fetch('./assets/notes/' + encodeURIComponent(name));
-        if (!response.ok) return;
-        url = URL.createObjectURL(await response.blob());
-        const texture = await textureLoader.loadAsync(url);
-        texture.encoding = THREE.sRGBEncoding;
-        texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-        noteTextures.set(name, texture);
-      } catch {
-        // Unavailable or unreadable files use a labeled placeholder.
-      } finally {
-        if (url) URL.revokeObjectURL(url);
-      }
-    }));
-    if (noteTextures.size < names.size) {
-      $('asset-status').textContent = 'RM50 images missing or unreadable (' + (names.size - noteTextures.size) +
-        ' / ' + names.size + '). Placeholders demonstrate the controls. Some clues may be unavailable.';
-      $('asset-status').hidden = false;
-    }
-  }
-
-  function noteTexture(name, label, uvMode) {
-    if (noteTextures.has(name)) return noteTextures.get(name);
-    if (!fallbackTextures.has(label)) {
-      fallbackTextures.set(label, makeFallbackTexture(label, uvMode));
-    }
-    return fallbackTextures.get(label);
-  }
-
-  function buildBanknote(set) {
-    const frontDayTex = noteTexture(set.frontDay, 'RM50 front', false);
-    const frontUVTex  = noteTexture(set.frontUV, 'RM50 front / UV', true);
-    const backDayTex  = noteTexture(set.backDay, 'RM50 back', false);
-    const backUVTex   = noteTexture(set.backUV, 'RM50 back / UV', true);
-
-    banknoteMaterial = new THREE.ShaderMaterial({
-      uniforms: {
-        tFrontDay: { value: frontDayTex },
-        tFrontUV:  { value: frontUVTex },
-        tBackDay:  { value: backDayTex },
-        tBackUV:   { value: backUVTex },
-        uLightPos: { value: new THREE.Vector3(0, 1.2, 0) },
-        uLightDir: { value: new THREE.Vector3(0, 0, -1) },
-        uIsUVOn: { value: isUVOn ? 1.0 : 0.0 },
-        uSpotAngle: { value: Math.cos(Math.PI / 6) }
-      },
-      vertexShader: `
-        varying vec2 vUv;
-        varying vec3 vWorldPosition;
-        varying vec3 vNormal;
-        void main() {
-          vUv = uv;
-          vNormal = normalize(normalMatrix * normal);
-          vec4 worldPos = modelMatrix * vec4(position, 1.0);
-          vWorldPosition = worldPos.xyz;
-          gl_Position = projectionMatrix * viewMatrix * worldPos;
-        }
-      `,
-      fragmentShader: `
-        uniform sampler2D tFrontDay;
-        uniform sampler2D tFrontUV;
-        uniform sampler2D tBackDay;
-        uniform sampler2D tBackUV;
-        uniform vec3 uLightPos;
-        uniform vec3 uLightDir;
-        uniform float uIsUVOn;
-        uniform float uSpotAngle;
-        varying vec2 vUv;
-        varying vec3 vWorldPosition;
-        varying vec3 vNormal;
-
-        void main() {
-          bool isFront = gl_FrontFacing;
-          // Mirror horizontal UVs so the back texture reads correctly from behind.
-          vec2 backUv = vec2(1.0 - vUv.x, vUv.y);
-          vec4 dayTex = isFront ? texture2D(tFrontDay, vUv) : texture2D(tBackDay, backUv);
-          vec4 uvTex  = isFront ? texture2D(tFrontUV, vUv)   : texture2D(tBackUV, backUv);
-
-          vec3 lightToPos = normalize(vWorldPosition - uLightPos);
-          float cosAngle = dot(lightToPos, normalize(uLightDir));
-          float spotFactor = 0.0;
-          if (cosAngle > uSpotAngle && uIsUVOn > 0.5) {
-            spotFactor = smoothstep(uSpotAngle, min(1.0, uSpotAngle + 0.12), cosAngle);
-          }
-
-          gl_FragColor = vec4(mix(dayTex.rgb, uvTex.rgb, spotFactor), dayTex.a);
-          #include <tonemapping_fragment>
-          #include <encodings_fragment>
-        }
-      `,
-      side: THREE.DoubleSide
-    });
-
-    if (banknoteMesh) {
-      banknoteMesh.material.dispose();
-      banknoteMesh.geometry.dispose();
-      scene.remove(banknoteMesh);
-    }
-    banknoteMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.21), banknoteMaterial);
-    banknoteMesh.position.set(0, 1.12, -0.48);
-    banknoteMesh.rotation.set(0, 0, 0);
-    banknoteZoom = 1;
-    banknoteMesh.scale.setScalar(banknoteZoom);
-    scene.add(banknoteMesh);
-    flip = null;
-  }
-
-  function setBanknoteZoom(nextZoom) {
-    if (!banknoteMesh) return;
-    banknoteZoom = THREE.MathUtils.clamp(nextZoom, MIN_BANKNOTE_ZOOM, MAX_BANKNOTE_ZOOM);
-    banknoteMesh.scale.setScalar(banknoteZoom);
-  }
-
-  function changeBanknoteZoom(amount) {
-    setBanknoteZoom(banknoteZoom + amount);
-  }
-
-  function buildUVTorch() {
-    uvTorchMesh = new THREE.Group();
-
-    const body = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.022, 0.022, 0.18, 20),
-      new THREE.MeshStandardMaterial({ color: 0x343a40, metalness: 0.75, roughness: 0.28 })
-    );
-    body.rotation.x = Math.PI / 2;
-    uvTorchMesh.add(body);
-
-    const head = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.032, 0.025, 0.035, 20),
-      new THREE.MeshStandardMaterial({ color: 0x777777, metalness: 0.8, roughness: 0.25 })
-    );
-    head.rotation.x = Math.PI / 2;
-    head.position.z = -0.095;
-    uvTorchMesh.add(head);
-
-    spotLight = new THREE.SpotLight(0x9d4edd, 5, 2.5, Math.PI / 6, 0.35, 1);
-    spotLight.position.set(0, 0, -0.11);
-    spotLight.target.position.set(0, 0, -1);
-    uvTorchMesh.add(spotLight);
-    uvTorchMesh.add(spotLight.target);
-
-    torchBeamCone = new THREE.Mesh(
-      new THREE.ConeGeometry(0.16, 0.65, 24, 1, true),
-      new THREE.MeshBasicMaterial({ color: 0x9d4edd, transparent: true, opacity: 0.13, side: THREE.DoubleSide, depthWrite: false })
-    );
-
-    torchBeamCone.rotation.x = Math.PI / 2;
-    torchBeamCone.position.z = -0.43;
-    uvTorchMesh.add(torchBeamCone);
-
-    uvTorchMesh.position.set(...DESKTOP_TORCH_POSITION);
-    scene.add(uvTorchMesh);
-    applyUVState();
-  }
-
-  let xrControllers = [];
-  let torchIsHeld = false;
-  let activeRightGrip = null;
-  let activeRightController = null;
-  let activeLeftInputSource = null;
-  let activeRightInputSource = null;
-
-  let vrActionButtons = [];
-  const controllerRaycasters = new Map();
-  const tempMatrix = new THREE.Matrix4();
-
-  function createVRHUD() {
-    vrHUDCanvas = document.createElement('canvas');
-    vrHUDCanvas.width = 900;
-    vrHUDCanvas.height = 560;
-    vrHUDContext = vrHUDCanvas.getContext('2d');
-    vrHUDTexture = new THREE.CanvasTexture(vrHUDCanvas);
-    vrHUDTexture.encoding = THREE.sRGBEncoding;
-    const material = new THREE.MeshBasicMaterial({
-      map: vrHUDTexture, transparent: true, side: THREE.DoubleSide
-    });
-    // Keep the HUD anchored behind the banknote in world space.
-    vrHUDPanel = new THREE.Mesh(new THREE.PlaneGeometry(0.82, 0.51), material);
-    vrHUDPanel.name = 'Banknote inspection HUD';
-    vrHUDPanel.position.set(0, 1.55, -1.02);
-    vrHUDPanel.renderOrder = 10;
-    scene.add(vrHUDPanel);
-    vrHUDPanel.visible = true;
-    updateGameDisplays();
-  }
-
-  function attachTorchToRightHand() {
-    if (!activeRightGrip) return;
-    activeRightGrip.add(uvTorchMesh);
-
-    uvTorchMesh.position.set(0, -0.075, -0.18);
-    uvTorchMesh.rotation.set(0, 0, 0);
-    torchIsHeld = true;
-  }
-
-  function dropTorchToWorld() {
-    if (!uvTorchMesh || !scene) return;
-    scene.attach(uvTorchMesh);
-    torchIsHeld = false;
-  }
-
-  function toggleTorchHold() {
-    if (!renderer.xr.isPresenting || !activeRightGrip) return;
-    if (torchIsHeld) {
-      dropTorchToWorld();
-      setStatus('Torch dropped. Squeeze the right grip to pick it up.');
-    } else {
-      attachTorchToRightHand();
-      setStatus('Torch held. Pull the trigger to toggle UV or squeeze to drop it.');
-    }
-  }
-
-  function makeVRButtonTexture(label, background, border) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 220;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = background;
-    ctx.strokeStyle = border;
-    ctx.lineWidth = 14;
-    const radius = 34;
-    ctx.beginPath();
-    ctx.moveTo(radius, 8);
-    ctx.lineTo(512 - radius, 8);
-    ctx.quadraticCurveTo(504, 8, 504, 8 + radius);
-    ctx.lineTo(504, 220 - radius);
-    ctx.quadraticCurveTo(504, 212, 512 - radius, 212);
-    ctx.lineTo(radius, 212);
-    ctx.quadraticCurveTo(8, 212, 8, 220 - radius);
-    ctx.lineTo(8, 8 + radius);
-    ctx.quadraticCurveTo(8, 8, radius, 8);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 76px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(label, 256, 112);
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.encoding = THREE.sRGBEncoding;
-    return texture;
-  }
-
-  function createVRActionButtons() {
-    const panel = new THREE.Group();
-    panel.name = 'VR verdict buttons';
-
-    panel.position.set(0, 0.99, -0.30);
-
-    const buttonDefs = [
-      { label: 'PASS', choice: true, x: -0.145, color: '#238636', border: '#56d364' },
-      { label: 'REJECT', choice: false, x: 0.145, color: '#b62324', border: '#ff7b72' }
-    ];
-
-    vrActionButtons = buttonDefs.map(def => {
-      const material = new THREE.MeshBasicMaterial({
-        map: makeVRButtonTexture(def.label, def.color, def.border),
-        transparent: false,
-        side: THREE.DoubleSide
-      });
-      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(0.26, 0.105), material);
-      mesh.position.set(def.x, 0, 0);
-      mesh.userData.isVRActionButton = true;
-      mesh.userData.choice = def.choice;
-      mesh.userData.baseScale = mesh.scale.clone();
-      panel.add(mesh);
-      return mesh;
-    });
-
-    panel.visible = false;
-    scene.add(panel);
-    return panel;
-  }
-
-  let vrActionPanel = null;
-
-  function setVRActionPanelVisible(visible) {
-    if (vrActionPanel) vrActionPanel.visible = visible;
-  }
-
-  function createControllerRay(controller) {
-    const points = [
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, 0, -2.5)
-    ];
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
-    const line = new THREE.Line(
-      geometry,
-      new THREE.LineBasicMaterial({ color: 0x8bd5ff, transparent: true, opacity: 0.85 })
-    );
-    line.name = 'VR controller ray';
-    line.visible = false;
-    controller.add(line);
-    controller.userData.rayLine = line;
-    controllerRaycasters.set(controller, new THREE.Raycaster());
-  }
-
-  function getControllerButtonHit(controller) {
-    if (!controller || !vrActionPanel?.visible) return null;
-    const raycaster = controllerRaycasters.get(controller);
-    if (!raycaster) return null;
-
-    controller.updateMatrixWorld(true);
-    tempMatrix.identity().extractRotation(controller.matrixWorld);
-    const origin = new THREE.Vector3().setFromMatrixPosition(controller.matrixWorld);
-    const direction = new THREE.Vector3(0, 0, -1).applyMatrix4(tempMatrix).normalize();
-    raycaster.set(origin, direction);
-    raycaster.far = 3.0;
-
-    const hits = raycaster.intersectObjects(vrActionButtons, false);
-    return hits.length ? hits[0].object : null;
-  }
-
-  function handleControllerSelect(controller) {
-    if (!renderer.xr.isPresenting) return;
-    const hitButton = getControllerButtonHit(controller);
-
-    if (hitButton) {
-      evaluateChoice(hitButton.userData.choice);
-      return;
-    }
-
-    if (controller === activeRightController) {
-      toggleUVLight();
-    } else {
-      setStatus('Aim at PASS or REJECT, then pull the trigger.');
-    }
-  }
-
-  function assignControllers(session) {
-    const sources = Array.from(session.inputSources || []);
-
-    activeRightController = null;
-    activeRightGrip = null;
-    activeLeftInputSource = null;
-    activeRightInputSource = null;
-
-    sources.forEach((source, i) => {
-      if (source.handedness === 'right') {
-        activeRightController = xrControllers[i] || null;
-        activeRightGrip = activeRightController ? activeRightController.userData.grip : null;
-        activeRightInputSource = source;
-      } else if (source.handedness === 'left') {
-        activeLeftInputSource = source;
-      }
-    });
-
-    if (!activeRightController) {
-      const index = sources.findIndex(source => source.handedness === 'none');
-      activeRightController = xrControllers[index] || null;
-      activeRightGrip = activeRightController?.userData.grip ?? null;
-      activeRightInputSource = sources[index] ?? null;
-    }
-    if (!activeLeftInputSource) activeLeftInputSource = sources.find(source => source !== activeRightInputSource) || null;
-
-    if (torchIsHeld && uvTorchMesh.parent !== activeRightGrip) dropTorchToWorld();
-    if (activeRightGrip && !torchIsHeld) attachTorchToRightHand();
-    setVerdictAvailability();
-    setStatus('Left stick rotates · Right stick zooms · Right trigger toggles UV');
-  }
-
-  function setupXRControllers() {
-    xrControllers = [0, 1].map(index => {
-      const inputController = renderer.xr.getController(index);
-      const grip = renderer.xr.getControllerGrip(index);
-      inputController.userData.grip = grip;
-      createControllerRay(inputController);
-
-      inputController.addEventListener('selectstart', () => {
-        if (renderer.xr.isPresenting) handleControllerSelect(inputController);
-      });
-
-      inputController.addEventListener('squeezestart', () => {
-        if (renderer.xr.isPresenting && inputController === activeRightController) {
-          toggleTorchHold();
-        }
-      });
-
-      scene.add(inputController);
-      scene.add(grip);
-      return inputController;
-    });
-
-    renderer.xr.addEventListener('sessionstart', () => {
-      const session = renderer.xr.getSession();
-      if (session) {
-        assignControllers(session);
-        if (vrHUDPanel) vrHUDPanel.visible = true;
-        session.addEventListener('inputsourceschange', () => assignControllers(session));
-      }
-    });
-
-    renderer.xr.addEventListener('sessionend', () => {
-      if (uvTorchMesh && torchIsHeld) dropTorchToWorld();
-      activeRightGrip = null;
-      activeRightController = null;
-      activeLeftInputSource = null;
-      activeRightInputSource = null;
-      xrControllers.forEach(c => {
-        if (c.userData.rayLine) c.userData.rayLine.visible = false;
-      });
-      setVRActionPanelVisible(false);
-      if (vrHUDPanel) vrHUDPanel.visible = true;
-      uvTorchMesh.position.set(...DESKTOP_TORCH_POSITION);
-      uvTorchMesh.rotation.set(0, 0, 0);
-      setStatus('Drag the note or torch · Scroll or pinch to zoom');
-    });
-  }
-
-  function applyUVState() {
-    if (spotLight) spotLight.visible = isUVOn;
-    if (torchBeamCone) torchBeamCone.visible = isUVOn;
-    if (banknoteMaterial) banknoteMaterial.uniforms.uIsUVOn.value = isUVOn ? 1.0 : 0.0;
-    $('uv-label').textContent = isUVOn ? 'UV on' : 'UV off';
-    $('uv-btn').setAttribute('aria-pressed', String(isUVOn));
-  }
-
-  function toggleUVLight() {
-    isUVOn = !isUVOn;
-    applyUVState();
-  }
-
-  function flipNote() {
-    if (!banknoteMesh || flip) return;
-    const from = banknoteMesh.quaternion.clone();
-    const halfTurn = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI);
-    flip = { start: performance.now(), from, to: from.clone().multiply(halfTurn) };
-  }
-
-  function rotateNote(dx, dy) {
-    if (!banknoteMesh || flip) return;
-    banknoteMesh.rotation.y += dx;
-    banknoteMesh.rotation.x += dy;
-  }
-
-  function setupDesktopInteraction() {
-    const dom = renderer.domElement;
-    const pointers = new Map();
-    const ray = new THREE.Raycaster();
-    let dragTarget = null;
-
-    function pinchDistance() {
-      const [first, second] = pointers.values();
-      return Math.hypot(first.x - second.x, first.y - second.y);
-    }
-
-    dom.addEventListener('wheel', event => {
-      if (renderer.xr.isPresenting) return;
-      event.preventDefault();
-      changeBanknoteZoom(event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP);
-    }, { passive: false });
-
-    dom.addEventListener('pointerdown', event => {
-      if (renderer.xr.isPresenting || event.button !== 0) return;
-      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
-      dom.setPointerCapture(event.pointerId);
-      if (pointers.size !== 1) {
-        dragTarget = null;
-        return;
-      }
-      const bounds = dom.getBoundingClientRect();
-      const x = (event.clientX - bounds.left) / bounds.width * 2 - 1;
-      const y = 1 - (event.clientY - bounds.top) / bounds.height * 2;
-      ray.setFromCamera({ x, y }, camera);
-      const hitsNote = ray.intersectObject(banknoteMesh).length > 0;
-      const hitsTorch = ray.intersectObject(uvTorchMesh, true).some(hit => hit.object !== torchBeamCone);
-      dragTarget = hitsTorch || (!hitsNote && x >= 0) ? 'torch' : 'note';
-    });
-
-    dom.addEventListener('pointermove', event => {
-      const previous = pointers.get(event.pointerId);
-      if (!previous || renderer.xr.isPresenting) return;
-      const before = pointers.size === 2 ? pinchDistance() : 0;
-      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
-      if (pointers.size === 2 && before > 0) {
-        setBanknoteZoom(banknoteZoom * pinchDistance() / before);
-        return;
-      }
-      if (pointers.size !== 1) return;
-      const dx = event.clientX - previous.x;
-      const dy = event.clientY - previous.y;
-      if (dragTarget === 'note') {
-        rotateNote(dx * 0.008, dy * 0.008);
-      } else if (dragTarget === 'torch') {
-        const scale = 0.0015 * 600 / dom.clientHeight;
-        uvTorchMesh.position.x = THREE.MathUtils.clamp(uvTorchMesh.position.x + dx * scale, -0.60, 0.60);
-        uvTorchMesh.position.y = THREE.MathUtils.clamp(uvTorchMesh.position.y - dy * scale, 0.89, 1.50);
-      }
-    });
-
-    const stopDrag = event => {
-      if (!pointers.delete(event.pointerId)) return;
-      dragTarget = null;
-    };
-    dom.addEventListener('pointerup', stopDrag);
-    dom.addEventListener('pointercancel', stopDrag);
-    dom.addEventListener('lostpointercapture', stopDrag);
-    window.addEventListener('blur', () => { pointers.clear(); dragTarget = null; });
-    window.addEventListener('keydown', handleKey);
-  }
-
-  function handleKey(event) {
-    if (!round || round.status !== 'playing' || event.ctrlKey || event.metaKey || event.altKey) return;
-    if (['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.code)) event.preventDefault();
-    switch (event.code) {
-      case 'Space': if (!event.repeat) toggleUVLight(); break;
-      case 'KeyF': if (!event.repeat) flipNote(); break;
-      case 'KeyP':
-      case 'ArrowLeft': if (!event.repeat) evaluateChoice(true); break;
-      case 'KeyR':
-      case 'ArrowRight': if (!event.repeat) evaluateChoice(false); break;
-      case 'Equal':
-      case 'NumpadAdd': changeBanknoteZoom(ZOOM_STEP); break;
-      case 'Minus':
-      case 'NumpadSubtract': changeBanknoteZoom(-ZOOM_STEP); break;
-      case 'Digit0':
-      case 'Numpad0': setBanknoteZoom(1); break;
-      case 'ArrowUp':
-      case 'KeyW': rotateNote(0, -0.14); break;
-      case 'ArrowDown':
-      case 'KeyS': rotateNote(0, 0.14); break;
-      case 'KeyA': rotateNote(-0.14, 0); break;
-      case 'KeyD': rotateNote(0.14, 0); break;
-    }
-  }
-
-  async function enterVR() {
-    if (!navigator.xr) {
-      setStatus('WebXR requires a supported browser and localhost or HTTPS.');
-      return;
-    }
-    $('enter-vr-btn').disabled = true;
-    $('start-game-btn').disabled = true;
-    try {
-      const supported = await navigator.xr.isSessionSupported('immersive-vr');
-      if (!supported) {
-        setStatus('This device does not support immersive VR.');
-        return;
-      }
-      const session = await navigator.xr.requestSession('immersive-vr', {
-        optionalFeatures: ['local-floor', 'bounded-floor']
-      });
-      await renderer.xr.setSession(session);
-      if (!round) startGame();
-      setStatus('Aim and trigger to judge · Right grip picks up or drops the torch');
-    } catch (error) {
-      setStatus('Could not enter VR: ' + (error.message || error));
-    } finally {
-      $('enter-vr-btn').disabled = false;
       $('start-game-btn').disabled = false;
     }
   }
 
   function evaluateChoice(userChoice) {
     if (!round || feedback || round.status !== 'playing') return;
-    feedback = round.answer(userChoice);
-    if (!feedback) {
+    const judgedNote = round.note;
+    const result = round.answer(userChoice);
+    if (!result) {
       endGame();
       return;
     }
-
+    feedback = { correct: result.correct, note: judgedNote };
     const card = $('feedback');
-    $('feedback-title').textContent = feedback.correct ? 'Correct · +10' : 'Wrong · +0';
-    $('feedback-reason').textContent = feedback.reason;
-    card.dataset.correct = String(feedback.correct);
+    $('feedback-title').textContent = t(feedback.correct ? 'correctPlus' : 'wrongPlus');
+    $('feedback-reason').textContent = lang === 'zh' ? feedback.note.reasonZh : feedback.note.reason;
+    card.className = 'feedback ' + (feedback.correct ? 'correct' : 'wrong');
     card.hidden = false;
     updateGameDisplays();
 
@@ -823,148 +273,493 @@
       } else if (round.expire()) {
         endGame();
       } else {
-        buildBanknote(round.note);
+        buildNote(round.note);
         updateGameDisplays();
       }
     }, FEEDBACK_MS);
   }
 
-  function onWindowResize() {
-    if (!camera || !renderer) return;
-    camera.aspect = window.innerWidth / window.innerHeight;
-    const narrower = Math.max(1, 0.85 / camera.aspect);
-    camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(Math.PI / 6) * narrower));
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+  /* ── note rendering ──────────────────────────────────────────────── */
+  function imageUrl(file) { return ASSET_BASE + file; }
+
+  function preloadImages() {
+    const files = new Set();
+    BANKNOTE_SETS.forEach(s => { files.add(s.front); files.add(s.back); });
+    let missing = 0;
+    return Promise.all([...files].map(file => new Promise(resolve => {
+      const el = new Image();
+      el.onload = () => { images.set(file, { el, ok: true }); resolve(); };
+      el.onerror = () => { images.set(file, { el: null, ok: false }); missing += 1; resolve(); };
+      el.src = imageUrl(file);
+    }))).then(() => missing);
   }
 
-  function readStickAxes(inputSource) {
-    if (!inputSource || !inputSource.gamepad || !inputSource.gamepad.axes) return [0, 0];
-    const axes = inputSource.gamepad.axes;
-
-
-    let x = 0, y = 0;
-    if (axes.length >= 4) {
-      // Prefer thumbstick axes, then fall back to the touchpad.
-      const pairA = [Number(axes[0]) || 0, Number(axes[1]) || 0];
-      const pairB = [Number(axes[2]) || 0, Number(axes[3]) || 0];
-      const magB = Math.abs(pairB[0]) + Math.abs(pairB[1]);
-      [x, y] = magB > 0.08 ? pairB : pairA;
-    } else if (axes.length >= 2) {
-      x = Number(axes[0]) || 0;
-      y = Number(axes[1]) || 0;
-    }
-    return [x, y];
+  function placeholderDataUrl(noteSet) {
+    const c = document.createElement('canvas');
+    c.width = 1126;
+    c.height = 533;
+    const ctx = c.getContext('2d');
+    const g = ctx.createLinearGradient(0, 0, 1126, 533);
+    g.addColorStop(0, '#cfe3dc');
+    g.addColorStop(1, '#e9f2ef');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 1126, 533);
+    ctx.strokeStyle = '#337379';
+    ctx.lineWidth = 5;
+    ctx.strokeRect(12, 12, 1102, 509);
+    ctx.fillStyle = '#337379';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = 'bold 130px Arial, sans-serif';
+    ctx.fillText(noteSet.denomination, 563, 210);
+    ctx.font = '40px Arial, sans-serif';
+    ctx.fillText(noteSet.name, 563, 350);
+    return c.toDataURL('image/png');
   }
 
-  function animate() {
-    if (flip) {
-      const progress = Math.min(1, (performance.now() - flip.start) / 380);
-      banknoteMesh.quaternion.slerpQuaternions(flip.from, flip.to, progress * progress * (3 - 2 * progress));
-      if (progress >= 1) flip = null;
+  function buildNote(noteSet) {
+    currentNote = noteSet;
+    side = 'front';
+    renderNote(true);
+  }
+
+  function renderNote(resetView) {
+    if (!currentNote) return;
+    const file = side === 'front' ? currentNote.front : currentNote.back;
+    const img = $('note-day');
+    const surface = $('note-surface');
+    const canvas = $('note-uv');
+    const entry = images.get(file);
+    if (entry && entry.ok) {
+      img.src = imageUrl(file);
+      surface.style.aspectRatio = entry.el.naturalWidth + ' / ' + entry.el.naturalHeight;
+      canvas.width = entry.el.naturalWidth;
+      canvas.height = entry.el.naturalHeight;
+    } else {
+      img.src = placeholderDataUrl(currentNote);
+      surface.style.aspectRatio = '1126 / 533';
+      canvas.width = 1126;
+      canvas.height = 533;
     }
-    if (renderer.xr.isPresenting) {
-      if (banknoteMesh && activeRightInputSource) {
-        const [, zoomAxisY] = readStickAxes(activeRightInputSource);
-        if (Math.abs(zoomAxisY) > 0.18) {
-          setBanknoteZoom(banknoteZoom + (-zoomAxisY * 0.025));
-        }
+    if (resetView) {
+      zoom = 1;
+      pan = { x: 0, y: 0 };
+      applyTransform();
+    }
+    drawUVOverlay(currentNote);
+    applyTorch();
+  }
+
+  function drawUVOverlay(noteSet) {
+    const canvas = $('note-uv');
+    const w = canvas.width;
+    const h = canvas.height;
+    if (!w || !h) return;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, w, h);
+
+    const defects = noteSet.defects || [];
+    const flat = defects.some(d => d.feature === 'all' && d.how === 'none');
+    if (flat) {
+      ctx.fillStyle = 'rgba(10, 8, 28, 0.55)';
+      ctx.fillRect(0, 0, w, h);
+      return;
+    }
+
+    ctx.fillStyle = 'rgba(28, 16, 68, 0.5)';
+    ctx.fillRect(0, 0, w, h);
+
+    const denom = noteSet.denomination.replace('RM', '');
+    const wrongNumeral = defects.find(d => d.feature === 'numeral');
+    const numeral = wrongNumeral ? String(wrongNumeral.value) : denom;
+    const threadMissing = defects.some(d => d.feature === 'thread' && d.how === 'missing');
+    const crestCopy = defects.some(d => d.feature === 'crest' && d.how === 'copy');
+
+    // 1) glowing denomination numeral
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = '#c9a7ff';
+    ctx.shadowBlur = 30;
+    ctx.fillStyle = '#c9a7ff';
+    ctx.font = `bold ${Math.round(h * 0.6)}px "Arial Black", Arial, sans-serif`;
+    ctx.fillText(numeral, w * 0.22, h * 0.52);
+    ctx.restore();
+
+    // 2) vertical security thread
+    if (!threadMissing) {
+      ctx.save();
+      const tx = w * 0.5;
+      ctx.shadowColor = '#7df3ff';
+      ctx.shadowBlur = 26;
+      ctx.fillStyle = 'rgba(125, 243, 255, 0.92)';
+      ctx.fillRect(tx - h * 0.02, 0, h * 0.04, h);
+      ctx.translate(tx, h * 0.5);
+      ctx.rotate(-Math.PI / 2);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#06324a';
+      ctx.shadowBlur = 0;
+      ctx.font = `bold ${Math.round(h * 0.075)}px Arial, sans-serif`;
+      ctx.fillText('BNM RM' + denom, 0, 0);
+      ctx.restore();
+    }
+
+    // 3) crest emblem
+    ctx.save();
+    const cx = w * 0.82;
+    const cy = h * 0.3;
+    const cr = h * 0.16;
+    if (crestCopy) {
+      ctx.shadowColor = '#ff8b8b';
+      ctx.shadowBlur = 24;
+      ctx.strokeStyle = '#ff7b7b';
+      ctx.lineWidth = h * 0.02;
+      ctx.beginPath();
+      ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = '#ff7b7b';
+      ctx.font = `bold ${Math.round(h * 0.13)}px Arial, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('✕', cx, cy);
+    } else {
+      ctx.shadowColor = '#c9a7ff';
+      ctx.shadowBlur = 28;
+      ctx.fillStyle = 'rgba(201, 167, 255, 0.85)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, cr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#3a2560';
+      ctx.font = `bold ${Math.round(cr * 1.1)}px Arial, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('★', cx, cy + h * 0.01);
+    }
+    ctx.restore();
+
+    // 4) fluorescent fibres
+    ctx.save();
+    const cols = ['#8eff9e', '#ff9e9e', '#9ec9ff', '#ffe28a'];
+    for (let i = 0; i < 42; i++) {
+      const x = Math.random() * w;
+      const y = Math.random() * h;
+      const len = h * (0.03 + Math.random() * 0.06);
+      const ang = Math.random() * Math.PI;
+      ctx.strokeStyle = cols[i % cols.length];
+      ctx.lineWidth = Math.max(1, h * 0.006);
+      ctx.shadowColor = ctx.strokeStyle;
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + Math.cos(ang) * len, y + Math.sin(ang) * len);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  /* ── UV torch ────────────────────────────────────────────────────── */
+  function applyUVState() {
+    $('uv-label').textContent = t(isUVOn ? 'uvOn' : 'uvOff');
+    $('uv-btn').setAttribute('aria-pressed', String(isUVOn));
+    applyTorch();
+  }
+
+  function toggleUVLight() {
+    isUVOn = !isUVOn;
+    applyUVState();
+  }
+
+  function applyTorch() {
+    const uv = $('note-uv');
+    const on = isUVOn && torch.visible && round && round.status === 'playing' && currentNote;
+    uv.classList.toggle('on', on);
+    if (on) {
+      const px = (torch.x * 100).toFixed(2);
+      const py = (torch.y * 100).toFixed(2);
+      const mask = `radial-gradient(circle at ${px}% ${py}%, #000 0%, #000 9%, transparent 27%)`;
+      uv.style.maskImage = mask;
+      uv.style.webkitMaskImage = mask;
+    } else {
+      uv.style.maskImage = 'none';
+      uv.style.webkitMaskImage = 'none';
+    }
+  }
+
+  function clearBeam() {
+    const beam = $('beam');
+    beam.getContext('2d').clearRect(0, 0, beam.width, beam.height);
+  }
+
+  function drawBeam(pt) {
+    const beam = $('beam');
+    const frame = $('note-frame');
+    if (beam.width !== frame.clientWidth || beam.height !== frame.clientHeight) {
+      beam.width = frame.clientWidth;
+      beam.height = frame.clientHeight;
+    }
+    const ctx = beam.getContext('2d');
+    const w = beam.width;
+    const h = beam.height;
+    ctx.clearRect(0, 0, w, h);
+    const cx = pt.x;
+    const cy = pt.y;
+
+    const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 150);
+    glow.addColorStop(0, 'rgba(190, 140, 255, 0.5)');
+    glow.addColorStop(0.5, 'rgba(168, 85, 247, 0.22)');
+    glow.addColorStop(1, 'rgba(168, 85, 247, 0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 150, 0, Math.PI * 2);
+    ctx.fill();
+
+    const ox = w / 2;
+    const oy = h;
+    const dx = cx - ox;
+    const dy = cy - oy;
+    const dist = Math.hypot(dx, dy) || 1;
+    const ux = dx / dist;
+    const uy = dy / dist;
+    const half = 24 + dist * 0.16;
+    const grad = ctx.createLinearGradient(ox, oy, cx, cy);
+    grad.addColorStop(0, 'rgba(168, 85, 247, 0.05)');
+    grad.addColorStop(1, 'rgba(168, 85, 247, 0.32)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(ox, oy);
+    ctx.lineTo(cx + -uy * half, cy + ux * half);
+    ctx.lineTo(cx - -uy * half, cy - ux * half);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(210, 170, 255, 0.95)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  /* ── flip & zoom ─────────────────────────────────────────────────── */
+  function flipNote() {
+    if (flipping || !round || round.status !== 'playing' || feedback) return;
+    flipping = true;
+    const el = $('note-flip');
+    el.style.transform = 'scaleX(0)';
+    setTimeout(() => {
+      side = side === 'front' ? 'back' : 'front';
+      renderNote(false);
+      el.style.transform = 'scaleX(1)';
+      setTimeout(() => { flipping = false; }, 190);
+    }, 95);
+  }
+
+  function clampPan() {
+    const max = 520;
+    pan.x = Math.min(max, Math.max(-max, pan.x));
+    pan.y = Math.min(max, Math.max(-max, pan.y));
+  }
+
+  function applyTransform() {
+    clampPan();
+    $('note-pan-zoom').style.transform = `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`;
+  }
+
+  function setZoom(level) {
+    zoom = Math.min(MAX_BANKNOTE_ZOOM, Math.max(MIN_BANKNOTE_ZOOM, level));
+    applyTransform();
+  }
+
+  function changeZoom(amount) {
+    setZoom(zoom + amount);
+  }
+
+  /* ── pointer / torch interaction ─────────────────────────────────── */
+  function setupInteraction() {
+    const frame = $('note-frame');
+    const pointers = new Map();
+    let pinchStart = null;
+
+    const framePoint = e => {
+      const r = frame.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
+    const noteLocal = e => {
+      const s = $('note-surface').getBoundingClientRect();
+      if (!s.width || !s.height) return { x: 0.5, y: 0.5 };
+      return {
+        x: Math.min(1, Math.max(0, (e.clientX - s.left) / s.width)),
+        y: Math.min(1, Math.max(0, (e.clientY - s.top) / s.height)),
+      };
+    };
+    const pinchDist = () => {
+      const [a, b] = [...pointers.values()];
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    };
+
+    frame.addEventListener('wheel', event => {
+      event.preventDefault();
+      changeZoom(event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP);
+    }, { passive: false });
+
+    frame.addEventListener('pointermove', event => {
+      const prev = pointers.get(event.pointerId);
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      torch.visible = true;
+      const local = noteLocal(event);
+      torch.x = local.x;
+      torch.y = local.y;
+      drawBeam(framePoint(event));
+      applyTorch();
+
+      if (pointers.size === 2) {
+        const dist = pinchDist();
+        if (pinchStart && pinchStart.dist > 0) setZoom(pinchStart.zoom * dist / pinchStart.dist);
+        return;
       }
-
-      if (banknoteMesh && activeLeftInputSource) {
-        const [xAxis, yAxis] = readStickAxes(activeLeftInputSource);
-        const deadzone = 0.14;
-        const rotationSpeed = 0.045;
-        if (Math.abs(xAxis) > deadzone || Math.abs(yAxis) > deadzone) {
-          rotateNote(
-            Math.abs(xAxis) > deadzone ? xAxis * rotationSpeed : 0,
-            Math.abs(yAxis) > deadzone ? yAxis * rotationSpeed : 0
-          );
-        }
+      if (prev && pointers.size === 1 && zoom > 1 && (event.buttons & 1)) {
+        pan.x += event.clientX - prev.x;
+        pan.y += event.clientY - prev.y;
+        applyTransform();
       }
+    });
 
-      xrControllers.forEach(controller => {
-        if (controller.userData.rayLine) controller.userData.rayLine.visible = true;
-      });
+    frame.addEventListener('pointerdown', event => {
+      if (event.button !== 0) return;
+      frame.setPointerCapture(event.pointerId);
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (pointers.size === 2) pinchStart = { zoom, dist: pinchDist() };
+      torch.visible = true;
+      const local = noteLocal(event);
+      torch.x = local.x;
+      torch.y = local.y;
+      drawBeam(framePoint(event));
+      applyTorch();
+    });
+
+    const stopPointer = event => {
+      pointers.delete(event.pointerId);
+      if (pointers.size < 2) pinchStart = null;
+      if (pointers.size === 0) {
+        torch.visible = false;
+        clearBeam();
+        applyTorch();
+      }
+    };
+    frame.addEventListener('pointerup', stopPointer);
+    frame.addEventListener('pointercancel', stopPointer);
+    frame.addEventListener('lostpointercapture', stopPointer);
+    frame.addEventListener('pointerleave', () => {
+      if (pointers.size === 0) {
+        torch.visible = false;
+        clearBeam();
+        applyTorch();
+      }
+    });
+    window.addEventListener('blur', () => {
+      pointers.clear();
+      pinchStart = null;
+      torch.visible = false;
+      clearBeam();
+      applyTorch();
+    });
+  }
+
+  /* ── keyboard & fullscreen ───────────────────────────────────────── */
+  function handleKey(event) {
+    if (!round || round.status !== 'playing' || event.ctrlKey || event.metaKey || event.altKey) return;
+    if (['Space', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.code)) event.preventDefault();
+    switch (event.code) {
+      case 'Space': if (!event.repeat) toggleUVLight(); break;
+      case 'KeyF': if (!event.repeat) flipNote(); break;
+      case 'KeyP':
+      case 'ArrowLeft': if (!event.repeat) evaluateChoice(true); break;
+      case 'KeyR':
+      case 'ArrowRight': if (!event.repeat) evaluateChoice(false); break;
+      case 'Equal':
+      case 'NumpadAdd': changeZoom(ZOOM_STEP); break;
+      case 'Minus':
+      case 'NumpadSubtract': changeZoom(-ZOOM_STEP); break;
+      case 'Digit0':
+      case 'Numpad0': setZoom(1); break;
+      case 'ArrowUp':
+      case 'KeyW': if (zoom > 1) { pan.y -= 40; applyTransform(); } break;
+      case 'ArrowDown':
+      case 'KeyS': if (zoom > 1) { pan.y += 40; applyTransform(); } break;
+      case 'KeyA': if (zoom > 1) { pan.x -= 40; applyTransform(); } break;
+      case 'KeyD': if (zoom > 1) { pan.x += 40; applyTransform(); } break;
     }
+  }
 
-    if (banknoteMaterial && uvTorchMesh) {
-      const worldPos = new THREE.Vector3();
-      spotLight.getWorldPosition(worldPos);
-      banknoteMaterial.uniforms.uLightPos.value.copy(worldPos);
+  function setupFullscreen() {
+    const btn = $('fullscreen-btn');
+    const update = () => {
+      const active = Boolean(document.fullscreenElement);
+      btn.textContent = active ? '⤢' : '⛶';
+      btn.setAttribute('aria-label', active ? t('fullscreenExit') : t('fullscreenEnter'));
+    };
+    refreshFullscreen = update;
+    if (!document.fullscreenEnabled) btn.hidden = true;
+    btn.addEventListener('click', async () => {
+      try {
+        if (document.fullscreenElement) await document.exitFullscreen();
+        else await document.documentElement.requestFullscreen();
+      } catch (error) { /* user gesture or support issue — ignore */ }
+    });
+    document.addEventListener('fullscreenchange', update);
+    update();
+  }
 
-      const worldDir = new THREE.Vector3(0, 0, -1).applyQuaternion(
-        uvTorchMesh.getWorldQuaternion(new THREE.Quaternion())
-      );
-      banknoteMaterial.uniforms.uLightDir.value.copy(worldDir).normalize();
-    }
+  /* ── boot ────────────────────────────────────────────────────────── */
+  function showFatalError(error) {
+    console.error(error);
+    const panel = $('error-panel');
+    panel.hidden = false;
+    panel.textContent = t('fatal') + '\n' + (error.message || error);
+  }
 
-    renderer.render(scene, camera);
+  function wireControls() {
+    $('flip-btn').addEventListener('click', flipNote);
+    $('uv-btn').addEventListener('click', toggleUVLight);
+    $('pass-btn').addEventListener('click', () => evaluateChoice(true));
+    $('reject-btn').addEventListener('click', () => evaluateChoice(false));
+    $('zoom-in-btn').addEventListener('click', () => changeZoom(ZOOM_STEP));
+    $('zoom-out-btn').addEventListener('click', () => changeZoom(-ZOOM_STEP));
+    $('zoom-reset-btn').addEventListener('click', () => setZoom(1));
+    $('start-game-btn').addEventListener('click', startGame);
+    $('lang-btn').addEventListener('click', () => {
+      lang = lang === 'zh' ? 'en' : 'zh';
+      localStorage.setItem(LANG_KEY, lang);
+      applyLang();
+    });
+    $('again-btn').addEventListener('click', () => {
+      if (demo && booth) booth.restartDemo(window);
+      else if (booth) booth.next(window);
+      else location.reload();
+    });
   }
 
   async function init() {
     try {
-      if (!window.THREE) throw new Error('The local Three.js library could not load.');
-      textureLoader = new THREE.TextureLoader();
-
-      const container = $('canvas-container');
-      scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x171616);
-
-      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-      camera.position.set(0, 1.42, 0.85);
-      camera.lookAt(0, 1.12, -0.5);
-
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.outputEncoding = THREE.sRGBEncoding;
-      renderer.xr.enabled = true;
-      container.appendChild(renderer.domElement);
-      renderer.domElement.tabIndex = -1;
-      renderer.domElement.setAttribute('aria-label', '3D banknote inspection area');
-      onWindowResize();
-
-      scene.add(new THREE.HemisphereLight(0xffffff, 0x303040, 1.0));
-      const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-      dirLight.position.set(2, 4, 2);
-      scene.add(dirLight);
-
-      const desk = new THREE.Mesh(
-        new THREE.BoxGeometry(1.6, 0.05, 0.9),
-        new THREE.MeshStandardMaterial({ color: 0x252b35, roughness: 0.65 })
-      );
-      desk.position.set(0, 0.88, -0.55);
-      scene.add(desk);
-
-      buildUVTorch();
-      await preloadNoteTextures();
-      buildBanknote(BANKNOTE_SETS[0]);
-      vrActionPanel = createVRActionButtons();
-      createVRHUD();
-      setupXRControllers();
-      setupDesktopInteraction();
-
-      $('flip-btn').addEventListener('click', flipNote);
-      $('again-btn').textContent = demo || !booth ? 'Play again' : 'Next participant';
-      $('again-btn').addEventListener('click', () => {
-        if (demo && booth) booth.restartDemo(window);
-        else if (booth) booth.next(window);
-        else location.reload();
-      });
-      $('uv-btn').addEventListener('click', toggleUVLight);
-      $('pass-btn').addEventListener('click', () => evaluateChoice(true));
-      $('reject-btn').addEventListener('click', () => evaluateChoice(false));
-      $('zoom-in-btn').addEventListener('click', () => changeBanknoteZoom(ZOOM_STEP));
-      $('zoom-out-btn').addEventListener('click', () => changeBanknoteZoom(-ZOOM_STEP));
-      $('zoom-reset-btn').addEventListener('click', () => setBanknoteZoom(1));
-      $('enter-vr-btn').addEventListener('click', enterVR);
-      $('start-game-btn').addEventListener('click', startGame);
-      updateGameDisplays();
-      window.addEventListener('resize', onWindowResize);
-
-      renderer.setAnimationLoop(animate);
+      if (!window.FakeCashCore) throw new Error('The game data could not load.');
+      const missing = await preloadImages();
+      if (missing) {
+        const status = $('asset-status');
+        status.hidden = false;
+        status.textContent = missing + t('missing');
+      }
+      setupFullscreen();
+      setupInteraction();
+      wireControls();
+      window.addEventListener('keydown', handleKey);
+      applyLang();
       initialized = true;
+
       let snapshot = null;
       try {
         snapshot = booth?.snapshot(window) ?? null;
@@ -977,8 +772,8 @@
       }
       if (!restored && [1, 2].includes(snapshot?.version) && snapshot.status === 'finished') {
         $('start-overlay').hidden = true;
-        $('result-title').textContent = 'Round complete';
-        $('result-accuracy').textContent = 'This round used an earlier version. The booth header shows its saved result.';
+        $('result-title').textContent = t('roundComplete');
+        $('result-accuracy').textContent = t('earlier');
         $('review-list').previousElementSibling.hidden = true;
         $('review-list').hidden = true;
         $('result-overlay').hidden = false;
@@ -987,8 +782,7 @@
         showRound();
       } else {
         $('start-game-btn').disabled = false;
-        $('enter-vr-btn').disabled = false;
-        if (!booth && !demo) setStatus('Practice mode: open the station page to save a score for a participant.');
+        if (!booth && !demo) setStatus(t('practice'));
       }
     } catch (error) {
       showFatalError(error);
