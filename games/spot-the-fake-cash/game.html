@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Spot the Fake Cash · Scamurai</title>
+  <link rel="stylesheet" href="../shared/theme.css">
+  <link rel="stylesheet" href="./css/styles.css">
+  <link rel="icon" href="/assets/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <script defer src="./js/game-core.js"></script>
+  <script defer src="./js/game.js"></script>
+</head>
+<body data-game="fake-cash">
+  <a class="skip-link" href="#main">Skip to game</a>
+  <header class="site-header">
+    <span class="brand"><b aria-hidden="true">✓</b> Spot the <strong>Fake Cash</strong></span>
+    <span class="wordmark">SCAM<span>URAI</span></span>
+  </header>
+  <main id="main" tabindex="-1">
+    <section id="home" class="home">
+      <div>
+        <p class="eyebrow">STATION 01 / CURRENCY AUTHENTICATION</p>
+        <h1>SPOT THE<br><em>FAKE CASH.</em></h1>
+        <p class="intro">Inspect five training samples in 60 seconds. Use the tools to find suspicious security features, then decide whether each sample passes as real or fake.</p>
+        <button id="start" class="button primary" type="button">Start round</button>
+        <p class="muted">Correct +20 · Wrong −20 · Unanswered 0 · Minimum 0</p>
+      </div>
+      <aside class="panel briefing">
+        <h2>YOUR INSPECTION KIT</h2>
+        <ul>
+          <li><kbd>T</kbd> Tilt for a shifting stripe</li>
+          <li><kbd>L</kbd> Hold to light for a watermark and matching marks</li>
+          <li><kbd>U</kbd> Check what glows under UV</li>
+          <li><kbd>M</kbd> Magnify tiny lettering</li>
+          <li><kbd>F</kbd> Feel for raised print</li>
+        </ul>
+        <p class="muted">The game uses simplified samples based on Bank Negara Malaysia’s security checks.</p>
+      </aside>
+    </section>
+
+    <section id="game" hidden>
+      <div class="hud">
+        <div><span>Sample</span><strong id="sample-count">1 / 5</strong></div>
+        <div><span>Time left</span><strong id="timer">01:00</strong></div>
+        <div><span>Correct</span><strong id="correct">0</strong></div>
+      </div>
+      <progress id="progress" max="5" value="0" aria-label="Samples answered"></progress>
+      <section class="panel gamebox" aria-labelledby="question">
+        <h2 id="question" tabindex="-1">REAL OR FAKE?</h2>
+        <div class="game-grid">
+          <div>
+            <div id="tools" class="tools" role="group" aria-label="Inspection tools">
+              <button type="button" class="button" data-tool="tilt" aria-pressed="false"><kbd>T</kbd> Tilt</button>
+              <button type="button" class="button" data-tool="light" aria-pressed="false"><kbd>L</kbd> Hold to light</button>
+              <button type="button" class="button" data-tool="uv" aria-pressed="false"><kbd>U</kbd> UV lamp</button>
+              <button type="button" class="button" data-tool="magnifier" aria-pressed="false"><kbd>M</kbd> Magnifier</button>
+              <button type="button" class="button" data-tool="feel" aria-pressed="false"><kbd>F</kbd> Feel</button>
+            </div>
+            <div id="viewer" class="viewer" data-tool="tilt">
+              <p class="eyebrow" id="tool-title"></p>
+              <div class="evidence">
+                <div id="stripe" class="stripe" hidden></div>
+                <div id="light-pattern" class="light-pattern" hidden>
+                  <div id="watermark" class="watermark" aria-hidden="true">≈</div>
+                  <div id="register" class="register" aria-hidden="true"><i></i><i></i></div>
+                </div>
+                <div id="uv-pattern" class="uv-pattern" hidden><span id="uv-symbol" aria-hidden="true">✦</span></div>
+                <span id="microprint" class="microprint" hidden>SECURE · PRINT</span>
+                <div id="relief" class="relief" hidden aria-hidden="true"></div>
+                <p id="inactive" class="inactive" hidden></p>
+              </div>
+              <div class="controls">
+                <label id="trace-label" for="trace" hidden></label>
+                <input id="trace" type="range" min="0" max="100" value="0" step="5" hidden>
+                <button id="tool-switch" class="button" type="button" aria-pressed="false" hidden></button>
+              </div>
+              <p id="observation" class="observation" role="status"></p>
+            </div>
+          </div>
+
+          <div class="decision">
+            <p id="guide" class="guide"></p>
+            <div class="answers" role="group" aria-label="Verdict">
+              <button id="real" class="button choice real" type="button"><kbd>1</kbd> Real</button>
+              <button id="fake" class="button choice fake" type="button"><kbd>2</kbd> Fake</button>
+            </div>
+            <div id="feedback" class="feedback" hidden>
+              <div role="status"><strong id="feedback-title"></strong><p id="feedback-body"></p></div>
+              <button id="next" class="button primary" type="button">Next sample</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section id="result" class="panel result" hidden>
+      <p class="eyebrow">STATION 01 / ROUND COMPLETE</p>
+      <h2 id="result-title" tabindex="-1"></h2>
+      <div class="scoreboard">
+        <div class="score-circle"><strong id="score"></strong><span>YOUR SCORE / 100</span></div>
+        <dl><dt>Correct</dt><dd id="result-correct"></dd><dt>Wrong</dt><dd id="result-wrong"></dd><dt>Unanswered</dt><dd id="result-unanswered"></dd></dl>
+      </div>
+      <h3>THE CHECKS YOU CAN USE ON REAL CASH</h3>
+      <ul id="lessons" class="lessons"></ul>
+      <details id="review" hidden>
+        <summary>Review your answers</summary>
+        <ol id="review-list"></ol>
+      </details>
+      <button id="again" class="button primary" type="button">Next participant</button>
+    </section>
+
+    <section id="error" class="panel result" hidden>
+      <h2>Keep this tab open.</h2>
+      <p role="alert" id="error-message"></p>
+    </section>
+  </main>
+  <footer class="site-footer"><span>STATION 01 / SPOT THE FAKE CASH</span><span>XMUM Community Service</span></footer>
+</body>
+</html>
