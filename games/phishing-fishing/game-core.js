@@ -77,6 +77,7 @@
       this.endedAt = null;
       this.endReason = null;
       this.lastElapsed = 0;
+      this.legacyScoring = false;
     }
     start() {
       if (this.status !== "ready") return false;
@@ -113,12 +114,12 @@
       this.endReason = reason;
     }
     snapshot() {
-      return {version:3, roundSeconds:this.settings.roundSeconds, verified:[...this.verified], questionIds:this.questions.map(q=>q.id), answers:this.answers.map(a=>a&&{...a}), index:this.index,
+      return {version:this.legacyScoring ? 3 : 4, roundSeconds:this.settings.roundSeconds, verified:[...this.verified], questionIds:this.questions.map(q=>q.id), answers:this.answers.map(a=>a&&{...a}), index:this.index,
         status:this.status, startedAt:this.startedAt, endedAt:this.endedAt, endReason:this.endReason, lastElapsed:this.lastElapsed};
     }
     static restore(bank, settings, data, options={}) {
       validateBank(bank, settings);
-      if (![2,3].includes(data?.version) || data.version===2&&data.status==='finished' || data.roundSeconds !== settings.roundSeconds || !Array.isArray(data.questionIds) || data.questionIds.length !== settings.roundQuestions || new Set(data.questionIds).size !== data.questionIds.length || !Array.isArray(data.answers) || data.answers.length !== data.questionIds.length || !["ready","playing","finished"].includes(data.status)) throw new Error("Saved inbox uses a different exercise version or is damaged. Ask the Game Master to cancel this Round.");
+      if (![2,3,4].includes(data?.version) || data.version===2&&data.status==='finished' || data.roundSeconds !== settings.roundSeconds || !Array.isArray(data.questionIds) || data.questionIds.length !== settings.roundQuestions || new Set(data.questionIds).size !== data.questionIds.length || !Array.isArray(data.answers) || data.answers.length !== data.questionIds.length || !["ready","playing","finished"].includes(data.status)) throw new Error("Saved inbox uses a different exercise version or is damaged. Ask the Game Master to cancel this Round.");
       const questions=data.questionIds.map(id=>bank.find(q=>q.id===id));
       if (questions.some(q=>!q) || (settings.roundQuestions===10 && questions.filter(q=>q.classification==='phishing').length!==5)) throw new Error("Invalid saved email deal.");
       const count=data.answers.filter(a=>a!==null).length;
@@ -128,6 +129,8 @@
       if (!finite(data.lastElapsed) || data.lastElapsed>settings.roundSeconds*1000 || (data.status==='ready' ? data.startedAt!==null||data.endedAt!==null||count!==0 : !finite(data.startedAt)) || (data.status==='playing' && (data.endedAt!==null||data.endReason!==null||count===questions.length)) || (data.status==='finished' && (!finite(data.endedAt)||data.endedAt<data.startedAt||data.endedAt>data.startedAt+settings.roundSeconds*1000||!['timeout','completed'].includes(data.endReason)||data.endReason==='completed'&&count!==questions.length||data.endReason==='timeout'&&data.endedAt!==data.startedAt+settings.roundSeconds*1000))) throw new Error("Invalid saved timer.");
       const round=Object.create(Round.prototype);
       Object.assign(round,{settings,now:options.now||(()=>Date.now()),questions,answers:data.answers.map(a=>a&&{classification:a.classification}),verified:[...data.verified],index:data.index,status:data.status,startedAt:data.startedAt,endedAt:data.endedAt,endReason:data.endReason,lastElapsed:data.lastElapsed});
+      // A finished round may already have a saved or pending score on the host.
+      round.legacyScoring = data.version === 3 && data.status === 'finished';
       return round;
     }
     results() {
@@ -139,10 +142,12 @@
       });
       const answered=this.answers.filter(Boolean).length,correct=reviews.filter(r=>r.correct).length;
       const incorrect=answered-correct;
-      const pointsPerEmail=100/this.questions.length,rawScore=(correct-incorrect)*pointsPerEmail;
+      const pointsPerEmail = 100 / this.questions.length;
+      const wrongAnswerPenalty = this.legacyScoring ? pointsPerEmail : 0;
+      const rawScore = correct * pointsPerEmail - incorrect * wrongAnswerPenalty;
       return {endReason:this.endReason,score:Math.round(Math.max(0,rawScore)*10)/10,maximum:100,
         correct,incorrect,answered,unanswered:this.questions.length-answered,
-        accuracy:answered?correct/answered:0,pointsPerEmail,rawScore,timeUsed:this.elapsedMs()/1000,reviews};
+        accuracy:answered?correct/answered:0,pointsPerEmail,wrongAnswerPenalty,rawScore,timeUsed:this.elapsedMs()/1000,reviews};
     }
   }
   const api = { evidenceChoices, shuffle, validateBank, selectQuestions, Round };

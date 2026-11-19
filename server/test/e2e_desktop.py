@@ -74,11 +74,11 @@ def run():
     p=api.ok('GET','/api/participant/me',participant=people['MAIL001']['participantToken']);assert p['total']==200 and len(p['stationsDone'])==5
     for _ in range(10):answer(b,kind='phishing')
     b.wait_for_function("JSON.parse(sessionStorage.getItem('scamurai.booth.3.event.v1')).status==='saved'")
-    assert state(b)['score']==0 and state(a)['score']==100
-    print('PASS: lost finish response retries idempotently, all correct saves 100, blind guessing saves 0, five-station total and survey handoff agree')
+    assert state(b)['score']==50 and state(a)['score']==100
+    print('PASS: lost finish response retries idempotently, all correct saves 100, using one label for every email saves 50, five-station total and survey handoff agree')
     b.click('#booth-next');select(b,'MAIL003');frame(b).wait_for_selector('#start-game')
     b.clock.install();frame(b).click('#start-game');answer(b)
-    b.clock.fast_forward(121000)
+    b.clock.fast_forward(61000)
     b.wait_for_function("JSON.parse(sessionStorage.getItem('scamurai.booth.3.event.v1')).status==='saved'")
     timed=state(b);assert timed['score']==10 and timed['snapshot']['endedAt']-timed['snapshot']['startedAt']==60000
     b.reload();frame(b).wait_for_selector('.score-circle');assert state(b)['score']==10
@@ -92,7 +92,7 @@ def run():
     assert len(cancelled)==1
     assert api.ok('GET','/api/participant/me',participant=people['MAIL004']['participantToken'])['stations'][2]['score'] is None
     b.unroute('**/api/rounds/*/cancel');b.click('#booth-next');select(b,'MAIL005');frame(b).wait_for_selector('#start-game');frame(b).click('#start-game')
-    remote=state(b);api.ok('POST',f'/api/rounds/{remote["roundId"]}/cancel',pin='5003');b.clock.fast_forward(121000)
+    remote=state(b);api.ok('POST',f'/api/rounds/{remote["roundId"]}/cancel',pin='5003');b.clock.fast_forward(61000)
     b.wait_for_function("JSON.parse(sessionStorage.getItem('scamurai.booth.3.event.v1')).status==='cancelled'")
     assert b.locator('#booth-next').is_visible()
     print('PASS: cancellation on a different laptop releases the original email laptop without a score')
@@ -124,8 +124,8 @@ def run():
      p.goto(BASE+f'/games/{game}/?demo=1&lang=en');assert p.locator('.scm input[type=password]').count()==0
      f=frame(p,iframe)
      if game=='phishing-fishing':
-      f.wait_for_selector('#start-game');f.click('#start-game');assert f.locator('.email-progress li').count()==32
-      for _ in range(32):answer(p)
+      f.wait_for_selector('#start-game');f.click('#start-game');assert f.locator('.email-progress li').count()==10
+      for _ in range(10):answer(p)
       p.wait_for_function("JSON.parse(sessionStorage.getItem('scamurai.booth.3.demo.v1')).status==='saved'")
      else:
       f.wait_for_selector('[data-booth-task]');f.locator('[data-booth-task="minute2-movie-animation"]').click();f.click('#booth-start');f.wait_for_selector('[data-booth-submit]');f.locator('[data-booth-submit]').click(force=True);f.wait_for_selector('.booth-score')
@@ -140,7 +140,7 @@ def run():
     """)
     lp.goto(BASE+'/games/phishing-fishing/?demo=1');frame(lp).wait_for_selector('#start-game');frame(lp).click('#start-game')
     assert lp.evaluate("sessionStorage.getItem('legacy-seeded')")=='1'
-    assert state(lp,'scamurai.booth.3.demo.v1')['snapshot']['version']==3 and not legacy_writes
+    assert state(lp,'scamurai.booth.3.demo.v1')['snapshot']['version']==4 and not legacy_writes
     legacy.close();print('PASS: an earlier-format demo restarts safely into the new exercise without event writes')
     assert not api.ok('GET','/api/rounds/open',pin='5003') and not api.ok('GET','/api/rounds/open',pin='5002')
     print('PASS: both public demos bypass PIN/identity, allow practice and write no event data')

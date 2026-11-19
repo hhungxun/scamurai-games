@@ -71,7 +71,8 @@
       "body:4",
       "sender",
       "destination:3"
-    ]
+    ],
+    "lesson": "credentials"
   },
   {
     "id": "campus-storage",
@@ -142,7 +143,8 @@
     },
     "acceptedEvidence": [
       "destination:3"
-    ]
+    ],
+    "lesson": "credentials"
   },
   {
     "id": "parcel-fee",
@@ -214,7 +216,8 @@
     "acceptedEvidence": [
       "destination:3",
       "sender"
-    ]
+    ],
+    "lesson": "card"
   },
   {
     "id": "shopping-document",
@@ -280,7 +283,8 @@
     },
     "acceptedEvidence": [
       "body:3"
-    ]
+    ],
+    "lesson": "permissions"
   },
   {
     "id": "tax-rebate",
@@ -348,7 +352,8 @@
     "acceptedEvidence": [
       "destination:2",
       "body:3"
-    ]
+    ],
+    "lesson": "credentials"
   },
   {
     "id": "security-reply",
@@ -414,69 +419,66 @@
     },
     "acceptedEvidence": [
       "body:3"
-    ]
+    ],
+    "lesson": "credentials"
   },
   {
-    "id": "library-hours",
+    "id": "study-room-booking",
     "institution": "university",
     "classification": "legitimate",
     "difficulty": "Easy",
-    "objective": "Distinguish a normal university booking deadline from pressure to disclose information.",
+    "objective": "Use a matching service record and proportionate booking action to assess a light-hearted campus notice.",
     "senderName": "XMUM Library",
     "senderEmail": "library@xmum.example",
     "recipient": "student@xmum.example",
-    "subject": "Revision-week study rooms: bookings close Friday",
+    "subject": "Group project rooms: now with fewer “can you hear me?”",
     "body": [
       {
         "type": "paragraph",
-        "text": "Dear students,"
+        "text": "Hi Aisha,"
       },
       {
         "type": "paragraph",
-        "text": "Next week’s study-room bookings close at 5:00 pm this Friday. Rooms seat four to six students and can be reserved for up to two hours."
+        "text": "Revision-week room bookings are open. Give your group chat a physical location; the mute button will have to take the afternoon off."
       },
       {
         "type": "detail",
-        "text": "Service: Library → Study Rooms\nBooking fee: RM 0.00\nBring your student card to the service counter."
+        "text": "Library rooms · Bookings close Friday · Up to 2 hours per group"
+      },
+      {
+        "type": "link",
+        "text": "Choose a study room",
+        "url": "https://library.xmum.example/rooms"
       },
       {
         "type": "paragraph",
-        "text": "Make or change a booking in the library section of your usual student portal. Questions can be checked at the library service counter during staffed hours.\nXMUM Library Services"
+        "text": "Reserve one room using the booking control in your usual library account. Bring the reservation reference to the desk."
       }
     ],
-    "explanation": "Legitimate for this case: the notice is independently recorded and the proposed action stays within the established booking workflow.",
+    "explanation": "Legitimate for this case: the notice matches the library’s published room-booking process and asks for an ordinary reservation.",
     "indicators": [
       {
         "target": "body",
-        "text": "bookings close at 5:00 pm this Friday",
-        "explanation": "This is a practical booking cutoff, not a demand to reveal secrets. Real notices can have deadlines."
-      },
-      {
-        "target": "body",
-        "text": "library section of your usual student portal",
-        "explanation": "The booking uses an established service you can open independently."
-      },
-      {
-        "target": "body",
-        "text": "library service counter",
-        "explanation": "There is a known physical place to confirm the details."
+        "text": "Reserve one room using the booking control",
+        "explanation": "The request is limited to the corroborated booking task."
       }
     ],
     "context": {
-      "source": "Your student portal’s library noticeboard",
+      "source": "Room bookings in your independently opened library account",
       "facts": [
-        "The study-room booking notice is published there.",
-        "Bookings are free under Library → Study Rooms."
+        "The library lists revision-week bookings until Friday.",
+        "Reservations use the existing room-booking control and allow up to two hours."
       ]
     },
     "reasoning": {
-      "evidence": "The email matches the independently checked notice and asks you to use the existing library booking service. It requests no new payment, credentials by reply or additional software.",
-      "contrast": "A deadline is normal for room bookings. Nothing in this request diverts you away from the known service; the sender address alone is not what makes it legitimate.",
-      "nextStep": "Open the usual student portal and make the booking under Library → Study Rooms."
+      "evidence": "The dates, two-hour limit and booking action match the independently checked library account.",
+      "contrast": "Humour and a deadline do not make a message suspicious. A familiar address alone would not prove safety; the corroborated booking process supports this verdict.",
+      "nextStep": "Open the library account yourself to book a room and keep the reference."
     },
     "acceptedEvidence": [
-      "body:3",
-      "verification:0"
+      "body:4",
+      "verification:0",
+      "verification:1"
     ]
   },
   {
@@ -606,15 +608,15 @@
     ]
   },
   {
-    "id": "shopping-receipt",
+    "id": "desk-duck-receipt",
     "institution": "shopping",
     "classification": "legitimate",
     "difficulty": "Easy",
-    "objective": "Check itemised amounts and the account workflow instead of treating money-related emails as scams.",
+    "objective": "Distinguish a playful but corroborated purchase receipt from payment or permission traps.",
     "senderName": "ShopLane Orders",
     "senderEmail": "orders@shoplane.example",
     "recipient": "student@xmum.example",
-    "subject": "Payment received — order SL-582714",
+    "subject": "Order confirmed: one emotional-support desk duck",
     "body": [
       {
         "type": "paragraph",
@@ -622,40 +624,40 @@
       },
       {
         "type": "paragraph",
-        "text": "Your RM 22.50 card payment for order SL-582714 has been received. Please check the delivery address in My Purchases before the order is packed tomorrow."
+        "text": "Your desk duck is on its way. It has no qualifications, but is available for silent moral support during deadlines."
       },
       {
         "type": "detail",
-        "text": "A5 notebook set × 1: RM 18.00\nDelivery: RM 4.50\nTotal paid: RM 22.50\nPayment: card ending 4821"
+        "text": "Order SL-582714\nDesk duck: RM 18.00\nDelivery: RM 4.50\nTotal paid: RM 22.50 · Card ending 4821"
       },
       {
         "type": "attachment",
-        "text": "Receipt-SL-582714.pdf · 36 KB"
+        "text": "Receipt-SL-582714.pdf · 42 KB"
       },
       {
         "type": "paragraph",
-        "text": "The order will be packed tomorrow. Address changes close when packing begins.\nShopLane Orders Team"
+        "text": "Review the delivery address in My Purchases before dispatch. The order is already paid."
       }
     ],
-    "explanation": "Legitimate for this case: it matches a recorded purchase and keeps any account change inside the known app.",
+    "explanation": "Legitimate for this case: the order, paid amount and requested address review match the existing shopping record.",
     "indicators": [
       {
         "target": "body",
         "text": "Total paid: RM 22.50",
-        "explanation": "The RM 18.00 item plus RM 4.50 delivery matches the total."
+        "explanation": "The item and delivery total agree with the independently checked purchase."
       }
     ],
     "context": {
       "source": "Your ShopLane My Purchases record",
       "facts": [
-        "SL-582714 is your notebook order.",
+        "SL-582714 is your desk-duck order.",
         "RM 18.00 + RM 4.50 = RM 22.50, paid on card 4821."
       ]
     },
     "reasoning": {
-      "evidence": "The order, itemised total and card suffix agree with the independently opened My Purchases record. The proposed address review concerns that known order, without a new payment or unrelated permission.",
-      "contrast": "A PDF attachment and correct arithmetic do not prove safety. Here, the matching account record and proportionate in-app action support the verdict; you do not need to open the attachment.",
-      "nextStep": "Use My Purchases to view the receipt or change the address; leave the attachment unopened if uncertain."
+      "evidence": "The duck order, total and card suffix match My Purchases. The action is limited to reviewing the address for that paid order.",
+      "contrast": "A silly product, PDF attachment or correct arithmetic alone proves nothing. The independent order record and proportionate action support the verdict.",
+      "nextStep": "Use My Purchases to check the address or view the receipt there; opening the attachment is unnecessary."
     },
     "acceptedEvidence": [
       "verification:0",
@@ -853,7 +855,8 @@
     "acceptedEvidence": [
       "body:2",
       "verification:1"
-    ]
+    ],
+    "lesson": "advance-fee"
   },
   {
     "id": "scholarship-document",
@@ -919,7 +922,8 @@
     },
     "acceptedEvidence": [
       "body:3"
-    ]
+    ],
+    "lesson": "malware"
   },
   {
     "id": "internship-shortlist",
@@ -938,7 +942,7 @@
       },
       {
         "type": "paragraph",
-        "text": "Your application CS-26104 for the data internship has been shortlisted. Please select an interview slot by Friday; the employer will discuss duties and allowances at the interview."
+        "text": "Your application CS-26104 for the data internship has been shortlisted. Please select an interview slot by Friday; the employer will discuss duties and allowances at the interview. Your CV survived the group chat; the interview is the next step."
       },
       {
         "type": "link",
@@ -1058,15 +1062,15 @@
     ]
   },
   {
-    "id": "penguin-qr",
-    "institution": "parcel",
+    "id": "mascot-qr",
+    "institution": "university",
     "classification": "phishing",
     "difficulty": "Easy",
-    "objective": "Recognise payment-card theft hidden behind a believable collection-locker QR update.",
-    "senderName": "ParcelPath · Campus Collection",
-    "senderEmail": "collection@parcelpath.example",
+    "objective": "Recognise card-data theft behind a lost-property collection QR.",
+    "senderName": "XMUM Lost Property",
+    "senderEmail": "lostproperty@xmum.example",
     "recipient": "student@xmum.example",
-    "subject": "Collection locker update PP-MY-441208",
+    "subject": "Your penguin has checked in. It has no ID.",
     "body": [
       {
         "type": "paragraph",
@@ -1074,103 +1078,95 @@
       },
       {
         "type": "paragraph",
-        "text": "Your campus collection parcel PP-MY-441208 is ready. We replaced the locker terminal, so this collection uses the QR code attached instead of the usual pickup PIN."
+        "text": "A penguin plush matching your lost-property report is at the student desk. It has occupied a chair and declined to answer questions."
       },
       {
         "type": "attachment",
-        "text": "Collection-PP-MY-441208-QR.png · 24 KB"
+        "text": "Penguin-Collection-LP-042-QR.png · 24 KB"
       },
       {
         "type": "paragraph",
-        "text": "Scan the attached QR code and verify your card number, expiry date and CVV to release the locker. No payment is taken; the card check confirms that the collection is being made by an adult."
+        "text": "Scan the attached QR and enter your card number, expiry date and CVV to release the item. No payment is taken; the card check confirms the collector is a real person."
       },
       {
         "type": "paragraph",
-        "text": "Campus Collection Support\nParcelPath"
+        "text": "Lost Property Desk · Case LP-042"
       }
     ],
-    "explanation": "Phishing: it substitutes an unnecessary card-data request for the recorded pickup process.",
+    "explanation": "Phishing: a real lost item is used to justify collecting payment-card credentials through a QR code.",
     "indicators": [
       {
         "target": "body",
-        "text": "Scan the attached QR code",
-        "explanation": "The code conceals a destination; it is not evidence of authenticity."
-      },
-      {
-        "target": "body",
         "text": "card number, expiry date and CVV",
-        "explanation": "These are payment credentials, not a reasonable locker-release requirement."
+        "explanation": "Payment-card credentials are unrelated to proving ownership of lost property."
       },
       {
         "target": "body",
         "text": "No payment is taken",
-        "explanation": "Reassuring wording does not make unnecessary collection of card details safe."
+        "explanation": "A no-charge promise does not make collecting payment credentials appropriate."
       }
     ],
     "context": {
-      "source": "Your courier app",
+      "source": "Your lost-property report in the student portal",
       "facts": [
-        "Parcel PP-MY-441208 is expected.",
-        "Your collection record uses a pickup PIN."
+        "LP-042 records your missing penguin plush.",
+        "Collection is at the student desk with your student card. No bank-card check is listed."
       ]
     },
     "reasoning": {
-      "evidence": "The email switches to an attached QR and asks for the card number, expiry and CVV to release a locker. Those payment credentials do not establish collection authority.",
-      "contrast": "An expected parcel or a matching sender does not justify the new card-verification step. A QR code is only a way to encode a destination, not a trust signal.",
-      "nextStep": "Use the collection PIN in the courier app or ask the staffed parcel desk to verify any change."
+      "evidence": "A penguin plush does not need your card number, expiry date or CVV to go home. The recorded collection process uses a student card at the desk.",
+      "contrast": "The joke, matching report and university sender do not decide authenticity. The unrelated card-data request does; a QR code does not make it trustworthy.",
+      "nextStep": "Collect the item at the student desk using the process in your existing report. Do not submit bank-card details through the QR."
     },
     "acceptedEvidence": [
-      "body:3"
-    ]
+      "body:3",
+      "verification:1"
+    ],
+    "lesson": "card"
   },
   {
-    "id": "lecture-clone",
+    "id": "attendance-clone",
     "institution": "university",
     "classification": "phishing",
     "difficulty": "Easy",
-    "objective": "Identify an executable disguised as a routine attendance PDF and refuse elevated permissions.",
+    "objective": "Identify a program disguised as a PDF and refuse unnecessary system privileges.",
     "senderName": "XMUM Teaching Systems",
     "senderEmail": "teaching@xmum.example",
     "recipient": "student@xmum.example",
-    "subject": "Attendance reconciliation: review before Friday",
+    "subject": "Attendance assistant: send your digital twin",
     "body": [
       {
         "type": "paragraph",
-        "text": "Dear Aisha,"
+        "text": "Hi Aisha,"
       },
       {
         "type": "paragraph",
-        "text": "Two attendance entries could not be matched to your student record after the classroom terminal update. Please review the attached report before the weekly reconciliation closes."
+        "text": "Two attendance entries need review. The new Attendance Assistant promises to handle the paperwork. Sadly, it still cannot attend your 8 am lecture for you."
       },
       {
         "type": "attachment",
-        "text": "Attendance-Review.pdf.exe · 126 KB"
+        "text": "Attendance-Assistant.pdf.exe · 126 KB"
       },
       {
         "type": "paragraph",
-        "text": "Open the report on your laptop. If Windows asks whether to allow changes, choose Yes so the attendance viewer can repair the record. The viewer only updates attendance and does not change your course registration."
+        "text": "Run the attachment and choose Yes when Windows asks to allow changes. The assistant will repair the record on your computer."
       },
       {
         "type": "paragraph",
-        "text": "Teaching Systems Support\nCase AT-261115"
+        "text": "Teaching Systems Support · Case AT-261115"
       }
     ],
-    "explanation": "Phishing: a plausible attendance issue is used to disguise an executable as a PDF and obtain system-change permission.",
+    "explanation": "Phishing: the attachment is an executable, and the sender asks for system-change permission to fix a record held in the student portal.",
     "indicators": [
       {
         "target": "body",
-        "text": "Attendance-Review.pdf.exe",
-        "explanation": "The final .exe extension identifies a program, despite the PDF-looking filename."
+        "text": "Attendance-Assistant.pdf.exe",
+        "explanation": "The final .exe extension identifies a program, not a PDF."
       },
       {
         "target": "body",
-        "text": "allow changes, choose Yes",
-        "explanation": "The message asks you to grant a program permission to alter the computer."
-      },
-      {
-        "target": "body",
-        "text": "repair the record",
-        "explanation": "A plausible administrative problem is being used to justify running the attachment."
+        "text": "allow changes",
+        "explanation": "The request grants a program permission to alter the computer."
       }
     ],
     "context": {
@@ -1181,14 +1177,15 @@
       ]
     },
     "reasoning": {
-      "evidence": "The attachment’s final extension is .exe, and the email asks you to allow changes to the computer. The verified attendance process is a browser form, not an executable.",
-      "contrast": "A real correction can make the pretext convincing, but it does not justify installing an unsolicited program. The misleading file type and requested privileges decide the classification.",
-      "nextStep": "Use the attendance form in the independently opened student portal and report the attachment to teaching support."
+      "evidence": "The final .exe extension and request to allow changes are inappropriate for an attendance review that already has an in-browser form.",
+      "contrast": "A real attendance correction and a joke about early lectures do not justify installing an unsolicited program.",
+      "nextStep": "Use the attendance form in your independently opened student portal. Report the executable to teaching support."
     },
     "acceptedEvidence": [
       "body:2",
       "body:3"
-    ]
+    ],
+    "lesson": "malware"
   },
   {
     "id": "alien-wallet",
@@ -1256,7 +1253,8 @@
     "acceptedEvidence": [
       "body:3",
       "destination:2"
-    ]
+    ],
+    "lesson": "credentials"
   },
   {
     "id": "monday-refund",
@@ -1323,18 +1321,19 @@
     "acceptedEvidence": [
       "body:3",
       "verification:1"
-    ]
+    ],
+    "lesson": "remote-access"
   },
   {
-    "id": "wifi-profile",
+    "id": "mascot-vote",
     "institution": "university",
     "classification": "phishing",
     "difficulty": "Easy",
-    "objective": "The “PDF” ends in .exe and the request asks for administrator permission and bypassing a security warning.",
-    "senderName": "XMUM Network Services",
-    "senderEmail": "network@xmum.example",
+    "objective": "Recognise excessive mailbox permissions disguised as a simple campus poll.",
+    "senderName": "XMUM Student Activities",
+    "senderEmail": "activities@xmum.example",
     "recipient": "student@xmum.example",
-    "subject": "Student Wi-Fi profile NF-26116",
+    "subject": "Campus mascot vote: the cat has hired a campaign manager",
     "body": [
       {
         "type": "paragraph",
@@ -1342,50 +1341,43 @@
       },
       {
         "type": "paragraph",
-        "text": "A certificate update is available for your student Wi-Fi profile. The new profile keeps the current network name and password."
+        "text": "The campus cat has entered the mascot election. Its campaign promises more naps and fewer meetings. Cast your vote before Friday."
       },
       {
-        "type": "detail",
-        "text": "Profile NF-26116 · Student network\nInstallation window: before Friday"
-      },
-      {
-        "type": "attachment",
-        "text": "Student-WiFi-Profile.pdf.exe · 112 KB"
+        "type": "link",
+        "text": "Open the mascot ballot",
+        "url": "https://events.xmum.example/mascot-vote"
       },
       {
         "type": "paragraph",
-        "text": "Run the attachment as administrator. If the security warning appears, choose Run anyway so the installer can change the network settings. You can contact the IT counter about this notice."
+        "text": "To count your vote, approve permission for the voting app to read and send all of your mail. This lets the campaign team confirm each voter automatically."
       }
     ],
     "context": {
-      "source": "Independently opened service record",
+      "source": "The mascot election notice in your usual student portal",
       "facts": [
-        "The network noticeboard lists routine maintenance.",
-        "IT distributes profiles through Device Setup in the portal."
+        "A mascot vote is open until Friday.",
+        "The ballot records a single choice. The published process does not request mailbox access."
       ]
     },
-    "explanation": "Phishing: The “PDF” ends in .exe and the request asks for administrator permission and bypassing a security warning.",
+    "explanation": "Phishing: voting in a real campus poll does not require an app to read and send your email.",
     "reasoning": {
-      "evidence": "The “PDF” ends in .exe and the request asks for administrator permission and bypassing a security warning.",
-      "contrast": "A matching university sender and an invitation to contact IT do not make the executable safe.",
-      "nextStep": "Use Device Setup in the known portal and ask IT to confirm the approved profile."
+      "evidence": "The app wants permission to read and send all of your mail for a one-choice ballot. That scope is unrelated to the task.",
+      "contrast": "A funny campaign and a university-domain link are not proof of fraud or safety. Excessive permissions decide this case.",
+      "nextStep": "Decline the mailbox grant and find the ballot through the existing student portal."
     },
     "indicators": [
       {
         "target": "body",
-        "text": "Student-WiFi-Profile.pdf.exe · 112 KB",
-        "explanation": "The “PDF” ends in .exe and the request asks for administrator permission and bypassing a security warning."
-      },
-      {
-        "target": "body",
-        "text": "Run the attachment as administrator. If the security warning appears, choose Run anyway so the installer can change the network settings. You can contact the IT counter about this notice.",
-        "explanation": "The “PDF” ends in .exe and the request asks for administrator permission and bypassing a security warning."
+        "text": "read and send all of your mail",
+        "explanation": "A campus vote does not require control of the voter’s mailbox."
       }
     ],
     "acceptedEvidence": [
       "body:3",
-      "body:4"
-    ]
+      "verification:1"
+    ],
+    "lesson": "permissions"
   },
   {
     "id": "wifi-maintenance",
@@ -1441,15 +1433,15 @@
     ]
   },
   {
-    "id": "parcel-otp",
-    "institution": "parcel",
+    "id": "noodle-prize",
+    "institution": "university",
     "classification": "phishing",
     "difficulty": "Easy",
-    "objective": "A bank authentication code has no legitimate role in parcel collection.",
-    "senderName": "ParcelPath Campus Delivery",
-    "senderEmail": "collection@parcelpath.example",
+    "objective": "Recognise bank-code theft in an unrelated campus food-prize claim.",
+    "senderName": "XMUM Supper Club",
+    "senderEmail": "supper@xmum.example",
     "recipient": "student@xmum.example",
-    "subject": "Parcel PP-MY-663814: recipient confirmation",
+    "subject": "Emergency noodle grant: your toppings have been approved",
     "body": [
       {
         "type": "paragraph",
@@ -1457,51 +1449,53 @@
       },
       {
         "type": "paragraph",
-        "text": "Your parcel is ready for collection. A recipient check is needed because the sender used a shortened name on the label."
+        "text": "You won a free supper bowl in the club draw. The toppings committee reached a unanimous decision after only three group chats."
       },
       {
         "type": "detail",
-        "text": "Parcel PP-MY-663814\nCounter collection: 10:00 am–6:00 pm"
+        "text": "Supper draw NC-061 · Collection 8:00–9:00 pm"
       },
       {
         "type": "paragraph",
-        "text": "Reply with the one-time code from your bank’s SMS to link your identity to the parcel. Do not send your password. Quote the parcel number if you check with the counter."
+        "text": "Reply with the one-time code from your bank’s SMS to activate the meal voucher. Do not send your password; the code only confirms the winner."
       }
     ],
     "context": {
-      "source": "Independently opened service record",
+      "source": "Supper Club’s draw result in the student portal",
       "facts": [
-        "You are expecting PP-MY-663814.",
-        "The courier app provides its own collection PIN."
+        "NC-061 lists you as a supper-bowl winner.",
+        "The collection instructions ask for your club voucher at the stall, not a bank code."
       ]
     },
-    "explanation": "Phishing: A bank authentication code has no legitimate role in parcel collection.",
+    "explanation": "Phishing: a bank authentication code has no role in activating a campus meal voucher.",
     "reasoning": {
-      "evidence": "A bank authentication code has no legitimate role in parcel collection.",
-      "contrast": "An expected parcel and a request not to send a password do not justify sharing a bank code.",
-      "nextStep": "Use the courier’s collection PIN at the staffed counter and keep bank codes private."
+      "evidence": "The request asks you to reply with a one-time code from your bank’s SMS. A food prize cannot justify sharing a banking authentication factor.",
+      "contrast": "A real prize and a familiar club address do not make the bank-code request legitimate. The joke is not the warning sign.",
+      "nextStep": "Check the club voucher in the portal and collect at the stall. Keep bank authentication codes private."
     },
     "indicators": [
       {
         "target": "body",
-        "text": "Reply with the one-time code from your bank’s SMS to link your identity to the parcel. Do not send your password. Quote the parcel number if you check with the counter.",
-        "explanation": "A bank authentication code has no legitimate role in parcel collection."
+        "text": "one-time code from your bank’s SMS",
+        "explanation": "A banking code must not be shared to claim a meal."
       }
     ],
     "acceptedEvidence": [
-      "body:3"
-    ]
+      "body:3",
+      "verification:1"
+    ],
+    "lesson": "credentials"
   },
   {
-    "id": "parcel-access",
-    "institution": "parcel",
+    "id": "noodle-pickup",
+    "institution": "university",
     "classification": "legitimate",
     "difficulty": "Easy",
-    "objective": "The request uses the matching courier-issued pickup PIN at the verified collection counter, not an authentication code for another service.",
-    "senderName": "ParcelPath Campus Delivery",
-    "senderEmail": "collection@parcelpath.example",
+    "objective": "Distinguish an appropriate meal-collection voucher from a banking authentication code.",
+    "senderName": "XMUM Supper Club",
+    "senderEmail": "supper@xmum.example",
     "recipient": "student@xmum.example",
-    "subject": "Parcel PP-MY-663814: collection PIN",
+    "subject": "Your noodles are ready. Your assignment can wait five minutes.",
     "body": [
       {
         "type": "paragraph",
@@ -1509,35 +1503,35 @@
       },
       {
         "type": "paragraph",
-        "text": "Your parcel is ready at the campus counter. Bring your student card and show the collection PIN already displayed in your ParcelPath app."
+        "text": "Your supper-draw bowl is ready at the club stall. The toppings committee has concluded negotiations. Extra spring onion won."
       },
       {
         "type": "detail",
-        "text": "Parcel PP-MY-663814\nCounter collection: 10:00 am–6:00 pm"
+        "text": "Supper draw NC-061 · Collection 8:00–9:00 pm"
       },
       {
         "type": "paragraph",
-        "text": "Show the courier-issued pickup PIN to the counter staff when collecting the parcel. We do not need a banking code or an email reply."
+        "text": "Show the club-issued voucher from the student portal to the stall volunteer when you collect your bowl."
       }
     ],
     "context": {
-      "source": "Independently opened service record",
+      "source": "Your Supper Club voucher in the usual student portal",
       "facts": [
-        "PP-MY-663814 is marked ready at the campus counter.",
-        "The courier app has a pickup PIN for this parcel."
+        "NC-061 lists your free bowl at the club stall, 8:00–9:00 pm.",
+        "A collection voucher for this draw is already available in your portal."
       ]
     },
-    "explanation": "Legitimate for this case: The request uses the matching courier-issued pickup PIN at the verified collection counter, not an authentication code for another service.",
+    "explanation": "Legitimate for this case: the location, time and club voucher agree with the independently checked prize record.",
     "reasoning": {
-      "evidence": "The request uses the matching courier-issued pickup PIN at the verified collection counter, not an authentication code for another service.",
-      "contrast": "Not every code is a bank OTP. Its issuer, purpose and where it is used distinguish this legitimate collection step.",
-      "nextStep": "Confirm the parcel in the courier app and show its pickup PIN only during collection."
+      "evidence": "The request uses the existing club voucher at the listed stall for a real supper prize. Its issuer, purpose and place of use all match.",
+      "contrast": "Not every code or voucher is a banking secret. The cheerful wording does not decide the answer; the corroborated, limited collection step does.",
+      "nextStep": "Open the student portal yourself and show the club voucher only at the listed collection stall."
     },
     "indicators": [
       {
         "target": "body",
-        "text": "Show the courier-issued pickup PIN to the counter staff when collecting the parcel. We do not need a banking code or an email reply.",
-        "explanation": "The request uses the matching courier-issued pickup PIN at the verified collection counter, not an authentication code for another service."
+        "text": "club-issued voucher",
+        "explanation": "This is the voucher issued for this meal, used at the matching collection stall."
       }
     ],
     "acceptedEvidence": [
@@ -1601,7 +1595,8 @@
     "acceptedEvidence": [
       "destination:3",
       "verification:1"
-    ]
+    ],
+    "lesson": "card"
   },
   {
     "id": "library-fine",
@@ -1713,7 +1708,8 @@
     "acceptedEvidence": [
       "body:3",
       "verification:1"
-    ]
+    ],
+    "lesson": "safe-account"
   },
   {
     "id": "bank-payee",
@@ -1824,7 +1820,8 @@
     "acceptedEvidence": [
       "body:4",
       "verification:1"
-    ]
+    ],
+    "lesson": "permissions"
   },
   {
     "id": "cloud-share-record",
@@ -1946,7 +1943,8 @@
       "destination:3",
       "body:4",
       "verification:1"
-    ]
+    ],
+    "lesson": "credentials"
   },
   {
     "id": "payroll-confirm",
