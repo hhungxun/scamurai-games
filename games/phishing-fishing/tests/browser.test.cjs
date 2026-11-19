@@ -59,8 +59,18 @@ async function restart(p){await p.locator('.new-player').first().click({force:tr
   await m.locator(`[data-answer="${choice}"]`).click();
   assert.equal(await m.locator('.is-reeling').count(),1);assert.equal(await m.locator('.cast-feedback').innerText(),'Reeling in…');
   assert.equal(await m.locator('.catch-report,.field-badges,mark').count(),0);
-  assert.equal(await m.locator('.fishing-bobber').evaluate(el=>getComputedStyle(el).animationName),'reel-in');
-  await m.clock.runFor(350);assert.equal(await m.locator('.is-reeling').count(),0);
+  const bobber=m.locator('.fishing-bobber');
+  const duration=await bobber.evaluate(el=>{
+   const reel=el.getAnimations().find(animation=>animation.animationName==='reel-in');
+   reel.pause();
+   return reel.effect.getTiming().duration;
+  });
+  assert.ok(duration>=750,'the lift should be visible at normal speed');
+  await m.clock.runFor(350);
+  assert.notEqual(await m.locator('[data-question]').first().getAttribute('data-question'),id,'next email opens before reel finishes');
+  assert.equal(await m.locator('.is-reeling').count(),1);
+  await bobber.evaluate(el=>el.getAnimations().find(animation=>animation.animationName==='reel-in').finish());
+  await m.locator('.is-reeling').waitFor({state:'detached'});
  }
  await m.clock.fastForward(61000);await m.locator('.new-player').first().click();assert.equal(await m.locator('.catch-report,.field-badges').count(),0);
  await motion.close();

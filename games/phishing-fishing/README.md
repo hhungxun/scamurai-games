@@ -24,7 +24,7 @@ Final score is floored at 0 and displayed/submitted out of 100. The best complet
 
 ## Fishing and campus stories
 
-The game keeps Scamurai's paper, charcoal and red colours. Between emails, the same short reeling animation plays inside the existing 320 ms input guard; it reveals no correctness, adds no delay and does not pause the timer. Reduced-motion preferences disable movement.
+The game keeps Scamurai's paper, charcoal and red colours. After an answer, the float dips, rises and settles in about 0.8 seconds. The next email appears while the animation is playing. Reduced-motion preferences disable movement.
 
 The result screen shows scams caught, safe mail released, scams escaped, safe mail miscast and unchecked mail. Choose any fish to open and focus its email explanation. Field badges recognise correctly identified techniques, such as excessive permissions or unsafe attachments; they do not add points or affect event records.
 

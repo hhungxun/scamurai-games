@@ -206,15 +206,29 @@
       });
     });
   }
+  function renderGameTopbar() {
+    main.innerHTML = `
+      <div class="game-topbar"><div><span class="eyebrow">THE INBOX CHALLENGE</span><p>Email <strong id="email-number"></strong> of ${round.questions.length}</p></div>
+        <div class="fishing-cast" aria-hidden="true">
+          <span class="fishing-water"><span class="fishing-ripple"></span><span class="fishing-bobber"></span></span>
+          <span class="cast-feedback">Reeling in…</span>
+        </div>
+        <div class="timer" id="timer" role="timer" aria-live="off" aria-label="Time remaining">${icon("clock")}<div><small>TIME LEFT</small><strong id="timer-value">${formatClock(Math.ceil(round.remainingMs() / 1000))}</strong></div><span class="timer-unit">shared across<br>all ${round.questions.length} emails</span></div>
+      </div>`;
+    const bobber = main.querySelector('.fishing-bobber');
+    const resetReel = () => bobber.closest('.fishing-cast').classList.remove('is-reeling');
+    bobber.addEventListener('animationend', resetReel);
+    bobber.addEventListener('animationcancel', resetReel);
+  }
   function renderEmail() {
     if (page !== "playing") return;
     const email = round.questions[round.index];
     main.className = "game-screen";
-    main.innerHTML = `
-      <div class="game-topbar"><div><span class="eyebrow">THE INBOX CHALLENGE</span><p>Email <strong>${round.index + 1}</strong> of ${round.questions.length} <span class="topbar-divider">/</span> Make your call.</p></div>
-        <div class="fishing-cast"><span class="fishing-water" aria-hidden="true"><span class="fishing-line"></span><span class="fishing-bobber"></span><span class="fishing-envelope">${icon('mail')}</span><span class="fishing-ripple"></span></span><span class="cast-feedback" role="status">Line ready</span></div>
-        <div class="timer" id="timer" role="timer" aria-live="off" aria-label="Time remaining">${icon("clock")}<div><small>TIME LEFT</small><strong id="timer-value">${formatClock(Math.ceil(round.remainingMs() / 1000))}</strong></div><span class="timer-unit">shared across<br>all ${round.questions.length} emails</span></div>
-      </div>
+    // Keep the top bar mounted so the float can finish moving as the next email opens.
+    if (!main.querySelector('.game-topbar')) renderGameTopbar();
+    main.querySelector('#email-number').textContent = round.index + 1;
+    main.querySelector('.game-workspace')?.remove();
+    main.insertAdjacentHTML('beforeend', `
       <div class="game-workspace">${progressRail()}<section class="message-area" aria-label="Current email">
         <div class="verification-tools"><button id="verify-independent" type="button" aria-expanded="${round.verified[round.index]}">${icon('shield')} Verify independently</button><span>Optional · no deduction · timer continues</span></div><div id="verification-record" ${round.verified[round.index]?'':'hidden'}>${caseContext(email)}</div><article class="email-card"><div class="email-toolbar"><span>${icon("mail")} Message</span><span>SIMULATED EMAIL</span></div>${emailContent(email)}<div class="email-training-note">${icon("info")} Hover or tap links to inspect. No sites or files will open.<span class="scroll-hint" hidden>Scroll to read more ${icon("chevron")}</span></div></article>
         <div class="decision-heading"><h2>Is this request legitimate for this case?</h2><span>Choose one to continue ${icon("arrow")}</span></div>
@@ -223,7 +237,7 @@
           <button class="answer-button phishing-button" type="button" data-answer="phishing" data-question="${esc(email.id)}">${icon("flag")}<span><strong>PHISHING</strong><small>This request is deceptive or unsafe.</small></span><kbd>P</kbd></button>
         </div>
         <p class="answer-hint">${icon('lock')} Answers are revealed after the round. <span><kbd>L</kbd>/<kbd>P</kbd> answers immediately</span></p>
-      </section></div>`;
+      </section></div>`);
     main.querySelectorAll("[data-answer]").forEach(button => button.addEventListener("click", () => submitAnswer(button.dataset.question,button.dataset.answer)));
     main.querySelector('#verify-independent').onclick=()=>{
       if(round.verify(email.id)) {
@@ -263,8 +277,6 @@
     }
     try { save(); } catch (error) { storageFailure(error); return; }
     locked = true;
-    main.classList.add('is-reeling');
-    main.querySelector('.cast-feedback').textContent = 'Reeling in…';
     main.querySelectorAll("[data-answer]").forEach(button => {
       button.disabled = true;
       if (button.dataset.answer === round.answers[round.index-1]?.classification) button.classList.add("answer-recorded");
@@ -273,6 +285,9 @@
     if (round.status === "finished") {
       showResults();
       return;
+    }
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      main.querySelector('.fishing-cast').classList.add('is-reeling');
     }
     // Keep the old question locked long enough to absorb double clicks/key repeats.
     transition = setTimeout(() => {
