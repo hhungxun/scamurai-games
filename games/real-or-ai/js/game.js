@@ -7,7 +7,7 @@ const host=window.parent!==window?window.parent.ScamuraiBooth:null;
 const demo=!host||host.demo;
 const VERSION=1;
 let items=(window.REAL_OR_AI_QUESTIONS||[]).map(q=>({...q}));
-let round=null,ticker=null,awaitingNext=false,lastResult=null,page='home';
+let round=null,ticker=null,awaitingNext=false,finishReported=false,lastResult=null,page='home';
 const player=$('player');
 function makeClock(){const wallOrigin=Date.now(),monoOrigin=performance.now();return()=>wallOrigin+Math.max(performance.now()-monoOrigin,Date.now()-wallOrigin);}
 function announce(t){const a=$('announcer');if(a)a.textContent=t;}
@@ -36,12 +36,29 @@ function tick(){
  const ms=round.remainingMs();setText('timerText',fmt(ms));$('timerText').classList.toggle('urgent',ms<=10000&&round.status==='playing');
  if(round.status==='playing'&&round.expire()){try{save();}catch(e){return;}showResults();}
 }
-function start(){
+function preloadOne(q,ms){
+ return new Promise(resolve=>{
+  let done=false;const fin=ok=>{if(!done){done=true;resolve(ok);}};
+  setTimeout(()=>fin(false),ms);
+  if(q.type==='photo'){const i=new Image();i.onload=()=>fin(true);i.onerror=()=>fin(false);i.src=q.src;}
+  else{const a=new Audio();a.preload='auto';a.oncanplaythrough=()=>fin(true);a.onloadeddata=()=>fin(true);a.onerror=()=>fin(false);a.src=q.src;a.load();}
+ });
+}
+let starting=false;
+async function start(){
+ if(starting)return;
  if(!pool().length){toast('Add a question with a media file first.');return;}
- clearInterval(ticker);stopAudio();
- round=new Core.Round(items,{now:makeClock()});round.start();
- try{save();}catch(e){return;}
- show('game');renderQuestion();ticker=setInterval(tick,100);tick();
+ starting=true;$('startBtn').disabled=true;
+ try{
+  clearInterval(ticker);stopAudio();
+  const r=new Core.Round(items,{now:makeClock()});
+  // Load every stimulus before the 60-second clock starts.
+  const oks=await Promise.all(r.questions.map(q=>preloadOne(q,15000)));
+  if(oks.some(ok=>!ok)){toast('Some questions did not load. Check the connection and try again.');return;}
+  round=r;finishReported=false;round.start();
+  try{save();}catch(e){return;}
+  show('game');renderQuestion();ticker=setInterval(tick,100);tick();
+ }finally{starting=false;$('startBtn').disabled=!pool().length;}
 }
 function playVoice(){
  const q=round&&round.questions[round.index];
@@ -60,7 +77,11 @@ function renderQuestion(){
  setText('questionTitle',q.type==='photo'?'Is this a real photo or an AI-generated image?':'Is this a real voice or an AI-generated voice?');
  const box=$('mediaContainer');box.replaceChildren();
  if(q.type==='photo'){
-  const img=new Image();img.src=q.src;img.alt=q.title||'Photo question';box.append(img);
+  setAnswerButtons(true);
+  const img=new Image();img.alt=q.title||'Photo question';
+  img.onload=()=>{if(!awaitingNext&&round&&round.questions[round.index]===q)setAnswerButtons(false);};
+  img.onerror=()=>{toast('This image did not load. Ask the Game Master for help.');};
+  img.src=q.src;box.append(img);
   const hint=document.createElement('span');hint.className='hint';hint.textContent=q.title||'Photo';box.append(hint);
  }else{
   const wrap=document.createElement('div');wrap.className='audio-wrap';
@@ -69,6 +90,9 @@ function renderQuestion(){
   const actions=document.createElement('div');actions.className='audio-actions';
   const play=document.createElement('button');play.type='button';play.className='play-audio';play.id='audioButton';play.textContent='▶  Play audio';play.addEventListener('click',playVoice);actions.append(play);
   const note=document.createElement('span');note.className='duration-note';note.textContent='Replay as often as you like (Space)';actions.append(note);wrap.append(actions);box.append(wrap);
+  setAnswerButtons(true);
+  player.oncanplay=()=>{if(!awaitingNext&&round&&round.questions[round.index]===q)setAnswerButtons(false);};
+  player.onerror=()=>{toast('This audio did not load. Ask the Game Master for help.');};
   player.src=q.src;
   player.onplay=()=>{wave.classList.add('animating');play.textContent='↻  Replay audio';};
   player.onpause=()=>wave.classList.remove('animating');player.onended=()=>wave.classList.remove('animating');
@@ -81,6 +105,7 @@ function answer(choice){
  const q=round.current;const res=round.answer(choice);
  if(!res){try{save();}catch(e){return;}showResults();return;}
  try{save();}catch(e){return;}
+ if(round.status==='finished'&&host){try{host.finish(window,round.snapshot(),round.score);finishReported=true;}catch(e){storageFailure(e);return;}}
  awaitingNext=true;setAnswerButtons(true);player.pause();
  const f=$('feedback');f.classList.remove('hidden','right','wrong');f.classList.add(res.correct?'right':'wrong');
  const head=(res.correct?'Correct. ':'Not quite. ')+'It was '+(q.answer==='ai'?'AI':'REAL')+'.';
@@ -98,7 +123,7 @@ function showResults(){
  if(page==='result'||!round||round.status!=='finished')return;
  clearInterval(ticker);stopAudio();awaitingNext=false;
  const r=round,total=r.answers.length,correct=r.correct,bad=r.wrong,score=r.score,acc=total?Math.round(correct/total*100):0,n=r.questions.length;
- if(host){try{host.finish(window,r.snapshot(),score);}catch(e){storageFailure(e);return;}}
+ if(host&&!finishReported){try{host.finish(window,r.snapshot(),score);}catch(e){storageFailure(e);return;}}
  setText('resultHeading',r.endReason==='complete'?'Round complete!':"Time's up!");
  setText('resultSubtitle',r.endReason==='complete'?'You answered all '+n+' questions.':'60 seconds are over. Here is how far you got.');
  setText('circleNum',String(score));setText('answeredNum',total+' / '+n);setText('correctNum',correct);setText('wrongNum',bad);setText('accuracyNum',acc+'%');
@@ -154,6 +179,14 @@ function addQuestion(type){if(items.length>=MAX_QUESTIONS){toast('Maximum 60 que
  const edit=$('editGrid');edit.lastElementChild?.scrollIntoView({behavior:'smooth',block:'center'});toast('Question added. Add a media path and enable it.');
 }
 function fileToData(file,type){return new Promise((resolve,reject)=>{let reader=new FileReader();reader.onerror=()=>reject(Error('File could not be read'));reader.onload=()=>{if(type==='photo'){let image=new Image();image.onerror=()=>reject(Error('Invalid image'));image.onload=()=>{const canvas=document.createElement('canvas'),scale=Math.min(1,1100/Math.max(image.width,image.height));canvas.width=Math.round(image.width*scale);canvas.height=Math.round(image.height*scale);canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);resolve(canvas.toDataURL('image/jpeg',.84));};image.src=reader.result;}else resolve(reader.result);};reader.readAsDataURL(file);});}
+function exportQuestions(){
+ const contents='window.REAL_OR_AI_QUESTIONS = '+JSON.stringify(items,null,2)+';\n';
+ const url=URL.createObjectURL(new Blob([contents],{type:'text/javascript;charset=utf-8'}));
+ const link=document.createElement('a');link.href=url;link.download='questions.js';
+ document.body.append(link);link.click();link.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),1000);
+ setText('exportInfo','Replace data/questions.js with the downloaded file.');
+}
 $('startBtn').addEventListener('click',start);
 $('againBtn').addEventListener('click',again);
 $('nextBtn').addEventListener('click',next);
