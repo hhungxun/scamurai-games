@@ -93,16 +93,34 @@
     document.title = mode === 'clean' ? t('Difficulty test · close the popups', '难度测试 · 一分钟') : t('close the popups · Web challenge', '一分钟 · 网页挑战');
     app.innerHTML = `${header(mode === 'clean' ? t('01 / Pick a task', '01 / 选题') : t('01 / Draw a task', '01 / 随机抽题'))}
       <main id="booth-main" data-booth-view="choose" class="booth-main">
-        <section class="booth-hero" aria-labelledby="booth-title">
-          <div>
-            <p class="booth-eyebrow">${mode === 'clean' ? t('Staff test · ads off', '工作人员测试 · 无广告') : t('Web challenge', '网页挑战')}</p>
+        <section class="${mode === 'clean' ? 'booth-hero' : 'booth-welcome'}" aria-labelledby="booth-title">
+          ${mode === 'ads' ? '<div class="booth-welcome-bar" aria-hidden="true"><i></i><i></i><i></i></div>' : ''}
+          <div class="${mode === 'ads' ? 'booth-welcome-copy' : ''}">
+            ${mode === 'clean' ? `<p class="booth-eyebrow">${t('Staff test · ads off', '工作人员测试 · 无广告')}</p>` : ''}
             <h1 id="booth-title">${t('One minute.', '一分钟挑战')}</h1>
             <p>${mode === 'clean'
               ? t('Try a task without interruptions to check its difficulty.', '先关掉广告，试一试题目难不难。')
-              : t('You have 60 seconds to finish a task. Watch out for pop-up ads.', '你有 60 秒做完任务，小心别点进弹窗广告。')}</p>
+              : t('Finish a web task in 60 seconds while pop-up ads try to distract you.', '在 60 秒内完成一项网页任务，小心突然出现的广告。')}</p>
             <button id="booth-random" class="booth-button booth-button-inverse" type="button">${t('Draw a task', '随机抽题')} <span aria-hidden="true">→</span></button>
+            ${mode === 'ads' ? `<p class="booth-welcome-note">${t('Read the brief before the clock starts.', '先读题，再开始计时。')}</p>` : ''}
           </div>
-          <span class="booth-hero-clock" aria-hidden="true">1:00</span>
+          ${mode === 'clean' ? '<span class="booth-hero-clock" aria-hidden="true">1:00</span>' : `
+            <figure class="booth-welcome-art">
+              <div class="booth-welcome-sponsor">
+                <span>Scamurai</span>
+                <div><strong>RM5,000</strong><span>${t('Event sponsorship', '赛事赞助')}</span></div>
+              </div>
+              <div class="booth-welcome-popup" aria-hidden="true">
+                <div class="booth-welcome-popup-bar"><span>${t('Prize alert', '中奖通知')}</span><span>×</span></div>
+                <span class="booth-welcome-pointer"></span>
+                <div class="booth-welcome-popup-copy">
+                  <span>${t('YOU WON!', '你中奖了！')}</span>
+                  <strong>RM1,000</strong>
+                  <span class="booth-welcome-claim">${t('Claim prize →', '领取奖品 →')}</span>
+                </div>
+              </div>
+              <figcaption>${t('Simulated ad', '模拟广告')}</figcaption>
+            </figure>`}
         </section>
         <section class="booth-collection" aria-labelledby="booth-task-heading">
           <div class="booth-collection-heading">
