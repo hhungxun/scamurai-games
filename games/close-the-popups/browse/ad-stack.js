@@ -4,7 +4,7 @@
   window.BROWSE_AD_STACK = C => {
     const {root,seed,t,esc,read,write,ads,adVisual,adDescription,adURL,redirectURL,wireAds,deck,chosen,adOffer,campaignSite,boothAds}=C;
     const KEY='br-run-v9:'+seed, MISSING=Symbol('missing'), AUTO_MAX=boothAds?60:30, ID_MAX=boothAds?70:40, REVEAL_MS=10000;
-    const GAPS=boothAds?[1000,1400,1200,1600,1300,1500]:[2200,2800,2500,3200,2300,3000];
+    const GAPS=boothAds?[800,1100,950,1250,1000,1150]:[2200,2800,2500,3200,2300,3000];
     const FORMATS=['bounce','robot','dodge','player-error','bonus','captcha','tiny','drawer','panel','newsletter'];
     const formats=boothAds?['tiny','drawer','dodge','bounce','panel','newsletter']:FORMATS;
     const firstAt=boothAds?1000:3000, rampAt=4000;
@@ -15,10 +15,10 @@
     const hash=salt=>{let value=2166136261;for(const c of seed+salt)value=Math.imul(value^c.charCodeAt(0),16777619);return value>>>0;};
     const closeStyles=['visible','dual','ghost'].sort((a,b)=>hash('close:'+a)-hash('close:'+b));
     // Each ten-card cycle retains four conventional corners, five left corners
-    // (one with a decoy), and one lower-right corner. The order is seed-shuffled.
-    const closeLayouts=['top-right','top-left','top-right','top-left','decoy','top-right','top-left','bottom-right','top-left','top-right']
+    // (two with decoys), and one lower-right corner. The order is seed-shuffled.
+    const closeLayouts=['top-right','top-left','top-right','top-left','decoy','top-right','top-left','bottom-right','decoy','top-right']
       .map((layout,index)=>({layout,order:hash('layout:'+index)})).sort((a,b)=>a.order-b.order).map(p=>p.layout);
-    const collisionEnabled=hash('collision-session')/4294967296<.3,collisionPairs=new Map();
+    const collisionEnabled=hash('collision-session')/4294967296<.6,collisionPairs=new Map();
     const dodgeLimit=id=>4+hash('dodge:'+id)%3;
     const hopDeck=TARGETS.slice().sort((a,b)=>hash('hop:'+a)-hash('hop:'+b));
     const hopTarget=id=>hopDeck[(id-1)%hopDeck.length];
@@ -67,7 +67,7 @@
     const save=()=>{if(!suspended&&!destroyed)C.rawWrite(KEY,state);};
     const burstActive=()=>state.pending.some(p=>p.burst===true);
     const phone=()=>matchMedia('(max-width: 640px)').matches;
-    const limit=()=>boothAds?(state.activeMs<rampAt?(phone()?3:4):(phone()?4:6)):burstActive()?(phone()?5:10):(phone()?2:4);
+    const limit=()=>boothAds?(state.activeMs<rampAt?(phone()?4:5):(phone()?5:7)):burstActive()?(phone()?5:10):(phone()?2:4);
     const pressure=window.BROWSE_AD_PRESSURE({root,lang:C.lang,t,esc,adURL,read,write,adOffer,campaignSite,campus:Boolean(boothAds)});
     const foreground=()=>!destroyed&&!suspended&&!externalModal&&!document.hidden&&document.hasFocus();
     const snapshot=()=>({activeMs:state.activeMs,quietUntil:state.quietUntil,active:foreground(),modalOpen:externalModal||modalId!==null,externalModal,suspended,restoring,shown:state.shown,pending:state.pending.length,burstUsed:state.burstUsed,burstActive:burstActive()});
@@ -255,7 +255,7 @@
           else{stage.querySelector('.br-blocked').hidden=false;entry.blockedLink=true;entry.motion?.pause();positionEntry(entry);}
         });
       });
-      if(!isModal){let line=0;const reserve=closeReserves(p);entry.motion=window.BROWSE_POPUP_MOTION({element:card,mode:moving?p.format:'static',slot:(p.id-1)%4,origin:p.burst?burstSlots[(p.id-1)%10]:moving?null:staticOrigin(p),speed:1.25,topReserve:reserve.top,bottomReserve:reserve.bottom,dodgeLimit:p.dodgeLimit,dodgeCount:p.dodgeCount,isActive:()=>foreground()&&modalId===null&&state.pending.some(item=>item.id===p.id),onMove:meta=>{
+      if(!isModal){let line=0;const reserve=closeReserves(p);entry.motion=window.BROWSE_POPUP_MOTION({element:card,mode:moving?p.format:'static',slot:(p.id-1)%4,origin:p.burst?burstSlots[(p.id-1)%10]:moving?null:staticOrigin(p),speed:1.5,topReserve:reserve.top,bottomReserve:reserve.bottom,dodgeLimit:p.dodgeLimit,dodgeCount:p.dodgeCount,isActive:()=>foreground()&&modalId===null&&state.pending.some(item=>item.id===p.id),onMove:meta=>{
         card.dataset.motionMoves=String(meta.count);card.dataset.motionReason=meta.reason;
         if(p.format==='dodge'){
           card.dataset.dodgeLimit=String(meta.dodgeLimit);card.dataset.dodgeCount=String(meta.dodgeCount);card.dataset.dodgeSettled=String(meta.settled);

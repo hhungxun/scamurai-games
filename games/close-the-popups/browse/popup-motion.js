@@ -102,13 +102,13 @@
         hit: raw < 0 || raw > range || (raw === 0 && velocity < 0) || (raw === range && velocity > 0)};
     };
     const dodge = (pointer, now) => {
-      if (usedDodges >= limit || !mouse.matches || now - lastDodge < 260) return;
+      if (usedDodges >= limit || !mouse.matches || now - lastDodge < 220) return;
       const closes = [...element.querySelectorAll('.br-real-close, .br-ghost-close[data-br-close]')].map(close => {
         const style = win.getComputedStyle(close), rect = close.getBoundingClientRect();
         return style.display !== 'none' && style.visibility !== 'hidden' && close.getClientRects().length && rect.width && rect.height ? rect : null;
       }).filter(Boolean);
       if (!closes.some(rect => Math.hypot(Math.max(rect.left - pointer.x, 0, pointer.x - rect.right),
-        Math.max(rect.top - pointer.y, 0, pointer.y - rect.bottom)) <= 44)) return;
+        Math.max(rect.top - pointer.y, 0, pointer.y - rect.bottom)) <= 60)) return;
       const offsets = closes.map(rect => [rect.left + rect.width / 2 - x, rect.top + rect.height / 2 - y]);
       const distance = (a, b) => Math.min(...offsets.map(([cx, cy]) => Math.hypot(a + cx - pointer.x, b + cy - pointer.y)));
       const travelX = bounds.right - bounds.left, travelY = bounds.bottom - bounds.top;
