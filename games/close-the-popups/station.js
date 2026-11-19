@@ -120,7 +120,12 @@
     if (state) sessionStorage.setItem(KEY, JSON.stringify(state));
     else sessionStorage.removeItem(KEY);
   }
+  function syncRoundBrand() {
+    // Only a live task mounts the round HUD. Advertiser tabs leave that document in place.
+    $('booth-brand').hidden = !frame.hidden && Boolean(frame.contentDocument?.getElementById('br-booth-bar'));
+  }
   function controls() {
+    syncRoundBrand();
     $('void').hidden = !ready || !state || !['open','pending'].includes(state.status);
     // A pending finish must be retried, not cancelled: the server may have saved it.
     $('void').disabled = busy || state?.status === 'pending';
@@ -328,6 +333,8 @@
     } catch { say('Could not open the participant page. Try again.', '成绩页暂不可用，请重试。'); }
   };
   frame.addEventListener('load', () => {
+    syncRoundBrand();
+    if (frame.contentDocument) frame.contentWindow.addEventListener('pageshow', syncRoundBrand);
     try { const u=new URL(frame.contentWindow.location.href);if(safeURL(u.href)){lang=u.searchParams.get('lang')==='zh'?'zh':'en';localise();inlineStatus();} } catch {}
     if (practice) {
       try { const url=safeURL(frame.contentWindow.location.href); if(url && new URL(url).searchParams.get('round')===practice.localId){practice.url=url;sessionStorage.setItem(KEY+':practice',JSON.stringify(practice));} } catch {}
