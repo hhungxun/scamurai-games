@@ -92,10 +92,24 @@ On labvps the PINs are in `~/scamurai-games/server/.env` (mode 600, not in git).
 ssh labvps 'cd ~/scamurai-games && git pull --ff-only && cd server && npm install --omit=dev && sudo systemctl restart scamurai'
 ```
 
+## Backup and restore
+
+`scripts/db-backup.js` uses SQLite's online backup, so it is safe while the server is running (WAL data is included). It reads `DATA_DIR` like the server.
+
+```
+node scripts/db-backup.js backup [dir]     # default dir: $DATA_DIR/backups; writes scamurai-<time>.db (mode 600) and verifies it
+node scripts/db-backup.js verify <file>    # integrity_check + row counts per table
+sudo systemctl stop scamurai               # restore ONLY with the server stopped
+node scripts/db-backup.js restore <file>   # verifies the backup first, keeps the old DB as scamurai.db.before-restore-<ms>, clears -wal/-shm
+sudo systemctl start scamurai
+```
+
+Take a backup before the event, after check-in, and at the end; copy it off the machine. Backups hold personal data: keep them private and delete them with the database (below). `test/backup-restore.js` (part of `npm test`) proves a backup taken from a live WAL database restores identical rows and that a corrupt backup is refused without touching the live DB.
+
 ## After the event
 
 1. Download both CSVs from `/admin.html` for the post-mortem report.
-2. By 26 Dec 2026, delete personal data: `ssh labvps 'sudo systemctl disable --now scamurai && rm -f ~/scamurai-games/server/data/scamurai.db*'`.
+2. By 26 Dec 2026, delete personal data: `ssh labvps 'sudo systemctl disable --now scamurai && rm -rf ~/scamurai-games/server/data/scamurai.db* ~/scamurai-games/server/data/backups'`.
 
 ## Desktop laptop lifecycle
 
