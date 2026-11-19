@@ -86,6 +86,7 @@ function openScanner() {
       if (![location.origin, 'https://scamurai.physicsxmum.my'].includes(u.origin)) return 'That QR is not part of Scamurai. Scan a station code instead.';
       if (u.pathname === '/station.html' && /^[1-5]$/.test(u.searchParams.get('n'))) return {navigate:'/station.html?n='+u.searchParams.get('n')};
       if (['/games/phishing-fishing/', '/games/phishing-fishing/index.html'].includes(u.pathname)) return {navigate:'/station.html?n=3'};
+      if (['/games/real-or-ai/', '/games/real-or-ai/index.html'].includes(u.pathname)) return {navigate:'/station.html?n=4'};
       if (['/games/close-the-popups/', '/games/close-the-popups/index.html'].includes(u.pathname)) return {navigate:'/station.html?n=2'};
       if (u.pathname === '/games/scan-me-if-you-can/' || u.pathname === '/games/scan-me-if-you-can/index.html') return {navigate:'/station.html?n=5'};
       if (u.pathname === '/games/scan-me-if-you-can/phone.html') {

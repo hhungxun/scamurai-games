@@ -12,11 +12,37 @@ A self-contained **static website** designed for an event booth. Players identif
 
 > ⚠️ DEMO-ONLY CONTENT: All 10 sample voice recordings are synthetic. Five of them use **temporary "Real" labels for UI testing**; those are NOT authenticated human recordings. All demo media must be replaced or cleared for reuse rights and provenance before public exhibition. Obtain consent before publishing images or recordings of classmates.
 
+## Booth integration (Station 4)
+
+The game runs as **Station 4** of the Scamurai event flow, the same way Phishing Fishing runs as Station 3. `index.html` is the booth shell (station PIN login, participant selection, score submission, next participant); the game itself is in `game.html`, loaded in an iframe. The shared `/sdk.js` and `/desktop-booth.js` do the station work. `participant.html` maps `/games/real-or-ai/` to `/station.html?n=4`. PINs come from server environment variables only.
+
+- **Demo mode:** open `/games/real-or-ai/?demo=1`. No PIN is needed and scores are never submitted.
+- **Organizer Mode** (question editor) is hidden unless the URL has `?organizer=1` (use `game.html?organizer=1` standalone).
+
+## Scoring rule
+
+- A Round is 10 questions (5 real / 5 AI where the bank allows, alternating photo and voice), shuffled every Round, with a 60-second timer.
+- **Score = (correct − wrong) x 100 / N**, rounded to 1 decimal and clamped to 0-100, where N is the number of questions in the Round (10). That is +10 per correct answer, −10 per wrong answer, 0 for unanswered; minimum 0, maximum 100.
+- If the bank has fewer than 10 usable questions, N is the number drawn.
+
+## Gameplay
+
+- After each answer the player sees Correct / Not quite and a one-line clue, then presses Next (or Enter).
+- Voice questions auto-play; a Play/Replay button and the Space key replay them (if the browser blocks autoplay, press Space).
+- Keys: 1 = Real, 2 = AI.
+
+## Questions and clues
+
+Each question in `data/questions.js` has an optional `clue` (one line shown after the answer; falls back to `explanation`). Add it in the file or in Organizer Mode ("Clue" field). The voice clues are generic because the voice Real/AI labels are temporary test values.
+
 ## Folder structure
 
 ```text
 real-or-ai-game/
-├── index.html                 # Main game page (GitHub Pages entry)
+├── index.html                 # Station 4 booth shell
+├── game.html                  # Game page (loaded in the shell iframe)
+├── js/game-core.js            # Round logic, shuffle, scoring
+├── tests/core.test.cjs        # node tests for game-core
 ├── css/styles.css             # Look & feel
 ├── js/game.js                 # Timer, randomized gameplay, score, editor
 ├── data/questions.js          # ADD / EDIT YOUR QUESTIONS HERE
