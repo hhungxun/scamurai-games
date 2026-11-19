@@ -10,6 +10,7 @@
   const save = () => { if (host) host.update(window, round.snapshot()); };
   const referenceDialog = document.querySelector("#reference-dialog");
   const icons = {
+    fish: '<path d="M3 12s4-6 10-6c4 0 7 6 7 6s-3 6-7 6c-6 0-10-6-10-6Zm0 0L1 7v10l2-5Zm10-6c-3 3-3 9 0 12"/><circle cx="16" cy="11" r=".8"/>',
     arrow: '<path d="M4 12h15m-6-6 6 6-6 6"/>',
     mail: '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="m3 7 9 6 9-6"/>',
     check: '<path d="m5 12 4 4L19 6"/>',
@@ -69,7 +70,13 @@
       main.innerHTML='<section class="setup-error"><h1>This exercise has been updated.</h1><p>This tab contains an earlier Round. Its saved score stays unchanged. Use Next participant if it is saved, or ask the Game Master to cancel an unfinished Round before starting the new exercise.</p></section>';
       return;
     }
-    round = saved ? GameCore.Round.restore(window.EMAIL_BANK,settings,saved,{now:makeClock()}) : new GameCore.Round(window.EMAIL_BANK, settings, { now: makeClock() });
+    try {
+      round = saved ? GameCore.Round.restore(window.EMAIL_BANK,settings,saved,{now:makeClock()}) : new GameCore.Round(window.EMAIL_BANK, settings, { now: makeClock() });
+    } catch (error) {
+      // A practice deal with retired cases can restart; event Rounds need explicit cancellation.
+      if (saved && demo && host) { host.restartDemo(window); return; }
+      throw error;
+    }
     if (round.status !== 'ready') {
       page = 'playing'; document.body.dataset.screen = page;
       if (round.status === 'finished' || round.expire()) { showResults(); return; }
@@ -91,7 +98,7 @@
         <div class="hero-copy">
           <span class="eyebrow"><span class="tiny-line"></span> THE INBOX CHALLENGE</span>
           <h1 tabindex="-1">Phishing<br><span>Fishing</span><span class="title-dot">.</span></h1>
-          <p class="hero-subtitle">Can you tell what's real<br class="desktop-break"> and what's a scam?</p>
+          <p class="hero-subtitle">Catch the scams.<br>Let safe mail swim.</p>
           <p class="hero-description">Inspect the sender, actual destination and requested action, then choose Legitimate or Phishing. Your choice submits immediately.</p>
           <div class="round-facts" aria-label="Round details">
             <div>${icon("mail")}<span><strong>${questionCount} emails</strong><small>One inbox challenge</small></span></div>
@@ -102,27 +109,26 @@
           <p class="scoring-note">${questionCount} emails · +${pointsPerEmail} for a correct classification, −${pointsPerEmail} for a wrong classification. Unanswered: 0. Final score cannot go below 0. ${demo ? "Unscored demo: no event result is saved." : "Your best completed Station 3 score counts."}</p>
           <p class="start-note">Use Verify independently when you need the service record. Checking is free; the timer keeps running. A familiar sender alone proves nothing.</p>
         </div>
-        <div class="hero-art" aria-hidden="true">
+        <div class="hero-art fishing-hero" aria-hidden="true">
           <div class="art-grid"></div>
-          <div class="art-topline"><span class="art-live-dot"></span> A LITTLE PAUSE. A SMARTER CLICK.</div>
-          <div class="art-orbit orbit-one"></div><div class="art-orbit orbit-two"></div>
-          <div class="floating-chip chip-top">${icon("eye")} Look a little closer</div>
-          <div class="illustrated-email back-email"></div>
-          <div class="illustrated-email front-email">
-            <div class="illustration-toolbar"><span></span><span></span><span></span><b>YOUR INBOX</b></div>
-            <div class="illustration-mail-header"><div class="illustration-avatar">${icon("mail")}</div><div><div class="skeleton-line wide"></div><div class="skeleton-line short"></div></div><span class="illustration-question">?</span></div>
-            <div class="illustration-lines"><div></div><div></div><div></div></div>
-            <div class="illustration-link"><span></span>${icon("arrow")}</div>
-            <div class="magnifier"><div class="magnifier-inner">${icon("shield")}</div><span></span></div>
-          </div>
-          <div class="floating-chip chip-bottom">${icon("lock")} Your best defence? Paying attention.</div>
-          <div class="art-caption"><span>01 / OBSERVE</span><span>02 / DECIDE</span><span>03 / LEARN</span></div>
+          <div class="art-topline"><span class="art-live-dot"></span> THE INBOX IS THE POND.</div>
+          <div class="fishing-hero-word">TAKE<br>THE BAIT?</div>
+          <svg class="pond-art" viewBox="0 0 540 440" fill="none">
+            <path class="pond-rod" d="M505 340V80Q210 20 167 110"/>
+            <path class="pond-line" d="M167 110v105q0 27 19 27t19-27v-9"/>
+            <path class="pond-water" d="M0 277q34-14 68 0t68 0 68 0 68 0 68 0 68 0 68 0 68 0M0 310q34-10 68 0t68 0 68 0 68 0 68 0 68 0 68 0 68 0"/>
+            <g class="pond-envelope"><rect x="131" y="153" width="72" height="49" rx="3"/><path d="m132 157 35 24 35-24"/></g>
+            <g class="pond-fish"><path d="M72 345q55-47 112 0-57 47-112 0l-23 21v-42l23 21Z"/><circle cx="160" cy="342" r="3"/><path d="M129 324q-16 21 0 42"/></g>
+            <g class="pond-fish pond-fish-small"><path d="M310 385q37-31 76 0-39 31-76 0l-17 15v-30l17 15Z"/><circle cx="371" cy="382" r="2.5"/></g>
+            <circle class="pond-bubble" cx="230" cy="332" r="5"/><circle class="pond-bubble" cx="246" cy="353" r="3"/>
+          </svg>
+          <div class="art-caption"><span>01 / READ</span><span>02 / INSPECT</span><span>03 / REEL</span></div>
         </div>
       </section>
       <section class="how-to" aria-label="How to play"><div class="how-to-label">A quick game.<br><strong>A useful habit.</strong></div>
         <div class="how-step"><span class="step-number">01</span><div><h2>Read the email</h2><p>Check the sender, the message<br>and what it asks you to do.</p></div></div>
         <div class="how-step"><span class="step-number">02</span><div><h2>Make your call</h2><p>Choose Legitimate or Phishing.<br>Your choice records the answer.</p></div></div>
-        <div class="how-step"><span class="step-number">03</span><div><h2>See the signs</h2><p>Get your score and review<br>the clues when the round ends.</p></div></div>
+        <div class="how-step"><span class="step-number">03</span><div><h2>Check your catch</h2><p>Reveal your fish and field badges,<br>then learn from every email.</p></div></div>
       </section>`;
     document.querySelector("#start-game").addEventListener("click", startGame);
   }
@@ -206,6 +212,7 @@
     main.className = "game-screen";
     main.innerHTML = `
       <div class="game-topbar"><div><span class="eyebrow">THE INBOX CHALLENGE</span><p>Email <strong>${round.index + 1}</strong> of ${round.questions.length} <span class="topbar-divider">/</span> Make your call.</p></div>
+        <div class="fishing-cast"><span class="fishing-water" aria-hidden="true"><span class="fishing-line"></span><span class="fishing-bobber"></span><span class="fishing-envelope">${icon('mail')}</span><span class="fishing-ripple"></span></span><span class="cast-feedback" role="status">Line ready</span></div>
         <div class="timer" id="timer" role="timer" aria-live="off" aria-label="Time remaining">${icon("clock")}<div><small>TIME LEFT</small><strong id="timer-value">${formatClock(Math.ceil(round.remainingMs() / 1000))}</strong></div><span class="timer-unit">shared across<br>all ${round.questions.length} emails</span></div>
       </div>
       <div class="game-workspace">${progressRail()}<section class="message-area" aria-label="Current email">
@@ -256,6 +263,8 @@
     }
     try { save(); } catch (error) { storageFailure(error); return; }
     locked = true;
+    main.classList.add('is-reeling');
+    main.querySelector('.cast-feedback').textContent = 'Reeling in…';
     main.querySelectorAll("[data-answer]").forEach(button => {
       button.disabled = true;
       if (button.dataset.answer === round.answers[round.index-1]?.classification) button.classList.add("answer-recorded");
@@ -310,6 +319,15 @@
     clearWork(); page='error';
     main.innerHTML=`<section class="setup-error"><h1>Keep this tab open.</h1><p>Your laptop could not preserve this Round: ${esc(error.message)}. Ask the Game Master to cancel it before another participant starts.</p></section>`;
   }
+  function catchReport(results) {
+    const report = FishingCatch.summarize(results.reviews);
+    return `<section class="catch-report" aria-labelledby="catch-title">
+      <div class="catch-heading"><div><span class="eyebrow">THE DAY'S FISHING REPORT</span><h2 id="catch-title">Your catch.</h2></div><p>Every fish has a story. Choose one to inspect its email.</p></div>
+      <dl class="catch-counts">${Object.entries(report.counts).map(([outcome, count])=>`<div class="catch-count ${outcome}"><dt>${FishingCatch.outcomes[outcome]}</dt><dd>${count}</dd></div>`).join('')}</dl>
+      <div class="catch-net" aria-label="Email catches">${report.catches.map(item=>`<button type="button" class="catch-fish ${item.outcome}" data-review-index="${item.index}" aria-controls="review-${item.index}" aria-label="Email ${item.index+1}: ${esc(item.email.subject)}. ${item.title}. Open explanation.">${icon(item.outcome==='untouched'?'mail':'fish')}<span><strong>${String(item.index+1).padStart(2,'0')}</strong><small>${item.title}</small></span>${icon('chevron')}</button>`).join('')}</div>
+      <div class="field-badges" aria-label="Earned field badges"><h3>Field badges</h3>${report.badges.length ? `<ul>${report.badges.map(badge=>`<li>${icon('shield')}<div><strong>${badge.title}</strong><p>${badge.detail} <span>${badge.count} caught.</span></p></div></li>`).join('')}</ul>` : '<p>No badges this round. Catch a scam to earn a badge for the trick you spotted.</p>'}<p class="badge-note">Badges celebrate what you spotted. Your score is shown above.</p></div>
+    </section>`;
+  }
   function showResults() {
     if (page !== "playing" || round.status !== "finished") return;
     clearWork();
@@ -323,10 +341,18 @@
       <div class="results-topline"><span class="eyebrow">THE INBOX CHALLENGE / ROUND COMPLETE</span><button class="button primary new-player" type="button">${icon("refresh")} New Player</button></div>
       <section class="results-hero"><div class="score-circle" style="--score-angle:${results.score / results.maximum * 360}deg"><div><strong>${results.score}<span>/ ${results.maximum}</span></strong><small>YOUR SCORE</small></div></div><div class="results-copy"><span class="completion-label">${icon(results.correct === results.reviews.length ? "trophy" : "shield")} ${results.endReason === "timeout" ? "Time's up. Let's find the clues." : "Inbox checked. A little more awareness."}</span><h1 tabindex="-1">${title}</h1><p>${message}</p><div class="result-stats"><div><strong>${results.answered}</strong><small>Emails answered / ${questionCount}</small></div><div><strong>${(results.accuracy * 100).toFixed(1)}<span>%</span></strong><small>Label accuracy (${results.correct} right, ${results.incorrect} wrong)</small></div><div><strong>${results.timeUsed.toFixed(1)}<span>s</span></strong><small>Time used of ${esc(settings.roundSeconds)}s</small></div></div><p class="score-breakdown">${results.correct} correct × ${pointsPerEmail} − ${results.incorrect} wrong × ${pointsPerEmail} = <strong>${results.score} / 100</strong> (minimum 0). Unanswered emails earn 0. ${demo ? 'Demo only — this does not affect the event leaderboard.' : 'The same displayed score is submitted to your event record.'}</p></div></section>
       ${results.unanswered ? `<div class="timeout-note">${icon("clock")} ${results.unanswered} email${results.unanswered === 1 ? " was" : "s were"} unanswered. Unanswered emails earn no points; wrong answers deduct ${pointsPerEmail} each.${results.answered ? "" : " No answers means zero points."}</div>` : ""}
+      ${catchReport(results)}
       <section class="answer-review" aria-labelledby="review-title"><div class="review-heading"><div><span class="eyebrow">THE DETAILS MAKE THE DIFFERENCE</span><h2 id="review-title">Review Answers</h2></div><span>Open an email to see the clues ${icon("chevron")}</span></div>${results.reviews.map(reviewCard).join("")}</section>
       <div class="takeaway"><span class="takeaway-icon">${icon("shield")}</span><div><strong>A familiar look is a clue. It isn't a guarantee.</strong><p>Sender addresses can be spoofed and genuine accounts compromised. Urgency, payment amounts and attachments do not automatically mean phishing. Inspect actual destinations, check permission requests, and verify through a known app, bookmark or contact. Never share passwords, PINs or one-time codes. The .example ending is used for every training message and is not a warning sign.</p></div></div>
       <div class="results-bottom"><p>One smarter click can make a difference.</p><button class="button primary new-player" type="button">${icon("refresh")} New Player ${icon("arrow")}</button></div>`;
     main.querySelectorAll(".new-player").forEach(button => button.addEventListener("click", () => resetGame()));
+    main.querySelectorAll('.review-card').forEach((card, index) => { card.id = `review-${index}`; });
+    main.querySelectorAll('[data-review-index]').forEach(button => button.addEventListener('click', () => {
+      const card = document.getElementById(`review-${button.dataset.reviewIndex}`);
+      card.open = true;
+      card.querySelector('summary').focus({ preventScroll: true });
+      card.scrollIntoView({ block: 'start' });
+    }));
     window.scrollTo(0, 0);
     focusHeading();
     announce(`Round complete. Score ${results.score} out of ${results.maximum}. ${results.answered} answered, ${results.correct} correct, ${results.incorrect} incorrect, ${results.unanswered} unanswered. Accuracy ${(results.accuracy * 100).toFixed(1)} percent. Review answers below.`);

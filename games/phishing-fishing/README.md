@@ -22,6 +22,16 @@ Final score is floored at 0 and displayed/submitted out of 100. The best complet
 4. Choose **Legitimate** or **Phishing**, or press **L/P**. The classification submits immediately; there is no evidence selection or extra submit button.
 5. Review the classifications, decisive clues, counterarguments and safe next actions after the Round ends. Contextual clues use a muted highlight because a familiar sender or correct amount alone proves nothing.
 
+## Fishing and campus stories
+
+The game keeps Scamurai's paper, charcoal and red colours. Between emails, the same short reeling animation plays inside the existing 320 ms input guard; it reveals no correctness, adds no delay and does not pause the timer. Reduced-motion preferences disable movement.
+
+The result screen shows scams caught, safe mail released, scams escaped, safe mail miscast and unchecked mail. Choose any fish to open and focus its email explanation. Field badges recognise correctly identified techniques, such as excessive permissions or unsafe attachments; they do not add points or affect event records.
+
+Eight cases include light campus humour across both classifications: a lost penguin, digital attendance assistant, cat mascot election, supper draw, study-room booking, desk-duck receipt and internship interview. Humour is not a clue. All 32 cases, classification totals, difficulty buckets, the 60-second deadline and scoring rules are retained.
+
+Changed scenarios have new IDs. An unfinished event deal containing a retired case requires explicit staff cancellation; it is not silently regraded. A saved demo containing retired cases restarts without writing event data. Historical completed server scores stay unchanged.
+
 ## Demo and laptop setup
 
 [Public demo](https://scamurai.physicsxmum.my/games/phishing-fishing/?demo=1): no PIN or registration. It offers the full 32-case bank, normalizes its practice score to 100 and never submits event data. Offline `game.html` also runs practice.
@@ -48,3 +58,5 @@ python3 server/test/e2e_popup_draw.py
 Pure checks cover 1,000 balanced deals, all scored classification combinations, no guaranteed repeated easy legitimate pair, content/indicator/evidence keys, grading, verification, legacy snapshots and deadlines. The desktop test uses temporary data and independent browser contexts for multi-laptop ownership, classification scoring, reload recovery, score retries, cancellation, survey and no-write demos.
 
 With a Node Playwright installation, run `node games/phishing-fishing/tests/browser.test.cjs`. `PLAYWRIGHT_PATH` and `BROWSER_PATH` can point at existing installations. It covers all 32 cases, hidden verification, immediate classification, absence of evidence controls, partial-timeout scoring, keyboard/touch inspection and five desktop/mobile layouts. The accepted 60-second budget and case difficulty should still be tried with Participants on the event hardware.
+
+The browser suite also checks neutral reel animations, catch-to-explanation focus, badges, reduced motion and reset. An intercepted local host double verifies the embedded 10-email Round, displayed/submitted score agreement, deadline recovery and retired-case handling without event API writes. Set `ARTIFACT_DIR` to save preview screenshots outside the repository. The full server integration checks above remain separate.

@@ -2,6 +2,7 @@
 const assert=require('node:assert/strict');
 const bank=require('../emails.js'),config=require('../config.js');
 const {Round,selectQuestions,validateBank,evidenceChoices}=require('../game-core.js');
+const fishing=require('../catch.js');
 validateBank(bank,config);assert.equal(bank.length,32);assert.equal(config.roundSeconds,60);
 let seed=7314;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
 const orders=new Set(),seen=new Set(),easyLegit=new Set();
@@ -41,3 +42,27 @@ for(const mutate of [d=>d.version=1,d=>d.questionIds[1]=d.questionIds[0],d=>d.an
 console.log('PASS: verification/deadline persist; active v2 migrates labels; historical v2 scores protected; late clicks/corrupt snapshots rejected');
 for(const mutate of [b=>b[1].id=b[0].id,b=>delete b[0].context,b=>b[0].reasoning.evidence='',b=>b[0].acceptedEvidence=['body:999'],b=>b[0].body.find(x=>x.type==='link').url='https://external.invalid/',b=>b[0].indicators[0].text='missing clue']){const b=structuredClone(bank);mutate(b);assert.throws(()=>validateBank(b,config))}
 console.log('PASS: exact evidence keys, rationale, reserved domains and content validation');
+
+for(const email of bank.filter(e=>e.classification==='phishing'))assert.ok(fishing.lessons[email.lesson],email.id+' needs a known teaching category');
+const scam=bank.find(e=>e.classification==='phishing'),safe=bank.find(e=>e.classification==='legitimate');
+const reviews=[
+ {email:scam,answer:'phishing',correct:true},
+ {email:safe,answer:'legitimate',correct:true},
+ {email:scam,answer:'legitimate',correct:false},
+ {email:safe,answer:'phishing',correct:false},
+ {email:scam,answer:null,correct:false},
+ {email:safe,answer:null,correct:false}
+];
+const original=JSON.stringify(reviews),catchResult=fishing.summarize(reviews);
+assert.deepEqual(catchResult.counts,{caught:1,safe:1,escaped:1,miscast:1,untouched:2});
+assert.deepEqual(catchResult.catches.map(c=>c.index),[0,1,2,3,4,5]);
+assert.equal(catchResult.badges.length,1);assert.equal(catchResult.badges[0].count,1);
+assert.equal(JSON.stringify(reviews),original,'presentation must not mutate answers or grading');
+assert.deepEqual(fishing.summarize(reviews.slice(2)).badges,[],'wrong and unanswered cases earn no badges');
+assert.deepEqual(fishing.summarize([]).badges,[]);
+for(const email of bank.filter(e=>e.lesson)){
+ const result=fishing.summarize([{email,answer:'phishing',correct:true},{email,answer:'phishing',correct:true}]);
+ assert.equal(result.badges.length,1);assert.equal(result.badges[0].count,2,'same skill aggregates without duplicate badges');
+}
+const retired=r.snapshot();retired.questionIds[0]='penguin-qr';assert.throws(()=>Round.restore(bank,config,retired),'retired cases must never be silently regraded');
+console.log('PASS: catch outcomes partition the inbox; badges reward caught techniques only; grading is untouched; retired deals fail closed');
