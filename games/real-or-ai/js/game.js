@@ -9,6 +9,7 @@ const VERSION=1;
 let items=(window.REAL_OR_AI_QUESTIONS||[]).map(q=>({...q}));
 let round=null,ticker=null,awaitingNext=false,finishReported=false,lastResult=null,page='home';
 const player=$('player');
+let clearMediaWatch=()=>{};
 function makeClock(){const wallOrigin=Date.now(),monoOrigin=performance.now();return()=>wallOrigin+Math.max(performance.now()-monoOrigin,Date.now()-wallOrigin);}
 function announce(t){const a=$('announcer');if(a)a.textContent=t;}
 function setText(id,t){const e=$(id);if(e)e.textContent=t;}
@@ -29,7 +30,7 @@ function storageFailure(error){
  $('main').innerHTML='<section class="result"><div class="result-head"><h2>Keep this tab open.</h2><p></p></div></section>';
  $('main').querySelector('p').textContent='Your laptop could not preserve this Round: '+error.message+'. Ask the Game Master to cancel it before another participant starts.';
 }
-function stopAudio(){try{player.pause();player.removeAttribute('src');player.load();}catch(e){}}
+function stopAudio(){clearMediaWatch();try{player.pause();player.removeAttribute('src');player.load();}catch(e){}}
 function fmt(ms){const sec=Math.ceil(ms/1000);return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');}
 function tick(){
  if(!round||round.status==='ready')return;
@@ -66,7 +67,18 @@ function playVoice(){
  try{player.currentTime=0;const p=player.play();if(p&&p.catch)p.catch(()=>{const b=$('audioButton');if(b)b.textContent='▶  Play audio';toast('Press Space or the Play button to hear the clip.');});}catch(e){toast('Press the Play button to hear the clip.');}
 }
 function setAnswerButtons(disabled){$('answerReal').disabled=disabled;$('answerAI').disabled=disabled;}
+function watchMedia(media,q,readyEvent){
+ const status=$('mediaStatus'),kind=q.type==='photo'?'image':'audio';
+ const active=()=>page==='game'&&!awaitingNext&&round&&round.current===q;
+ status.hidden=false;status.textContent='Loading '+kind+'… You can still choose REAL or AI.';
+ const ready=()=>{clearTimeout(timeout);if(active()){status.hidden=true;status.textContent='';}};
+ const failed=()=>{clearTimeout(timeout);if(active()){status.hidden=false;status.textContent='This '+kind+' could not load. You can still choose REAL or AI, or ask the Game Master for help.';announce(status.textContent);}};
+ const timeout=setTimeout(()=>{if(active()){status.hidden=false;status.textContent='This '+kind+' is taking too long to load. You can still choose REAL or AI, or ask the Game Master for help.';announce(status.textContent);}},8000);
+ media.addEventListener(readyEvent,ready);media.addEventListener('error',failed);
+ clearMediaWatch=()=>{clearTimeout(timeout);media.removeEventListener(readyEvent,ready);media.removeEventListener('error',failed);status.hidden=true;status.textContent='';clearMediaWatch=()=>{};};
+}
 function renderQuestion(){
+ // Media readiness must never gate answers; only submitted answers disable them.
  stopAudio();awaitingNext=false;$('feedback').classList.add('hidden');setAnswerButtons(false);
  const q=round.questions[round.index];if(!q){showResults();return;}
  const n=round.questions.length;
@@ -77,10 +89,8 @@ function renderQuestion(){
  setText('questionTitle',q.type==='photo'?'Is this a real photo or an AI-generated image?':'Is this a real voice or an AI-generated voice?');
  const box=$('mediaContainer');box.replaceChildren();
  if(q.type==='photo'){
-  setAnswerButtons(true);
   const img=new Image();img.alt=q.title||'Photo question';
-  img.onload=()=>{if(!awaitingNext&&round&&round.questions[round.index]===q)setAnswerButtons(false);};
-  img.onerror=()=>{toast('This image did not load. Ask the Game Master for help.');};
+  watchMedia(img,q,'load');
   img.src=q.src;box.append(img);
   const hint=document.createElement('span');hint.className='hint';hint.textContent=q.title||'Photo';box.append(hint);
  }else{
@@ -90,9 +100,7 @@ function renderQuestion(){
   const actions=document.createElement('div');actions.className='audio-actions';
   const play=document.createElement('button');play.type='button';play.className='play-audio';play.id='audioButton';play.textContent='▶  Play audio';play.addEventListener('click',playVoice);actions.append(play);
   const note=document.createElement('span');note.className='duration-note';note.textContent='Replay as often as you like (Space)';actions.append(note);wrap.append(actions);box.append(wrap);
-  setAnswerButtons(true);
-  player.oncanplay=()=>{if(!awaitingNext&&round&&round.questions[round.index]===q)setAnswerButtons(false);};
-  player.onerror=()=>{toast('This audio did not load. Ask the Game Master for help.');};
+  watchMedia(player,q,'canplay');
   player.src=q.src;
   player.onplay=()=>{wave.classList.add('animating');play.textContent='↻  Replay audio';};
   player.onpause=()=>wave.classList.remove('animating');player.onended=()=>wave.classList.remove('animating');
@@ -106,7 +114,7 @@ function answer(choice){
  if(!res){try{save();}catch(e){return;}showResults();return;}
  try{save();}catch(e){return;}
  if(round.status==='finished'&&host){try{host.finish(window,round.snapshot(),round.score);finishReported=true;}catch(e){storageFailure(e);return;}}
- awaitingNext=true;setAnswerButtons(true);player.pause();
+ awaitingNext=true;setAnswerButtons(true);clearMediaWatch();player.pause();
  const f=$('feedback');f.classList.remove('hidden','right','wrong');f.classList.add(res.correct?'right':'wrong');
  const head=(res.correct?'Correct. ':'Not quite. ')+'It was '+(q.answer==='ai'?'AI':'REAL')+'.';
  setText('feedbackHead',head);setText('feedbackClue',q.clue||q.explanation||'');
