@@ -66,6 +66,25 @@ def run():
                 assert k.locator('body > div svg').count() == 0
                 assert k.evaluate("PASS_KEYS=>PASS_KEYS.some(x=>localStorage.getItem(x)!==null)", PASS_KEYS) is False
                 print('PASS: kiosk keeps no personal pass; QR for My scores is per player and gone at handover')
+
+                # H2: a Round stranded by a closed tab can be restarted from a fresh laptop session
+                api.ok('POST', '/api/participants', {'id': 'STRAND', 'name': 'STRAND', 'ageGroup': '19–21', 'pbbAccount': False, 'scamExposure': 'no', 'consent': True}, pin='1111')
+                s1 = laptop(); s1.locator('.scm .it[data-id="STRAND"]').wait_for(); s1.fill('.scm .find', 'STRAND'); s1.click('.scm .go')
+                s1.wait_for_function("(k)=>{const s=JSON.parse(sessionStorage.getItem(k)||'null');return s&&s.participant}", arg=KEY, timeout=15000)
+                old = state(s1)['roundId']; s1.context.close()  # tab closed without cancelling
+                assert [r['roundId'] for r in api.ok('GET', '/api/rounds/open', pin='5003') if r['participant']['id'] == 'STRAND'] == [old]
+                s2 = laptop(); msgs = []
+                s2.on('dialog', lambda d: (msgs.append(d.message), d.accept()))
+                s2.locator('.scm .it[data-id="STRAND"]').wait_for(); s2.fill('.scm .find', 'STRAND'); s2.click('.scm .go')
+                for _ in range(40):
+                    if msgs: break
+                    s2.wait_for_timeout(250)
+                assert any('unfinished Round' in m for m in msgs), msgs
+                s2.locator('.scm .it[data-id="STRAND"]').wait_for(); s2.fill('.scm .find', 'STRAND'); s2.click('.scm .go')
+                s2.wait_for_function("(k)=>{const s=JSON.parse(sessionStorage.getItem(k)||'null');return s&&s.participant&&!s.existing}", arg=KEY, timeout=15000)
+                new = state(s2)['roundId']; assert new != old
+                assert [r['roundId'] for r in api.ok('GET', '/api/rounds/open', pin='5003') if r['participant']['id'] == 'STRAND'] == [new]
+                print('PASS: stranded Round can be cancelled and restarted from a new laptop session')
                 assert not errors, errors
                 browser.close()
         finally:

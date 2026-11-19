@@ -56,8 +56,19 @@
         state = {version:1,status:'open',roundId:null,participant:null,snapshot:null}; persist(); frame.src = gameURL();
       } else {
         // Retain a completed result if the next-participant picker is backed out of.
-        const p = await Scamurai.pick();
+        let p = await Scamurai.pick();
         if (!p) return;
+        // The same player's earlier Round is still open (tab closed or laptop restarted): offer a clean restart
+        // instead of leaving them stranded until the 15-minute idle timeout.
+        if (p.existing) {
+          if (!confirm(`${p.name} already has an unfinished Round here (for example the tab was closed). Cancel it and start a fresh one?`)) {
+            status(`${p.name} already has an active Round. Resume it on the original laptop, or choose another participant.`, true); return;
+          }
+          await Scamurai.cancelRound(p.roundId);
+          const again = await Scamurai.pick();
+          if (!again) return;
+          p = again;
+        }
         state = {version:1,status:'open',roundId:p.roundId,participant:{id:p.id,name:p.name},snapshot:null,existing:!!p.existing};
         persist();
         if (p.existing) { status('This participant already has an active Round. Resume it on the original laptop, or ask the Game Master to cancel it.', true); frame.src = 'about:blank'; }

@@ -43,7 +43,9 @@ def run():
     a=laptop('phishing-fishing',3);b=laptop('phishing-fishing',3)
     select(a,'MAIL001');frame(a).wait_for_selector('#start-game');frame(a).click('#start-game')
     b.wait_for_function("document.querySelector('.scm .it[data-id=\"MAIL001\"]')?.textContent.includes('playing now')")
-    b.locator('.scm .it[data-id="MAIL001"]').click();assert b.locator('.scm .go').is_disabled()
+    b.locator('.scm .it[data-id="MAIL001"]').click()
+    b.once('dialog',lambda d:d.dismiss());b.click('.scm .go');b.wait_for_timeout(1500);b.click('#booth-select')   # a second laptop may only restart after confirming; declining keeps the first Round
+    assert len(api.ok('GET','/api/rounds/open',pin='5003'))==1 and state(a)['participant']['id']=='MAIL001'
     select(b,'MAIL002');frame(b).wait_for_selector('#start-game');frame(b).click('#start-game')
     assert len(api.ok('GET','/api/rounds/open',pin='5003'))==2
     assert state(a)['participant']['id']=='MAIL001' and state(b)['participant']['id']=='MAIL002'

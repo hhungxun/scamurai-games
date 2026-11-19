@@ -217,8 +217,8 @@
           : `<span class="pill p-new">${p.stationsDone.length}/5 done</span>`;
         return `<div class="it${sel && sel.id === p.id ? ' sel' : ''}" data-id="${esc(p.id)}"><div><b>${esc(p.name)}</b><br><small>${esc(p.id)}</small></div>${pill}</div>`;
       }).join('') || `<div class="it"><small>${list.length ? 'No match. Check the ID, or send them to the front desk.' : 'Nobody registered yet.'}</small></div>`;
-      go.disabled = !sel || (mode === 'play' && !!sel.playingHere);
-      go.textContent = mode === 'leave' ? (sel ? `Check out ${sel.name}` : 'Pick who is leaving') : (sel ? `Start round · ${sel.name}` : 'Start round');
+      go.disabled = !sel || (mode === 'play' && !!sel.playingHere && !pickRes);   // dashboards/booths may re-open a stranded Round
+      go.textContent = mode === 'leave' ? (sel ? `Check out ${sel.name}` : 'Pick who is leaving') : (sel ? `${sel.playingHere && pickRes ? 'Resume or restart' : 'Start round'} · ${sel.name}` : 'Start round');
     }
     box.onclick = e => { if (starting) return; const it = e.target.closest('.it[data-id]'); if (!it) return; sel = list.find(p => p.id === it.dataset.id); render(); };
     find.oninput = () => { if (starting) return; sel = null; const t = find.value.trim().toUpperCase(); const exact = list.find(p => p.id === t); if (exact) sel = exact; render(); };
