@@ -7,7 +7,7 @@
     courier: {
       brand: ['Delivery notice desk', '派送通知台'],
       cards: [
-        ['parcel', ['Delivery update','派送更新'], ['Delivery failed: address incomplete','派送失败：地址不完整'], ['Arrange redelivery','安排改派'], ['Pay RM3 to release your parcel for another delivery attempt.','支付 RM3 手续费，释放包裹并再次派送。']],
+        ['parcel', ['Delivery update','派送更新'], ['Delivery failed: address incomplete','派送失败：地址不完整'], ['Reschedule delivery','改约派送'], ['A RM3 fee is required before we can deliver your parcel again.','请先支付 RM3 手续费，我们会重新派送。']],
         ['desk', ['Everyday supplies','日常用品'], ['Organise your parcel corner','整理你的收件角'], ['Browse storage','浏览收纳用品'], ['Shelves and storage accessories for your shared space.','为公共空间挑选置物架和收纳配件。']],
         ['parcel', ['Recipient check','收件人核验'], ['Verify identity before rescheduling','改约前验证身份'], ['Verify recipient','验证收件人'], ['Open a separate recipient verification to continue delivery.','打开独立的收件人核验页面以继续派送。']],
         ['coupon', ['Shipping offer','运费推广'], ['A voucher for your next parcel','下次寄件的优惠券'], ['Claim voucher','领取优惠券'], ['Activate a shipping offer before your next order.','下次下单前激活寄件优惠。']]
@@ -16,7 +16,7 @@
     search: {
       brand: ['Software download desk', '软件下载台'],
       cards: [
-        ['software', ['Download shortcut','下载快捷入口'], ['Pixelpress high-speed download','Pixelpress 高速下载'], ['Get installer','获取安装器'], ['Open the recommended download assistant for this search.','为本次搜索打开推荐下载助手。']],
+        ['software', ['Download shortcut','下载快捷入口'], ['Pixelpress high-speed download','Pixelpress 高速下载'], ['Get installer','获取安装器'], ['Use our download manager to get Pixelpress.','打开下载助手，获取 Pixelpress。']],
         ['stock', ['Design resources','设计素材'], ['Images for your next club page','社团网页图片素材'], ['Browse images','浏览图片'], ['A separate collection of photos for your next project.','为下次项目浏览独立图片素材集。']],
         ['security', ['Security notice','安全通知'], ['Your download needs a security check','下载需要安全检查'], ['Verify now','立即验证'], ['Run a browser verification before continuing your download.','继续下载前先进行浏览器验证。']],
         ['software', ['Recommended update','推荐更新'], ['Install the download helper','安装下载辅助工具'], ['Continue download','继续下载'], ['Use the download assistant to unlock the file.','使用下载助手解锁文件。']]
@@ -26,7 +26,7 @@
       brand: ['Campus Canvas', '校园画布'],
       cards: [
         ['stock', ['Projector backdrops', '投影背景'], ['XMUM presentation backdrops', 'XMUM 小组汇报背景'], ['Browse the pack', '浏览素材包'], ['Scenery for society slides and classroom screens.', '社团幻灯片和教室投影可用的风景素材。']],
-        ['desk', ['Desk setup', '桌面布置'], ['Set up your study screen', '布置你的自习屏幕'], ['See the student picks', '查看学生推荐'], ['A student pick of screen stands and desk accessories for dorm rooms.', '学生整理的宿舍显示器支架和桌面配件。']],
+        ['desk', ['Desk setup', '桌面布置'], ['Set up your study screen', '布置你的自习屏幕'], ['See the student picks', '查看学生推荐'], ['Monitor stands and desk accessories for small rooms.', '适合小房间的显示器支架和桌面配件。']],
         ['stock', ['Image comparison', '图片比较'], ['More images to compare', '还有照片可以比较'], ['Compare the photos', '比较照片'], ['The campus slide pack has another version with different dimensions.', '校园幻灯片素材包里还有另一种尺寸的版本。']],
         ['software', ['Image export', '图片导出'], ['Wallpaper export ready', '壁纸已准备好导出'], ['Download the JPG', '下载 JPG'], ['Open the projector-size copy for your next XMUM presentation.', '打开适合下次 XMUM 汇报投影的尺寸。']],
         ['security', ['File check', '文件检查'], ['Check the original image', '检查原图文件'], ['Continue download', '继续下载'], ['Preview the file check before saving the larger wallpaper.', '保存大尺寸壁纸前，先看文件检查结果。']],
@@ -36,7 +36,7 @@
     recipes: {
       brand: ['Dorm Kitchen Notes', '宿舍厨房笔记'],
       cards: [
-        ['coupon', ['After class', '课后晚餐'], ['Easy dinners for XMUM students', 'XMUM 同学的快手晚餐'], ['See the dinner picks', '查看晚餐推荐'], ['Student meal ideas for cooking together after lectures.', '学生整理的课后聚餐灵感。']],
+        ['coupon', ['After class', '课后晚餐'], ['Easy dinners for XMUM students', 'XMUM 同学的快手晚餐'], ['See the dinner picks', '查看晚餐推荐'], ['Dinner ideas for cooking with friends after class.', '下课后和朋友一起做顿饭。']],
         ['desk', ['Meal prep', '备餐用品'], ['Pack a meal for the group', '给小组准备便当'], ['Browse containers', '浏览便当盒'], ['Reusable food containers for long days of classes and group work.', '上课和做小组作业时用的可重复使用便当盒。']],
         ['coupon', ['Recipe filters', '食谱筛选'], ['Show vegan meals on a budget', '只看预算内的纯素餐'], ['Apply meal filters', '应用食谱筛选'], ['Narrow down ideas for the next XMUM group dinner.', '为下次 XMUM 同学聚餐筛选食谱。']],
         ['software', ['Portion calculator', '份量计算器'], ['Need six servings?', '需要六人份？'], ['Update the portions', '更新份量'], ['Scale all the ingredients for your group meal in one step.', '一步按小组人数换算所有食材。']],
@@ -48,7 +48,7 @@
       brand: ['Society Design Desk', '社团设计桌'],
       cards: [
         ['stock', ['Society artwork', '社团素材'], ['Make an XMUM society poster', '做一张 XMUM 社团海报'], ['Browse image samples', '浏览示例图片'], ['Try campus-themed images for posters and event posts.', '试用校园主题图片来做海报和活动帖。']],
-        ['stock', ['Poster templates', '海报模板'], ['Images for recruitment week', '招新周图片素材'], ['See the template pack', '查看模板素材包'], ['A student-made set for club displays and social posts.', '学生整理的社团展台和社媒帖素材。']],
+        ['stock', ['Poster templates', '海报模板'], ['Images for recruitment week', '招新周图片素材'], ['See the template pack', '查看模板素材包'], ['Templates for club booths and social posts.', '社团摊位和发帖用的模板。']],
         ['software', ['Quick settings', '快捷设置'], ['Custom width, quick WebP export', '自定义宽度，快速导出 WebP'], ['Apply export settings', '应用导出设置'], ['Open a custom-size preset for your society’s artwork.', '打开社团宣传图的自定义尺寸预设。']],
         ['player', ['Output preview', '输出预览'], ['The image preview needs an update', '图片预览需要更新'], ['Enable preview', '启用预览'], ['Check the compressed image before sending it to your group chat.', '发到小组群之前，先检查压缩后的预览。']],
         ['software', ['Ready to export', '导出已就绪'], ['Your resized copy is ready', '调整尺寸后的图片已就绪'], ['Download output', '下载导出文件'], ['Save the copy prepared for your XMUM society post.', '保存给 XMUM 社团发帖准备的图片。']],
@@ -58,8 +58,8 @@
     movies: {
       brand: ['After-Class Screen Room', '课后放映室'],
       cards: [
-        ['corn', ['Campus movie night', '校园电影夜'], ['Shorts for an XMUM movie night', 'XMUM 电影夜短片清单'], ['See the lineup', '查看片单'], ['A student-curated list of films that fit between classes.', '学生整理的片单，适合在课间看一部。']],
-        ['desk', ['Screening setup', '观影布置'], ['Turn a desk into a movie corner', '把桌面变成观影角'], ['See the setup', '查看布置'], ['Headphones and desk stands for a dorm-room screening.', '适合宿舍观影的耳机和桌面支架。']],
+        ['corn', ['Campus movie night', '校园电影夜'], ['Shorts for an XMUM movie night', 'XMUM 电影夜短片清单'], ['See the lineup', '查看片单'], ['Short films you can watch between classes.', '课间有空，可以看部短片。']],
+        ['desk', ['Screening setup', '观影布置'], ['Dorm room movie setup', '宿舍观影装备'], ['See the setup', '查看布置'], ['Headphones and desk stands for a dorm-room screening.', '适合宿舍观影的耳机和桌面支架。']],
         ['player', ['Playback notice', '播放提示'], ['Resume the selected preview', '继续播放已选预告'], ['Continue preview', '继续预览'], ['Enable playback before checking the runtime for movie night.', '启用播放后，再核对电影夜的放映时长。']],
         ['corn', ['Watchlist shortcut', '片单快捷入口'], ['Add this to the group watchlist', '加入小组想看片单'], ['Add to watchlist', '加入想看'], ['Keep the short with your group’s other XMUM movie-night picks.', '和小组的其他 XMUM 电影夜备选放在一起。']],
         ['coupon', ['Screening pass', '放映活动'], ['A pass for your shortlist', '备选影片观影通行券'], ['Open the screening details', '打开放映详情'], ['See which films are included in the student screening offer.', '看看学生放映推广包含哪些影片。']],

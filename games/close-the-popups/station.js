@@ -17,6 +17,9 @@
   function localise() {
     document.documentElement.lang=lang==='zh'?'zh-Hans':'en';
     const labels={
+      'demo-link':['Try the demo','试玩一下'],
+      'demo-note':['Practice round. Your score won’t count toward the event.','这是练习，得分不会计入活动成绩。'],
+      'event-link':['Back to the event →','返回正式挑战 →'],
       'staff-toggle':['Staff','工作人员'],'staff-title':['Staff desk','展台交接'],
       'staff-eyebrow':['STATION 02 / SCAMURAI','第 02 站 / SCAMURAI'],
       'participant-label':['CURRENT PARTICIPANT','当前参与者'],
@@ -29,12 +32,14 @@
       'confirm-void':['Cancel round','确认作废'],'keep-playing':['Keep playing','继续挑战']
     };
     for(const [id,text] of Object.entries(labels)) $(id).textContent=text[lang==='zh'?1:0];
+    $('demo-link').href=`?demo=1&lang=${lang}`;
+    $('event-link').href=`?lang=${lang}`;
     $('staff-close').setAttribute('aria-label',lang==='zh'?'关闭工作人员菜单':'Close staff menu');
     status.textContent=message[lang==='zh'?1:0];
     panelSummary();
   }
   function panelSummary() {
-    $('booth-player').textContent = state ? `${state.participant.name} · ${state.participant.id}` : DEMO ? 'Demo / no event score' : practice ? 'Staff practice' : lang==='zh'?'请选择参与者':'Choose participant';
+    $('booth-player').textContent = state ? `${state.participant.name} · ${state.participant.id}` : DEMO ? (lang==='zh'?'试玩':'Demo') : practice ? (lang==='zh'?'工作人员练习':'Staff practice') : lang==='zh'?'请选择参与者':'Choose participant';
     $('station-header').dataset.phase=practice?'practice':state?.status||'idle';
     $('participant-name').textContent=state ? `${state.participant.name} · ${state.participant.id}` : (practice ? (lang==='zh'?'工作人员练习':'Staff practice') : (lang==='zh'?'等待下一位参与者':'Ready for the next participant'));
     $('next').textContent=state||practice ? (lang==='zh'?'下一位':'Next participant') : (lang==='zh'?'选择参与者 ID':'Select participant ID');
@@ -98,11 +103,11 @@
   }
   function showState() {
     if (practice) say(`Practice only — no event score${practice.status !== 'open' ? ' · '+practice.score+' / 100' : ''}`, `工作人员练习，不写入活动成绩${practice.status !== 'open' ? ' · '+practice.score+' / 100' : ''}`);
-    else if (!state) say('Select the next participant ID, then draw the assigned task. Starting a task also opens the ID picker if needed.', '请先选择下一位参与者 ID，再随机分配任务。若直接开始任务，也会先要求选择 ID。');
+    else if (!state) say('Choose the next participant, then draw a task. If you go straight to the task, we’ll ask for an ID first.', '先选下一位参与者，再抽题。如果直接点任务，会先弹出 ID 选择。');
     else if (state.status === 'saved') say('Score saved. Ready for the next participant.', '成绩已同步，可以交接下一位。');
     else if (state.status === 'cancelled') say('Round cancelled. No score recorded.', '本轮已作废，不计分。');
     else if (state.status === 'pending') say('Score awaiting confirmation. Retry saving before the next participant.', '成绩尚待确认。请重试保存后再交接下一位。');
-    else if (!state.localId) say(state.readyToStart ? 'Participant confirmed. Draw the assigned task for the 60-second challenge.' : 'An existing round is open. Resume in its original tab or cancel it here.', state.readyToStart ? '参与者已确认，请随机抽题。开始挑战后才进入 60 秒计时。' : '该参与者已有未完成轮次，请回原标签恢复，或在此作废。');
+    else if (!state.localId) say(state.readyToStart ? 'Participant selected. You can draw a task now.' : 'An existing round is open. Resume in its original tab or cancel it here.', state.readyToStart ? '参与者已选好，可以抽题了。' : '该参与者已有未完成轮次，请回原标签恢复，或在此作废。');
     else say('Challenge in progress. Return to the task to continue.', '挑战进行中，返回任务即可继续。');
     controls();
   }

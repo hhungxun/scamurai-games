@@ -12,8 +12,8 @@
   <script defer src="station.js"></script>
 <link rel="stylesheet" href="../shared/theme.css"></head>
 <body>
-  <div id="booth-brand"><a href="/">SCAM<span>URAI</span></a><span>02 / CLOSE THE POPUPS</span><strong id="booth-player">Choose participant</strong><a href="?demo=1&amp;lang=en">Try demo</a></div>
-  <div id="demo-banner" hidden>DEMO / PRACTICE · No event score is saved. <a href="?lang=en">Return to event play →</a></div>
+  <div id="booth-brand"><a href="/">SCAM<span>URAI</span></a><span>02 / CLOSE THE POPUPS</span><strong id="booth-player">Choose participant</strong><a id="demo-link" href="?demo=1&amp;lang=en">Try the demo</a></div>
+  <div id="demo-banner" hidden><span id="demo-note">Practice round. Your score won’t count toward the event.</span> <a id="event-link" href="?lang=en">Back to the event →</a></div>
   <button id="staff-toggle" aria-haspopup="dialog" aria-controls="station-header" aria-expanded="false">Staff</button>
   <dialog id="station-header" aria-labelledby="staff-title">
     <header class="station-panel-heading">

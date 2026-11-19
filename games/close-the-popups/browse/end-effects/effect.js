@@ -131,8 +131,8 @@
     if(embed){
       const score=Number(options.get('score'));
       $('score-number').textContent=options.has('score')&&Number.isFinite(score)&&score>=0&&score<=100?String(score):'—';
-      $('result-title').textContent=mode==='nuke'?'TIME’S UP.':'ROUND COMPLETE!';
-      $('result-copy').textContent=mode==='nuke'?(en?'All distractions end here.':'所有干扰，到此为止。'):(en?'Your round has been submitted.':'本轮已交卷。');
+      $('result-title').textContent=mode==='nuke'?(en?'Time’s up':'时间到了'):(en?'Round submitted':'已交卷');
+      $('result-copy').textContent=en?'See how you scored.':'看看这轮拿了多少分。';
       $('again').textContent=en?'View results →':'查看成绩 →';
     }
     // Layout read permits the entry transition without an extra unmanaged timer.

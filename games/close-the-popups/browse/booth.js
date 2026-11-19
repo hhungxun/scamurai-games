@@ -96,7 +96,7 @@
             <h1 id="booth-title">${t('One minute.', '一分钟挑战')}</h1>
             <p>${mode === 'clean'
               ? t('Try a task without interruptions to check its difficulty.', '先关掉广告，试一试题目难不难。')
-              : t('Find the right result in 60 seconds while simulated campus ads compete for your attention.', '在 60 秒内找对结果，同时应对模拟校园广告。')}</p>
+              : t('You have 60 seconds to finish a task. Watch out for pop-up ads.', '你有 60 秒做完任务，小心别点进弹窗广告。')}</p>
             <button id="booth-random" class="booth-button booth-button-inverse" type="button">${t('Draw a task', '随机抽题')} <span aria-hidden="true">→</span></button>
           </div>
           <span class="booth-hero-clock" aria-hidden="true">1:00</span>
@@ -106,7 +106,7 @@
             <h2 id="booth-task-heading">${t('Or pick your own', '也可以自己选题')}</h2>
             <span>${tasks.length} ${t('tasks', '题')}</span>
           </div>
-          <p class="booth-note booth-duration-note">${t('Suggested durations describe task difficulty. Every round still has a 60-second countdown.', '建议时长用于挑选难度；每轮实际倒计时均为 60 秒。')}</p><div class="booth-task-groups">${taskGroups.map((group,i)=>`<section class="booth-task-group" aria-labelledby="booth-group-${i}"><h3 id="booth-group-${i}">${esc(txt(group.title))}</h3><ul class="booth-task-grid">${group.ids.map(id=>tasks.find(x=>x.id===id)).filter(Boolean).map(taskCard).join('')}</ul></section>`).join('')}</div>
+          <p class="booth-note booth-duration-note">${t('The times on the cards are estimates. Every round gives you 60 seconds.', '卡片上是预计用时。每轮都给你 60 秒。')}</p><div class="booth-task-groups">${taskGroups.map((group,i)=>`<section class="booth-task-group" aria-labelledby="booth-group-${i}"><h3 id="booth-group-${i}">${esc(txt(group.title))}</h3><ul class="booth-task-grid">${group.ids.map(id=>tasks.find(x=>x.id===id)).filter(Boolean).map(taskCard).join('')}</ul></section>`).join('')}</div>
         </section>
         ${staffHistory()}
       </main>`;
@@ -135,19 +135,19 @@
     document.title = `${txt(item.title)} · ${t('close the popups', '一分钟')}`;
     app.innerHTML = `${header(t('02 / Read the task', '02 / 读题'))}
       <main id="booth-main" data-booth-view="brief" class="booth-main booth-brief-main">
-        <a class="booth-back" href="${esc(chooseURL())}">← ${mode === 'clean' ? t('Pick another task', '返回选题') : t('Back to assigned task draw', '返回已分配任务')}</a>
+        <a class="booth-back" href="${esc(chooseURL())}">← ${mode === 'clean' || demo ? t('Back to tasks', '返回选题') : t('Back to the task draw', '返回抽题')}</a>
         <section class="booth-brief-layout" aria-labelledby="booth-title">
           <div class="booth-brief-copy">
             <p class="booth-eyebrow">${esc(item.site)}${item.advanced ? ` · ${t('Advanced', '进阶')}` : ''}${mode === 'clean' ? ` · ${esc(modeName(mode))}` : ''}</p>
             <h1 id="booth-title">${esc(txt(item.title))}</h1>
             <p class="booth-brief-text">${taskText(item.brief, item)}</p>
-            ${item.hint ? `<aside class="booth-start-hint"><strong>${t('Start here', '从这里开始')}</strong><p>${taskText(item.hint, item)}</p></aside>` : ''}
+            ${item.hint ? `<aside class="booth-start-hint"><strong>${t('Hint', '提示')}</strong><p>${taskText(item.hint, item)}</p></aside>` : ''}
             <div class="booth-goals">
-              <h2>${t('What counts as finished', '完成条件')}</h2>
+              <h2>${t('What to do', '要做的事')}</h2>
               <ol>${item.goals.map(goal => `<li>${taskText(goal, item)}</li>`).join('')}</ol>
             </div>
-            <button id="booth-start" type="button" class="booth-button booth-button-primary">${t('Start the challenge', '开始挑战')} <span aria-hidden="true">→</span></button>
-            <p id="booth-start-note" class="booth-note" role="status">${t('The 60 seconds start once the site is ready. Switching tabs does not pause the clock. Task 60 + speed 20 + safe interaction 20. Complete and submit within 30 seconds for full time points.', '网页就绪后开始 60 秒倒计时，切换标签页时照常计时。任务 60＋速度 20＋安全操作 20；全部完成后点「交卷」，30 秒内交卷得时间满分。')}</p>
+            <button id="booth-start" type="button" class="booth-button booth-button-primary">${t('Start task', '开始任务')} <span aria-hidden="true">→</span></button>
+            <p id="booth-start-note" class="booth-note" role="status">${t('You have 60 seconds once the site loads. The clock keeps running if you switch tabs. Finish and submit within 30 seconds for full speed points. You can earn 60 points for the task, 20 for speed and 20 for safe browsing.', '网页打开后有 60 秒，切换标签页也照常计时。30 秒内做完并交卷，速度分拿满。任务 60 分，速度和安全操作各 20 分。')}</p>
           </div>
           <figure class="booth-brief-figure"><img class="booth-brief-photo" src="${esc(item.briefCover||item.cover)}" alt="" width="480" height="360">${item.coverNote?`<figcaption>${esc(txt(item.coverNote))}</figcaption>`:""}</figure>
         </section>
@@ -236,40 +236,40 @@
   function scoreBlock(score, round) {
     if (!score) return '';
     const r = score.resilience, time = score.time;
-    const rows = r ? [[t('Misleading-ad clicks (including blocked tabs)', '误点广告（包括被拦截的标签页）'), r.unsafeClicks], [t('Clean closes', '干净关闭'), r.cleanCloses], [t('False closes', '假关闭'), r.decoys],
-      [t('Evasion chases (record only)', '追逐闪避（仅记录）'), r.dodges], [t('10-second close assists (record only)', '10 秒关闭辅助（仅记录）'), r.revealed],
-      [t('Advertiser tabs opened', '已打开广告标签页'), r.opened]] : [];
+    const rows = r ? [[t('Misleading ads clicked (including blocked tabs)', '误点广告次数（含被拦截的）'), r.unsafeClicks], [t('Pop-ups closed safely', '正确关掉的弹窗'), r.cleanCloses], [t('Fake close buttons clicked', '误点假关闭按钮'), r.decoys],
+      [t('Chased close buttons (no points)', '追逐关闭按钮次数（不计分）'), r.dodges], [t('Close buttons revealed after 10 seconds (no points)', '10 秒后出现辅助关闭按钮（不计分）'), r.revealed],
+      [t('Ad tabs opened', '打开的广告标签页'), r.opened]] : [];
     return `<section class="booth-score" aria-labelledby="booth-score-title">
         <h2 id="booth-score-title" class="booth-sr">${t('Round score', '本轮得分')}</h2>
         <div class="booth-score-total"><strong>${score.total}</strong><span>/ 100</span></div>
         <dl class="booth-score-split">
-          <div><dt>${t('Task', '任务完成')}</dt><dd>${score.task.score} / 60</dd><small>${t(`${score.task.met} of ${score.task.total} evidence checks recorded`, `已记录 ${score.task.met} / ${score.task.total} 项证据`)}</small></div>
-          <div><dt>${t('Speed', '速度')}</dt><dd>${time ? `${time.score} / 20` : '—'}</dd><small>${time ? t(`${time.base} base + ${time.bonus} speed bonus`, `基础 ${time.base} ＋速度奖励 ${time.bonus}`) : t('Timing data is unavailable', '用时数据不可用')}</small></div>
-          <div><dt>${t('Safe interaction', '安全操作')}</dt><dd>${r ? `${r.score} / 20` : '—'}</dd><small>${r ? t('Progress credit minus 5 per misleading-ad click', '按完成进度计分，每次误点广告扣 5 分') : unavailableResilience(round)}</small></div>
+          <div><dt>${t('Task', '任务完成')}</dt><dd>${score.task.score} / 60</dd><small>${t(`${score.task.met} of ${score.task.total} items checked off`, `已记录 ${score.task.met} / ${score.task.total} 项`)}</small></div>
+          <div><dt>${t('Speed', '速度')}</dt><dd>${time ? `${time.score} / 20` : '—'}</dd><small>${time ? t('Based on time and task progress', '按用时和任务进度计算') : t('No time recorded', '没有用时记录')}</small></div>
+          <div><dt>${t('Safe interaction', '安全操作')}</dt><dd>${r ? `${r.score} / 20` : '—'}</dd><small>${r ? t('Lose 5 points each time you click a misleading ad.', '每误点一次广告扣 5 分。') : unavailableResilience(round)}</small></div>
         </dl>
         ${rows.length ? `<ul class="booth-score-detail">${rows.map(([label, value]) => `<li><span>${esc(label)}</span><b>${value}</b></li>`).join('')}</ul>` : ''}
-        <p class="booth-note">${t('The task score counts automatically confirmable evidence, so its total can differ from the condition checklist below, which also lists conditions only staff can confirm.', '任务分统计可自动确认的证据，分母可能与下方「条件核对」不同——后者还包含只能由工作人员核对的条件。')}</p>
+        <p class="booth-note">${t('The task score uses the items we could check automatically. A staff member can verify the others below.', '任务分按系统能自动核对的项目计算。下方还有些项目需要工作人员确认。')}</p>
         <details class="booth-score-rules">
           <summary>${t('How scoring works', '查看计分规则')}</summary>
-          <p>${t('Task: 60 × completed evidence fraction. Speed: up to 20 × that fraction, full through 30 seconds and declining logarithmically to zero at 60 seconds. No completed evidence means zero points.', '任务：60 × 证据完成比例。速度：最高 20 × 完成比例，30 秒内满额，之后按对数曲线递减至 60 秒的 0 分。没有完成证据则得 0 分。')}</p>
-          <p>${t('Safe interaction: 20 × completed evidence fraction, minus 5 per misleading-ad click, minimum zero. Blocked tabs count; each click is counted once. Closing popups cannot erase penalties. Missing ad records earn no safety credit. Staff practice never submits an event score.', '安全操作：20 × 证据完成比例，每次误点广告扣 5 分，最低 0 分。被拦截的标签页同样计入，每次点击只计一次。关闭弹窗不能抵消扣分；缺少广告记录不获安全分。工作人员练习不提交活动成绩。')}</p>
+          <p>${t('The task is worth up to 60 points. The more you finish, the more you earn. Speed is worth up to 20 points and also depends on how much you finish. After 30 seconds, your available speed points drop to zero at 60 seconds. If you complete none of the checks, your total is zero.', '任务最多 60 分，完成得越多，分数越高。速度最多 20 分，也按完成进度计算。超过 30 秒后，能拿到的速度分会逐渐降低，到 60 秒降为 0。所有项目都没完成，本轮就是 0 分。')}</p>
+          <p>${t('Safe browsing is worth up to 20 points, based on how much of the task you finish. Each misleading-ad click costs 5 points, even if your browser blocks the tab. Closing the ad does not undo the deduction. This part of your score cannot go below zero. If there is no ad log, you get no safety points. Staff practice does not count toward the event.', '安全操作最多 20 分，也按任务完成进度计算。每误点一次广告扣 5 分，即使标签页被拦截也算。关掉广告不会退回扣分，最低扣到 0 分。没有广告记录就没有安全分。工作人员练习不计入活动成绩。')}</p>
         </details>
       </section>`;
   }
 
   function resultChecks(assessment) {
-    return assessment.checks.length ? assessment.checks.map(check => `<li data-booth-check data-met="${check.met===null?'unknown':check.met===true}"><span class="booth-check-symbol" aria-hidden="true">${check.met===true?'✓':check.met===null?'—':'○'}</span><div><strong>${esc(txt(check.label))}</strong>${check.detail ? `<p>${esc(txt(check.detail))}</p>` : ''}</div><span class="booth-check-state">${check.met===true?t('Recorded','已记录'):check.met===null?t('Staff check needed','待人工核对'):t('Not recorded','尚未记录')}</span></li>`).join('') : `<li data-booth-check data-met="unknown"><span class="booth-check-symbol" aria-hidden="true">—</span><div><strong>${t('No task evidence is available.', '暂无可用的任务证据。')}</strong><p>${t('Ask the participant and inspect the actual output. No success is inferred.', '请询问参与者并检查实际产物；系统不会据此推断成功。')}</p></div></li>`;
+    return assessment.checks.length ? assessment.checks.map(check => `<li data-booth-check data-met="${check.met===null?'unknown':check.met===true}"><span class="booth-check-symbol" aria-hidden="true">${check.met===true?'✓':check.met===null?'—':'○'}</span><div><strong>${esc(txt(check.label))}</strong>${check.detail ? `<p>${esc(txt(check.detail))}</p>` : ''}</div><span class="booth-check-state">${check.met===true?t('Done','已完成'):check.met===null?t('Staff to check','待工作人员确认'):t('Not detected','未检测到')}</span></li>`).join('') : `<li data-booth-check data-met="unknown"><span class="booth-check-symbol" aria-hidden="true">—</span><div><strong>${t('No task activity recorded', '没有任务操作记录')}</strong><p>${t('A staff member can ask what you did and check any files you downloaded.', '工作人员可以向你确认操作，并检查下载的文件。')}</p></div></li>`;
   }
   function evidenceSummary(assessment) {
     const recorded=assessment.checks.filter(c=>c.met===true).length,total=assessment.checks.length;
-    if(total&&recorded===total)return t('All task conditions recorded.','全部任务条件已记录。');
+    if(total&&recorded===total)return t('You completed every item.','所有要求都完成了。');
     const unknown=assessment.checks.filter(c=>c.met===null).length;
-    return t(`${recorded} of ${total} conditions recorded.${unknown?` ${unknown} require a staff check.`:''}`,`已记录 ${recorded}/${total} 项条件。${unknown?`另有 ${unknown} 项需人工核对。`:''}`);
+    return t(`${recorded} of ${total} items checked off.${unknown?` ${unknown} require a staff check.`:''}`,`已完成 ${recorded}/${total} 项。${unknown?`另有 ${unknown} 项需人工核对。`:''}`);
   }
   function renderPending(round, item) {
     const armed = round.status === 'armed';
     document.title = t('This round is not finished · close the popups', '本轮尚未结束 · 60秒任务挑战');
-    app.innerHTML = `${header(t('ROUND STATUS', '轮次状态'), round)}<main id="booth-main" data-booth-view="${armed ? 'armed' : 'running'}" class="booth-main booth-recovery"><p class="booth-eyebrow">${esc(item.site)} / ${esc(modeName(round.mode))}</p><h1 id="booth-title">${armed ? t('Ready, not started.', '已准备，尚未开始。') : t('Your round is still running.', '本轮仍在进行。')}</h1><p>${armed ? t('This round has no start time or result yet. Continue to the website to start the challenge once it is ready.', '本轮还没有开始时间，也没有结果。继续前往网站，页面准备好后才开始挑战。') : t('Opening this result page does not submit the round or reset its clock. Return to the task website to continue or submit.', '打开结果页不会交卷或重置计时。请回到任务网站继续，或在那里交卷。')}</p><div class="booth-recovery-task"><strong>${esc(txt(item.title))}</strong><span>${esc(txt(item.brief))}</span></div><a class="booth-button booth-button-primary" id="booth-resume" href="${esc(localisedURL(api.entryURL(round)))}">${armed ? t('Continue to the website', '继续前往网站') : t('Return to this round', '返回本轮任务')}<span aria-hidden="true">↗</span></a><a class="booth-text-link" href="${esc(chooseURL())}">${t('Back to task selection', '返回选题')}</a></main>`;
+    app.innerHTML = `${header(t('ROUND STATUS', '轮次状态'), round)}<main id="booth-main" data-booth-view="${armed ? 'armed' : 'running'}" class="booth-main booth-recovery"><p class="booth-eyebrow">${esc(item.site)} / ${esc(modeName(round.mode))}</p><h1 id="booth-title">${armed ? t('Ready to start', '可以开始了') : t('Your timer is still running', '倒计时还在继续')}</h1><p>${armed ? t('Go to the task site. The timer starts when the page loads.', '打开任务网站。网页就绪后开始计时。') : t('Go back to the task site to finish or submit. Opening this page keeps the timer running.', '回到任务网站继续做题或交卷。打开这个页面时，倒计时还在继续。')}</p><div class="booth-recovery-task"><strong>${esc(txt(item.title))}</strong><span>${esc(txt(item.brief))}</span></div><a class="booth-button booth-button-primary" id="booth-resume" href="${esc(localisedURL(api.entryURL(round)))}">${armed ? t('Continue to the website', '继续前往网站') : t('Return to this round', '返回本轮任务')}<span aria-hidden="true">↗</span></a><a class="booth-text-link" href="${esc(chooseURL())}">${t('Back to task selection', '返回选题')}</a></main>`;
   }
   function exportResult(round, item) {
     const assessment = validAssessment(round);
@@ -278,7 +278,7 @@
         `${t('Task', '任务完成')}: ${score.task.score} / 60 (${score.task.met}/${score.task.total})`,
         `${t('Speed', '速度')}: ${score.time ? `${score.time.score} / 20 (${t('base', '基础')} ${score.time.base} + ${t('speed bonus', '速度奖励')} ${score.time.bonus})` : '—'}`,
         `${t('Safe interaction', '安全操作')}: ${score.resilience ? `${score.resilience.score} / 20` : `— (${unavailableResilience(round)})`}`,
-        ...(score.resilience ? [`${t('Clean closes / false closes / evasions / assists', '干净关闭 / 假关闭 / 闪避 / 辅助')}: ${score.resilience.cleanCloses} / ${score.resilience.decoys} / ${score.resilience.dodges} / ${score.resilience.revealed}`, `${t('Advertiser tabs opened', '已打开广告标签页')}: ${score.resilience.opened}`] : [])] : []),
+        ...(score.resilience ? [`${t('Clean closes / false closes / evasions / assists', '干净关闭 / 假关闭 / 闪避 / 辅助')}: ${score.resilience.cleanCloses} / ${score.resilience.decoys} / ${score.resilience.dodges} / ${score.resilience.revealed}`, `${t('Ad tabs opened', '打开的广告标签页')}: ${score.resilience.opened}`] : [])] : []),
  `${t('Staff verdict', '工作人员判定')}: ${verdictText(round.judgement)}`, '', txt(item.brief), '', t('TASK CONDITIONS — ✓ recorded; ○ not recorded; — staff check needed', '条件核对 — ✓ 已记录；○ 尚未记录；— 待人工核对'), evidenceSummary(assessment), ...assessment.checks.map(check => `${check.met===true?'[✓]':check.met===null?'[—]':'[○]'} ${txt(check.label)}${check.detail ? ': ' + txt(check.detail) : ''}`), '', t('STAFF REFERENCE', '工作人员参考'), txt(item.answer), ...item.route.map((step, index) => `${index + 1}. ${txt(step)}`), '', `${t('This round’s review', '本轮复盘')}: ${new URL(api.reviewURL(round), location.href).href}`, '', t('Generated locally. A download record shows that the browser was asked to download a generated file; staff should verify files on disk where needed.', '本地生成。导出记录代表文件已生成并向浏览器发起下载；需要时由工作人员核对磁盘上的实际文件。')];
     let objectURL;
     try {
@@ -315,7 +315,7 @@
         </section>
         ${scoreBlock(score, round)}
         <section class="booth-result-evidence" aria-labelledby="booth-evidence-title">
-          <h2 id="booth-evidence-title">${t('Condition checklist', '条件核对')}</h2><p class="booth-evidence-summary" role="status">${esc(evidenceSummary(assessment))}</p><p class="booth-note">${t('✓ Recorded · ○ Not recorded · — Staff check needed. The staff verdict is shown separately below.', '✓ 已记录 · ○ 尚未记录 · — 待人工核对。工作人员最终判定在下方单独显示。')}</p>
+          <h2 id="booth-evidence-title">${t('What you completed', '任务完成情况')}</h2><p class="booth-evidence-summary" role="status">${esc(evidenceSummary(assessment))}</p><p class="booth-note">${t('✓ Done · ○ Not detected · — Staff to check', '✓ 已完成 · ○ 未检测到 · — 待工作人员确认')}</p>
           <ul class="booth-checks">${resultChecks(assessment)}</ul>
           <p class="booth-note">${round.status === 'void'
             ? t('Staff set this round aside.', '工作人员已将本轮作废。')
