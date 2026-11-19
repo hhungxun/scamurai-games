@@ -95,6 +95,7 @@ Both use Python Playwright with Chromium installed; the camera-feed test also ne
 | *(template)* | `games/_template/` | — | Copy this to start |
 | Phishing Fishing (Station 1) | `games/phishing-fishing/` | ZYH | Investigate 10 balanced emails in 60 seconds; classify directly; +10 correct, −10 wrong, minimum 0 |
 | Close the Popups (Station 2) | `games/close-the-popups/` | Gary | A randomly assigned desktop task in 60 seconds, with misleading popups; shared participant selection, best score and exit survey |
+| Real or AI? (Station 4) | `games/real-or-ai/` | tianxingjian2424-dotcom | 60-second quiz: judge photos and voice clips as Real or AI (imported from github.com/tianxingjian2424-dotcom/Real-or-AI) |
 | Scan Me If You Can (Station 5) | `games/scan-me-if-you-can/` | Hung Xun | Game Master runs many players at once from one laptop; each scans a Join QR, then 8 of the 25 numbered board QRs (a fresh deal every round) and judges each site REAL or FAKE in 12 s using the in-game QR scanner |
 
 Station 2 scoring: task evidence up to 60, speed up to 20 weighted by evidence completion, and safe interaction up to 20 weighted by completion minus 5 per misleading-ad click (including blocked tabs, counted once). No completed evidence earns zero. A complete, safe Round earns 100 through 30 seconds and 80 at timeout. Every scored Round draws one persistent assignment from all 13 tasks; practice allows free choice and never submits. See [the rules](games/close-the-popups/docs/SCORING.md).
