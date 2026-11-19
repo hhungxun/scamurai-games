@@ -16,7 +16,7 @@
 <script src="participant.js"></script>
 <script src="/vendor/jsQR.js"></script><script src="/qr-scanner.js"></script><script src="/games/scan-me-if-you-can/s5.js"></script>
 <script src="/site.js" defer></script>
-</head><body data-site-nav data-page="participant"><main class="wrap">
+<link rel="icon" href="/assets/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/assets/apple-touch-icon.png"></head><body data-site-nav data-page="participant"><main class="wrap">
 <div class="top"><img src="assets/logo.jpg" alt=""><div><h1>YOUR <em>SCAM RADAR.</em></h1><p class="tag">My participant page</p></div></div>
 <p class="muted" id="connection" role="status">Opening your page…</p>
 <div id="profile"></div>
@@ -85,7 +85,7 @@ function openScanner() {
       let u; try { u = new URL(raw); } catch { return 'That is not a Scamurai QR. Try the code at your station.'; }
       if (![location.origin, 'https://scamurai.physicsxmum.my'].includes(u.origin)) return 'That QR is not part of Scamurai. Scan a station code instead.';
       if (u.pathname === '/station.html' && /^[1-5]$/.test(u.searchParams.get('n'))) return {navigate:'/station.html?n='+u.searchParams.get('n')};
-      if (['/games/phishing-fishing/', '/games/phishing-fishing/index.html'].includes(u.pathname)) return {navigate:'/station.html?n=1'};
+      if (['/games/phishing-fishing/', '/games/phishing-fishing/index.html'].includes(u.pathname)) return {navigate:'/station.html?n=3'};
       if (['/games/close-the-popups/', '/games/close-the-popups/index.html'].includes(u.pathname)) return {navigate:'/station.html?n=2'};
       if (u.pathname === '/games/scan-me-if-you-can/' || u.pathname === '/games/scan-me-if-you-can/index.html') return {navigate:'/station.html?n=5'};
       if (u.pathname === '/games/scan-me-if-you-can/phone.html') {

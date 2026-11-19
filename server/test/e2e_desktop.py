@@ -40,12 +40,12 @@ def run():
      choice=kind or (actual if correct else 'phishing' if actual=='legitimate' else 'legitimate')
      f.locator(f'[data-answer="{choice}"]').click()
      f.wait_for_function('(old)=>document.querySelector("[data-question]")?.dataset.question!==old',arg=qid)
-    a=laptop('phishing-fishing',1);b=laptop('phishing-fishing',1)
+    a=laptop('phishing-fishing',3);b=laptop('phishing-fishing',3)
     select(a,'MAIL001');frame(a).wait_for_selector('#start-game');frame(a).click('#start-game')
     b.wait_for_function("document.querySelector('.scm .it[data-id=\"MAIL001\"]')?.textContent.includes('playing now')")
     b.locator('.scm .it[data-id="MAIL001"]').click();assert b.locator('.scm .go').is_disabled()
     select(b,'MAIL002');frame(b).wait_for_selector('#start-game');frame(b).click('#start-game')
-    assert len(api.ok('GET','/api/rounds/open',pin='5001'))==2
+    assert len(api.ok('GET','/api/rounds/open',pin='5003'))==2
     assert state(a)['participant']['id']=='MAIL001' and state(b)['participant']['id']=='MAIL002'
     print('PASS: two email laptops play independently; the same participant cannot start twice')
     af=frame(a);af.click('#verify-independent');saved=state(a)['snapshot']
@@ -88,9 +88,9 @@ def run():
     b.route('**/api/rounds/*/cancel',lose_cancel);b.on('dialog',lambda d:d.accept());b.click('#booth-cancel')
     b.wait_for_function("JSON.parse(sessionStorage.getItem('scamurai.booth.1.event.v1')).status==='cancelled'")
     assert len(cancelled)==1
-    assert api.ok('GET','/api/participant/me',participant=people['MAIL004']['participantToken'])['stations'][0]['score'] is None
+    assert api.ok('GET','/api/participant/me',participant=people['MAIL004']['participantToken'])['stations'][2]['score'] is None
     b.unroute('**/api/rounds/*/cancel');b.click('#booth-next');select(b,'MAIL005');frame(b).wait_for_selector('#start-game');frame(b).click('#start-game')
-    remote=state(b);api.ok('POST',f'/api/rounds/{remote["roundId"]}/cancel',pin='5001');b.clock.fast_forward(121000)
+    remote=state(b);api.ok('POST',f'/api/rounds/{remote["roundId"]}/cancel',pin='5003');b.clock.fast_forward(121000)
     b.wait_for_function("JSON.parse(sessionStorage.getItem('scamurai.booth.1.event.v1')).status==='cancelled'")
     assert b.locator('#booth-next').is_visible()
     print('PASS: cancellation on a different laptop releases the original email laptop without a score')
@@ -140,7 +140,7 @@ def run():
     assert lp.evaluate("sessionStorage.getItem('legacy-seeded')")=='1'
     assert state(lp,'scamurai.booth.1.demo.v1')['snapshot']['version']==3 and not legacy_writes
     legacy.close();print('PASS: an earlier-format demo restarts safely into the new exercise without event writes')
-    assert not api.ok('GET','/api/rounds/open',pin='5001') and not api.ok('GET','/api/rounds/open',pin='5002')
+    assert not api.ok('GET','/api/rounds/open',pin='5003') and not api.ok('GET','/api/rounds/open',pin='5002')
     print('PASS: both public demos bypass PIN/identity, allow practice and write no event data')
     assert not errors,errors
     browser.close()

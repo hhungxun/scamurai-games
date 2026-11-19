@@ -32,4 +32,26 @@ for (let ms = 0; ms <= 60000; ms += 1000) {
     if (ms) assert.ok(value <= score(met, ms - 1000).total);
   }
 }
-console.log('PASS: Station 2 calibration, no-progress zero, unsafe-click deductions, monotonic progress/time and score bounds');
+// Guaranteed warm-up floor: 20/100 for a finished round once the warm-up was completed.
+{
+  const ended = {status: 'ended', startedAt: 1000, endedAt: 1000 + 60000, guaranteed: true};
+  const none = {checks: Array.from({length: 10}, () => ({met: false}))};
+  const full = {checks: Array.from({length: 10}, () => ({met: true}))};
+  assert.strictEqual(compute(none, {counts: {}}, ended).total, 20);
+  assert.strictEqual(compute({checks: []}, {counts: {}}, ended).total, 20);
+  assert.strictEqual(compute(none, {counts: {opened: 9}}, ended).total, 20);
+  assert.strictEqual(compute(none, {counts: {}}, {...ended, guaranteed: false}).total, 0);
+  assert.strictEqual(compute(none, {counts: {}}, {...ended, guaranteed: undefined}).total, 0);
+  assert.strictEqual(compute(none, {counts: {}}, {...ended, status: 'active'}).total, 0);
+  assert.strictEqual(compute(full, {counts: {}}, {...ended, endedAt: 1000 + 10000}).total, 100);
+  const high = compute(full, {counts: {}}, {...ended, endedAt: 1000 + 10000});
+  assert.strictEqual(high.guaranteed.applied, false);
+  assert.strictEqual(compute(none, {counts: {}}, ended).guaranteed.applied, true);
+  for (let met = 0; met <= 10; met++) for (const ms of [0, 5000, 30000, 59000, 60000]) {
+    const g = compute({checks: Array.from({length: 10}, (_, i) => ({met: i < met}))}, {counts: {opened: 1}}, {...ended, endedAt: 1000 + ms});
+    const plain = score(met, ms, {opened: 1});
+    assert.ok(g.total >= 20 && g.total <= 100);
+    assert.strictEqual(g.total, Math.max(plain.total, 20));
+  }
+}
+console.log('PASS: Station 2 calibration, no-progress zero, unsafe-click deductions, monotonic progress/time, score bounds and guaranteed warm-up floor');

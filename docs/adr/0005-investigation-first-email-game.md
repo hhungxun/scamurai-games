@@ -8,7 +8,7 @@ Automatic independent case notes exposed mismatches before a Participant investi
 
 ## Decision
 
-Scored Rounds remain ten balanced messages (5 Phishing / 5 Legitimate with 2 Easy, 2 Medium and 1 Hard per class), now with a shared 120-second deadline. Each completed judgement contains a classification and one selected detail from the sender, subject, message, inspected destination or voluntarily opened verification record.
+Scored Rounds remain ten balanced messages (5 Phishing / 5 Legitimate with 2 Easy, 2 Medium and 1 Hard per class), now with a shared 60-second deadline. Each completed judgement contains a classification and one selected detail from the sender, subject, message, inspected destination or voluntarily opened verification record.
 
 Award +10 only when both label and cited evidence are supported; award 0 for a correct label with unsupported evidence; deduct 10 for a wrong label; unanswered/draft judgements earn 0; floor the final total at 0. Best-Round aggregation and the existing server-duration tie-break remain unchanged. All-correct labels alone can no longer earn a positive score.
 
@@ -20,8 +20,8 @@ Use snapshot version2 to persist evidence drafts and voluntary-verification stat
 
 ## Consequences
 
-The game measures inspection and justified decisions rather than binary recognition alone. Participants may need to read, inspect or verify before selecting a useful detail. Difficulty is increased by plausible paired cases and evidence quality, not ambiguous trick labels or a penalty for checking. The 120-second budget is an accepted operational choice and still needs event playtesting. Client-side cases and accepted evidence are visible to a deliberate source-code reader; this is an educational station, not a secure examination system.
+The game measures inspection and justified decisions rather than binary recognition alone. Participants may need to read, inspect or verify before selecting a useful detail. Difficulty is increased by plausible paired cases and evidence quality, not ambiguous trick labels or a penalty for checking. The 60-second budget (shortened from 120 seconds on 2026-11-19) is an accepted operational choice and still needs event playtesting. Client-side cases and accepted evidence are visible to a deliberate source-code reader; this is an educational station, not a secure examination system.
 
 ## Subsequent revision
 
-The user requested classification-only play. Evidence selection and supported/unsupported grading are retired: correct +10, wrong −10, unanswered 0, final minimum 0. The 32-case bank, balanced 10-email deals, 120-second timer, optional verification and post-round teaching remain. Finished historical scores are unchanged; active version2 labels migrate without extending their deadline.
+The user requested classification-only play. Evidence selection and supported/unsupported grading are retired: correct +10, wrong −10, unanswered 0, final minimum 0. The 32-case bank, balanced 10-email deals, 60-second timer, optional verification and post-round teaching remain. Finished historical scores are unchanged; active version2 labels migrate without extending their deadline.

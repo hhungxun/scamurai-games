@@ -5,7 +5,7 @@
     TASK_MAX: 60, TASK_BASE: 0, TIME_MAX: 20, TIME_BASE: 0,
     ROUND_MS: 60000, TIME_FULL_MS: 30000,
     RESILIENCE_MAX: 20, RESILIENCE_BASE: 0,
-    UNSAFE_CLICK: -5
+    UNSAFE_CLICK: -5, GUARANTEED_FLOOR: 20
   });
   const count = v => Number.isInteger(v) && v > 0 ? Math.min(10000, v) : 0;
   const taskScore = assessment => {
@@ -40,7 +40,11 @@
   };
   const compute = (assessment, reviewData, round) => {
     const task = taskScore(assessment), time = timeScore(assessment, round), resilience = resilienceScore(reviewData, assessment);
-    return {task, time, resilience, total: task.score + (time ? time.score : 0) + (resilience ? resilience.score : 0)};
+    const raw = task.score + (time ? time.score : 0) + (resilience ? resilience.score : 0);
+    // Guaranteed warm-up: a finished round never scores below the floor once the warm-up was completed.
+    const done = round?.guaranteed === true && round?.status === 'ended';
+    const total = done ? Math.max(raw, CONFIG.GUARANTEED_FLOOR) : raw;
+    return {task, time, resilience, guaranteed: {done, floor: CONFIG.GUARANTEED_FLOOR, applied: done && total > raw}, total};
   };
   window.BROWSE_BOOTH_SCORE = Object.freeze({CONFIG, taskScore, timeScore, resilienceScore, compute});
 })();

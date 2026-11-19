@@ -22,12 +22,19 @@ Every misleading-ad click has one recorded outcome: opened, blocked or native. A
 
 | Scenario | Task | Speed | Safe interaction | Total |
 |---|---:|---:|---:|---:|
-| No evidence, including timeout or many popup closes | 0 | 0 | 0 | 0 |
+| No evidence, no warm-up, including timeout or many popup closes | 0 | 0 | 0 | 0 |
 | All evidence, safe, ≤30 seconds | 60 | 20 | 20 | 100 |
 | Half evidence, safe, ≤30 seconds | 30 | 10 | 10 | 50 |
 | All evidence, safe, 60-second timeout | 60 | 0 | 20 | 80 |
 | All evidence, ≤30 seconds, one misleading-ad click | 60 | 20 | 15 | 95 |
 | All evidence, ≤30 seconds, four or more misleading-ad clicks | 60 | 20 | 0 | 80 |
+| No evidence, warm-up completed | 0 | 0 | 0 | **20** (floor) |
+
+## Guaranteed warm-up floor / 热身保底
+
+Every task dialog carries a simple warm-up: tap the label shown in the top bar of the page, from three choices. It is untimed, can be retried, and needs no search or browsing, so every participant can finish it. Completing it sets `round.guaranteed`. When the Round has ended (submitted or timed out), `total = max(task + speed + safeInteraction, 20)`. The 100-point cap, the weights and the zero for a skipped warm-up with no evidence are unchanged. A cancelled (void) Round never scores. Staff Practice stays unscored.
+
+每道任务的说明窗口都附带一个简单热身：从三个选项中点击页面顶部栏显示的任务标签。热身不计时、可重试，无需搜索或浏览，人人都能完成。完成后，本轮结束（提交或超时）时 `总分 = max(任务＋速度＋安全操作, 20)`。满分仍为 100，权重不变；未做热身且无证据仍为 0。作废轮次不计分，工作人员练习仍不计分。
 
 The 60-second deadline starts when the scene is ready and continues through navigation, reloads, task reminders and other tabs. Speed measures submission or timeout, rather than an inferred first-completion timestamp. The shared leaderboard tie-break continues using server Round duration from participant confirmation to saved finish, including briefing and loading.
 

@@ -13,12 +13,12 @@ async function restart(p){await p.locator('.new-player').first().click({force:tr
 (async()=>{
  browser=await chromium.launch({headless:true,...(process.env.BROWSER_PATH?{executablePath:process.env.BROWSER_PATH}:{})});
  const c=await browser.newContext({viewport:{width:1366,height:900},offline:true,reducedMotion:'reduce'}),p=await c.newPage();watch(p);await p.clock.install();await p.goto(url);
- assert.match(await p.locator('.round-facts').innerText(),/32 emails/);assert.match(await p.locator('.round-facts').innerText(),/120 seconds/);await p.locator('#start-game').click();
- assert.equal(await p.locator('#timer-value').innerText(),'2:00');assert.equal(await p.locator('.case-context').isVisible(),false);
+ assert.match(await p.locator('.round-facts').innerText(),/32 emails/);assert.match(await p.locator('.round-facts').innerText(),/60 seconds/);await p.locator('#start-game').click();
+ assert.equal(await p.locator('#timer-value').innerText(),'1:00');assert.equal(await p.locator('.case-context').isVisible(),false);
  assert.equal(await p.locator('[data-evidence],#submit-judgement,.evidence-pick').count(),0);
- await p.locator('#verify-independent').click();assert.equal(await p.locator('.case-context').isVisible(),true);await p.clock.runFor(1000);assert.notEqual(await p.locator('#timer-value').innerText(),'2:00');
+ await p.locator('#verify-independent').click();assert.equal(await p.locator('.case-context').isVisible(),true);await p.clock.runFor(1000);assert.notEqual(await p.locator('#timer-value').innerText(),'1:00');
  await p.keyboard.down('p');await p.clock.runFor(350);await p.keyboard.down('p');await p.clock.runFor(350);assert.equal(await p.locator('.email-progress .answered').count(),1);await p.keyboard.up('p');
- await p.clock.fastForward(121000);assert.equal(await p.locator('.review-card').count(),32);
+ await p.clock.fastForward(61000);assert.equal(await p.locator('.review-card').count(),32);
  console.log('PASS: no evidence controls; optional verification keeps clock running; keyboard answers immediately and held keys do not skip messages');
  await restart(p);const seen=[];
  for(let i=0;i<32;i++){
@@ -28,7 +28,7 @@ async function restart(p){await p.locator('.new-player').first().click({force:tr
  }
  assert.equal(new Set(seen).size,32);assert.match(await p.locator('.score-circle strong').innerText(),/^100/);assert.equal(await p.locator('.review-card').count(),32);assert.equal(await p.locator('.decision-reasoning dt').count(),96);assert.equal(await p.locator('.submitted-evidence').count(),0);
  console.log('PASS: all32 cases render; classification-only earns100; review teaches decisive clues and safe next actions');
- await restart(p);for(let i=0;i<10;i++)await judgement(p);for(let i=0;i<2;i++)await judgement(p,{correct:false});await p.clock.fastForward(121000);assert.match(await p.locator('.score-circle strong').innerText(),/^25/);assert.match(await p.locator('.timeout-note').innerText(),/20 emails were unanswered/);
+ await restart(p);for(let i=0;i<10;i++)await judgement(p);for(let i=0;i<2;i++)await judgement(p,{correct:false});await p.clock.fastForward(61000);assert.match(await p.locator('.score-circle strong').innerText(),/^25/);assert.match(await p.locator('.timeout-note').innerText(),/20 emails were unanswered/);
  console.log('PASS: partial timeout scores correct minus wrong; unanswered zero');
  for(const v of [{width:1366,height:768},{width:1024,height:768},{width:768,height:1024},{width:390,height:844},{width:360,height:800}]){
   await p.setViewportSize(v);await restart(p);assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);

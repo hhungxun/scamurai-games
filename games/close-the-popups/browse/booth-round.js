@@ -112,6 +112,7 @@
     }
     const out = {version:1,id:v.id,taskId:v.taskId,seed:v.seed,mode:v.mode,lang:v.lang,status:v.status,createdAt:v.createdAt,updatedAt:v.updatedAt,startedAt:v.startedAt,deadline:v.deadline,endedAt:v.endedAt,reason:v.reason,judgement:v.judgement};
     if (typeof v.usedSecondHint === 'boolean') out.usedSecondHint = v.usedSecondHint;
+    if (v.guaranteed === true) out.guaranteed = true;
     out.evidence = v.status === 'armed' ? emptyEvidence(v.taskId) : normalizeEvidence(v.evidence,out);
     return out;
   };
@@ -124,6 +125,7 @@
       // A cached renderer may still hold a record from before the hint was used.
       const authoritative=readRecord(record.id);
       if(authoritative?.usedSecondHint===true)record.usedSecondHint=true;
+      if(authoritative?.guaranteed===true)record.guaranteed=true;
       sessionStorage.setItem(PREFIX+record.id,JSON.stringify(record)); return true;
     } catch { return false; }
   };
@@ -405,7 +407,14 @@
     bar.innerHTML=`<div class="br-booth-time"><small>${translate('TIME LEFT','剩余时间')}</small><strong data-booth-clock role="timer" aria-live="off">1:00</strong></div><div class="br-booth-current"><span>${record.mode==='clean'?translate('CLEAN ROUND','无广告挑战'):translate('AD CHALLENGE','广告挑战')}</span><b>${escape(text(task.title))}</b>${task.badge?`<strong class="br-booth-badge">${escape(text(task.badge))}</strong>`:""}</div><div class="br-booth-actions"><button type="button" data-booth-task>${translate('View task','查看任务')}</button><button type="button" data-booth-submit>${translate('Submit','交卷')}</button><button type="button" data-booth-void aria-label="${translate('Staff: void this round','工作人员：作废本轮')}">${translate('Staff','工作人员')}</button></div>`;
     dialog=document.createElement('dialog');dialog.id='br-booth-task-dialog';dialog.setAttribute('aria-labelledby','br-booth-dialog-title');
     const goals=task.steps || task.goals || [];
-    dialog.innerHTML=`<div class="br-booth-dialog-inner"><div class="br-booth-dialog-kicker">${translate('YOUR TASK','本轮任务')}</div><h1 id="br-booth-dialog-title">${escape(text(task.title))}</h1><p>${taskText(task.brief)}</p><ul class="br-booth-conditions">${goals.map(x=>`<li><span aria-hidden="true">□</span> ${taskText(x)}</li>`).join('')}</ul>${task.hint?`<details class="br-booth-start-hint"><summary>${translate('Hint','提示')}</summary><p>${taskText(task.hint)}</p></details>`:''}${task.hint2?`<button type="button" data-booth-second-hint aria-expanded="false" aria-controls="br-booth-hint2">${translate('Another hint','再看一个提示')}</button><p id="br-booth-hint2" hidden>${taskText(task.hint2)}</p>`:''}<p class="br-booth-dialog-rule">${translate('The timer keeps running while you read this or switch tabs. A staff member checks the result.','看提示或切换标签页时，倒计时都不会停。结果由工作人员核对。')}</p><button type="button" data-booth-dialog-close>${translate('Back to the task','回到任务')}</button></div>`;
+    // Guaranteed warm-up: tap this task's own bar label among three. Never timed, retryable, worth the 20-point floor.
+    const warmupOwn=text(task.badge||task.title),warmupOthers=(window.BROWSE_BOOTH_TASKS||[]).filter(t=>t.id!==task.id&&t.badge).map(t=>text(t.badge)).filter(x=>x!==warmupOwn);
+    const warmupPos=parseInt(record.seed.slice(2,4),16)%3,warmupOffset=parseInt(record.seed.slice(4,6),16)%Math.max(1,warmupOthers.length-1);
+    const warmupChoices=[warmupOthers[warmupOffset],warmupOthers[(warmupOffset+1)%warmupOthers.length]].filter(x=>x!==undefined);
+    warmupChoices.splice(Math.min(warmupPos,warmupChoices.length),0,warmupOwn);
+    const warmupDone=record.guaranteed===true;
+    const warmupMarkup=`<section class="br-booth-warmup" aria-labelledby="br-booth-warmup-title"><div class="br-booth-dialog-kicker">${translate('WARM-UP · 20 POINTS GUARANTEED','热身 · 保底20分')}</div><h2 id="br-booth-warmup-title">${translate('Tap the label shown in the top bar of this page','点击页面顶部栏里显示的任务标签')}</h2><div class="br-booth-warmup-options">${warmupChoices.map(x=>`<button type="button" data-booth-warmup="${escape(x)}"${warmupDone?' disabled':''}>${escape(x)}</button>`).join('')}</div><p class="br-booth-warmup-status" role="status" aria-live="polite">${warmupDone?translate('Warm-up done ✓ 20 points secured.','热身完成 ✓ 已保底20分。'):''}</p></section>`;
+    dialog.innerHTML=`<div class="br-booth-dialog-inner"><div class="br-booth-dialog-kicker">${translate('YOUR TASK','本轮任务')}</div><h1 id="br-booth-dialog-title">${escape(text(task.title))}</h1><p>${taskText(task.brief)}</p><ul class="br-booth-conditions">${goals.map(x=>`<li><span aria-hidden="true">□</span> ${taskText(x)}</li>`).join('')}</ul>${task.hint?`<details class="br-booth-start-hint"><summary>${translate('Hint','提示')}</summary><p>${taskText(task.hint)}</p></details>`:''}${task.hint2?`<button type="button" data-booth-second-hint aria-expanded="false" aria-controls="br-booth-hint2">${translate('Another hint','再看一个提示')}</button><p id="br-booth-hint2" hidden>${taskText(task.hint2)}</p>`:''}${warmupMarkup}<p class="br-booth-dialog-rule">${translate('The timer keeps running while you read this or switch tabs. A staff member checks the result.','看提示或切换标签页时，倒计时都不会停。结果由工作人员核对。')}</p><button type="button" data-booth-dialog-close>${translate('Back to the task','回到任务')}</button></div>`;
     dialog.querySelector('[data-booth-second-hint]')?.addEventListener('click',()=>{
       if(!canAct())return;
       const fresh=current();if(!fresh)return;
@@ -414,6 +423,16 @@
       dialog.querySelector('#br-booth-hint2').hidden=false;
       dialog.querySelector('[data-booth-second-hint]').setAttribute('aria-expanded','true');
     });
+    dialog.querySelectorAll('[data-booth-warmup]').forEach(btn=>btn.addEventListener('click',()=>{
+      const status=dialog.querySelector('.br-booth-warmup-status');
+      if(btn.dataset.boothWarmup!==warmupOwn){status.textContent=translate('Not that one. Look at the top bar and try again.','不是这个。请看页面顶部栏，再试一次。');return;}
+      if(!canAct())return;
+      const fresh=current();if(!fresh)return;
+      fresh.guaranteed=true;fresh.updatedAt=Math.max(fresh.updatedAt,Date.now());
+      if(!store(fresh))return;
+      dialog.querySelectorAll('[data-booth-warmup]').forEach(b=>{b.disabled=true;});
+      status.textContent=translate('Warm-up done ✓ 20 points secured.','热身完成 ✓ 已保底20分。');
+    }));
     document.body.append(bar,dialog);document.documentElement.classList.add('br-booth-running');document.documentElement.style.setProperty('--br-booth-offset','56px');
     bar.querySelector('[data-booth-task]').addEventListener('click',()=>{if(!canAct()||modalActive())return;reminder?.remove();reminder=null;emit('browse:booth-dialog',{open:true});dialog.showModal();});
     bar.querySelector('[data-booth-submit]').addEventListener('click',()=>{if(!modalActive()&&canAct())end('submitted');});

@@ -1,10 +1,10 @@
-# Phishing Fishing — Scamurai Station 1
+# Phishing Fishing — Scamurai Station 3
 
 An investigation game: inspect an email and choose Legitimate or Phishing to submit immediately. It uses the event's registered Participants, best-Round Station Scores, leaderboard and Exit Survey.
 
 ## Event rules
 
-A scored Round deals ten messages, five Phishing and five Legitimate. Both classes have 2 Easy, 2 Medium and 1 Hard case. There is one absolute **120-second** deadline. The bank contains **32 cases**, including paired messages with the same sender, subject or destination but different requested actions or permissions.
+A scored Round deals ten messages, five Phishing and five Legitimate. Both classes have 2 Easy, 2 Medium and 1 Hard case. There is one absolute **60-second** deadline. The bank contains **32 cases**, including paired messages with the same sender, subject or destination but different requested actions or permissions.
 
 For each classification:
 
@@ -12,7 +12,7 @@ For each classification:
 - Wrong label: **−10**.
 - Unanswered: **0**.
 
-Final score is floored at 0 and displayed/submitted out of 100. The best completed Station 1 Round counts toward the event total. Existing event tie-break duration still includes time from participant confirmation through saving. All correct earns 100; blindly choosing one label throughout a balanced deal earns 0.
+Final score is floored at 0 and displayed/submitted out of 100. The best completed Station 3 Round counts toward the event total. Existing event tie-break duration still includes time from participant confirmation through saving. All correct earns 100; blindly choosing one label throughout a balanced deal earns 0.
 
 ## How to investigate
 
@@ -26,7 +26,7 @@ Final score is floored at 0 and displayed/submitted out of 100. The best complet
 
 [Public demo](https://scamurai.physicsxmum.my/games/phishing-fishing/?demo=1): no PIN or registration. It offers the full 32-case bank, normalizes its practice score to 100 and never submits event data. Offline `game.html` also runs practice.
 
-For event play, open `/games/phishing-fishing/` on two or more Station 1 laptops. Staff enter the same Station 1 PIN once per browser; Participants select their existing registered name or Student/Guest ID. Each laptop owns its own Round. Different Participants can play concurrently; the same Participant cannot start two active Rounds at Station 1. Use **Next participant** after the saved-score confirmation. **My scores**, **Leaving** and **Exit survey** use the shared event flows. **Cancel round** is for wrong identity or equipment trouble.
+For event play, open `/games/phishing-fishing/` on two or more Station 3 laptops. Staff enter the same Station 3 PIN once per browser; Participants select their existing registered name or Student/Guest ID. Each laptop owns its own Round. Different Participants can play concurrently; the same Participant cannot start two active Rounds at Station 3. Use **Next participant** after the saved-score confirmation. **My scores**, **Leaving** and **Exit survey** use the shared event flows. **Cancel round** is for wrong identity or equipment trouble.
 
 Reload preserves the exact deal, submitted answers, verification state and original deadline. Lost score responses retry the frozen score on the same Round; finishing is idempotent. Pending finishes cannot be cancelled or replaced. Remote cancellation releases the original laptop when it reconciles the finish. Corrupt storage fails closed.
 
@@ -47,4 +47,4 @@ python3 server/test/e2e_popup_draw.py
 
 Pure checks cover 1,000 balanced deals, all scored classification combinations, no guaranteed repeated easy legitimate pair, content/indicator/evidence keys, grading, verification, legacy snapshots and deadlines. The desktop test uses temporary data and independent browser contexts for multi-laptop ownership, classification scoring, reload recovery, score retries, cancellation, survey and no-write demos.
 
-With a Node Playwright installation, run `node games/phishing-fishing/tests/browser.test.cjs`. `PLAYWRIGHT_PATH` and `BROWSER_PATH` can point at existing installations. It covers all 32 cases, hidden verification, immediate classification, absence of evidence controls, partial-timeout scoring, keyboard/touch inspection and five desktop/mobile layouts. The accepted 120-second budget and case difficulty should still be tried with Participants on the event hardware.
+With a Node Playwright installation, run `node games/phishing-fishing/tests/browser.test.cjs`. `PLAYWRIGHT_PATH` and `BROWSER_PATH` can point at existing installations. It covers all 32 cases, hidden verification, immediate classification, absence of evidence controls, partial-timeout scoring, keyboard/touch inspection and five desktop/mobile layouts. The accepted 60-second budget and case difficulty should still be tried with Participants on the event hardware.

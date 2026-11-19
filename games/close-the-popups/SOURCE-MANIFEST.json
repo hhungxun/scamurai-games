@@ -610,6 +610,10 @@
       "wallpapers/wallpaper.html"
     ],
     "modified_after_copy": [
+      "browse/booth-round.css",
+      "browse/booth-round.js",
+      "browse/booth-score.js",
+      "browse/booth.css",
       "browse/booth.html",
       "browse/booth.js",
       "docs/MINUTE-BOOTH.md"

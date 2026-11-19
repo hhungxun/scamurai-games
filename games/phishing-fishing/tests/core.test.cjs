@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const bank=require('../emails.js'),config=require('../config.js');
 const {Round,selectQuestions,validateBank,evidenceChoices}=require('../game-core.js');
-validateBank(bank,config);assert.equal(bank.length,32);assert.equal(config.roundSeconds,120);
+validateBank(bank,config);assert.equal(bank.length,32);assert.equal(config.roundSeconds,60);
 let seed=7314;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
 const orders=new Set(),seen=new Set(),easyLegit=new Set();
 for(let i=0;i<1000;i++){
@@ -19,7 +19,7 @@ function play(a,c,settings=config){
   if(i%2===0)assert.ok(r.verify(q.id));
   assert.equal(r.answer(q.id,kind),true);assert.equal(r.answer(q.id,kind),false,'duplicate answer rejected');
  }
- if(r.status!=='finished'){now=121010;r.expire()}
+ if(r.status!=='finished'){now=61010;r.expire()}
  const out=r.results();assert.equal(out.correct,c);assert.equal(out.incorrect,a-c);
  assert.equal(out.score,Math.round(Math.max(0,(c-(a-c))*100/settings.roundQuestions)*10)/10);
  assert.deepEqual(Round.restore(bank,settings,r.snapshot(),{now:()=>now}).results(),out);return out;
@@ -35,7 +35,7 @@ const legacy=structuredClone(saved);legacy.version=2;legacy.draft={classificatio
 assert.equal(Round.restore(bank,config,legacy,{now:()=>now}).snapshot().version,3);
 r.answer(q.id,q.classification);const legacyAnswered=r.snapshot();legacyAnswered.version=2;legacyAnswered.answers[0].evidenceId='subject';
 assert.deepEqual(Round.restore(bank,config,legacyAnswered).answers[0],{classification:q.classification});
-now=121010;assert.equal(restored.answer(q.id,q.classification),false);assert.equal(restored.results().timeUsed,120);assert.equal(restored.endedAt,121000);
+now=61010;assert.equal(restored.answer(q.id,q.classification),false);assert.equal(restored.results().timeUsed,60);assert.equal(restored.endedAt,61000);
 const oldFinished=restored.snapshot();oldFinished.version=2;assert.throws(()=>Round.restore(bank,config,oldFinished));
 for(const mutate of [d=>d.version=1,d=>d.questionIds[1]=d.questionIds[0],d=>d.answers[2]={classification:'phishing'},d=>d.verified[0]='yes',d=>d.lastElapsed=-1]){const d=structuredClone(saved);mutate(d);assert.throws(()=>Round.restore(bank,config,d))}
 console.log('PASS: verification/deadline persist; active v2 migrates labels; historical v2 scores protected; late clicks/corrupt snapshots rejected');

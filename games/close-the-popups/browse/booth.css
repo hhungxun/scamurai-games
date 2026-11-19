@@ -147,7 +147,7 @@ h1, h2, h3 { font-family: var(--display); line-height: 1.08; font-weight: 900; l
 .booth-score-total { display: flex; align-items: baseline; gap: 10px; }
 .booth-score-total strong { font: 900 clamp(3rem, 7vw, 4.6rem)/1 var(--display); font-variant-numeric: tabular-nums; }
 .booth-score-total span { font-size: 1.1rem; font-weight: 800; color: var(--muted); }
-.booth-score-split { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.booth-score-split { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 0; }
 .booth-score-split > div { padding: 12px 14px; border: 3px solid var(--ink); background: var(--cream); }
 .booth-score-split dt { font-size: .74rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
 .booth-score-split dd { margin: 4px 0 0; font: 900 1.6rem/1.2 var(--display); font-variant-numeric: tabular-nums; }

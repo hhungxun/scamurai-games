@@ -99,7 +99,7 @@
             <div>${icon("trophy")}<span><strong>100 points</strong><small>A perfect score</small></span></div>
           </div>
           <button class="button primary start-button" id="start-game" type="button">Start Game ${icon("arrow")}</button>
-          <p class="scoring-note">${questionCount} emails · +${pointsPerEmail} for a correct classification, −${pointsPerEmail} for a wrong classification. Unanswered: 0. Final score cannot go below 0. ${demo ? "Unscored demo: no event result is saved." : "Your best completed Station 1 score counts."}</p>
+          <p class="scoring-note">${questionCount} emails · +${pointsPerEmail} for a correct classification, −${pointsPerEmail} for a wrong classification. Unanswered: 0. Final score cannot go below 0. ${demo ? "Unscored demo: no event result is saved." : "Your best completed Station 3 score counts."}</p>
           <p class="start-note">Use Verify independently when you need the service record. Checking is free; the timer keeps running. A familiar sender alone proves nothing.</p>
         </div>
         <div class="hero-art" aria-hidden="true">

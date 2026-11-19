@@ -93,7 +93,7 @@ Both use Python Playwright with Chromium installed; the camera-feed test also ne
 | Game | Folder | Made by | How to play |
 |---|---|---|---|
 | *(template)* | `games/_template/` | — | Copy this to start |
-| Phishing Fishing (Station 1) | `games/phishing-fishing/` | ZYH | Investigate 10 balanced emails in 120 seconds; classify directly; +10 correct, −10 wrong, minimum 0 |
+| Phishing Fishing (Station 1) | `games/phishing-fishing/` | ZYH | Investigate 10 balanced emails in 60 seconds; classify directly; +10 correct, −10 wrong, minimum 0 |
 | Close the Popups (Station 2) | `games/close-the-popups/` | Gary | A randomly assigned desktop task in 60 seconds, with misleading popups; shared participant selection, best score and exit survey |
 | Scan Me If You Can (Station 5) | `games/scan-me-if-you-can/` | Hung Xun | Game Master runs many players at once from one laptop; each scans a Join QR, then 8 of the 25 numbered board QRs (a fresh deal every round) and judges each site REAL or FAKE in 12 s using the in-game QR scanner |
 
