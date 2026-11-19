@@ -1,45 +1,38 @@
 # Station 2 scoring / 第 2 站计分
 
-Approved event calibration: **task 60 + speed 20 + safe interaction 20 = 100**. The displayed total is submitted unchanged with `maxScore: 100`. Staff Practice is unscored. A cancelled Round never counts.
+**Task 40 + speed 40 + safe interaction 20 = 100.** The host submits the total shown on the results screen with `maxScore: 100`. Staff Practice and cancelled rounds stay off the event leaderboard.
 
-活动计分：**任务 60＋速度 20＋安全操作 20＝100**。显示总分原样提交，工作人员练习与作废轮次不计入活动。
+**任务 40 分＋速度 40 分＋安全操作 20 分，满分 100。** 活动成绩以结算页显示的总分为准。工作人员练习和作废轮次不计入排行榜。
 
-Let `p` be the fraction of automatically verifiable task checks completed. Only `met === true` counts. An empty or unavailable checklist gives `p = 0`. The search task also requires its recorded sponsored-result avoidance condition; submission alone proves nothing. Sponsored-result avoidance only counts as progress once at least one positive task action is recorded.
+Let `p` be the fraction of automatic scoring checks passed. Only `met === true` counts. The search task gives credit for avoiding sponsored results once the player has also completed a positive task action.
 
 ```text
-task = round(60 × p)
-t = clamp(elapsed milliseconds, 0, 60000)
-curve = t <= 30000 ? 1 : 1 − log₂(t / 30000)
-speed = round(20 × p × curve)
-unsafeClicks = opened + blocked + native
-safeInteraction = clamp(round(20 × p) − 5 × unsafeClicks, 0, 20)
+task = max(10, round(40 × p)) if scoring checks exist, otherwise 0
+t = elapsed milliseconds, capped at 60000
+curve = 1 through 30000 ms, then 1 − log₂(t / 30000)
+speed = 20 + round(20 × p × curve) with valid timing, otherwise 0
+safeInteraction = clamp(10 + 2 × realCloses − fakeCloseClicks, 0, 20) with an ad log, otherwise 0
 total = task + speed + safeInteraction
 ```
 
-Every misleading-ad click has one recorded outcome: opened, blocked or native. A false-close/decoy click is already included in those outcomes and is not charged twice. Genuine closes, evasion chases and assisted closes remain observations; closing extra popups cannot erase deductions. Missing ad records earn zero safety credit. Missing or invalid timing earns zero speed credit.
+Each real close counts, including one made after the game reveals the close button. A fake-close click costs one point. Other ad clicks, close-button moves and reveals are recorded for review. With a recorded checklist, valid timing and an ad log, an untouched round earns 40 from the three starting scores.
 
-每次误点广告按 opened、blocked 或 native 中的一种结果计入，包括浏览器拦截的标签页。假关闭按钮已经包含在内，不重复扣分。真正关闭、闪避和辅助关闭仅作记录，不能抵消扣分。缺少广告记录不获安全分；无效计时不获速度分。
+有自动计分项时，任务分最低 10 分。速度有 20 分基础分，另按完成比例和用时给奖励。安全操作有广告记录时从 10 分起算，每正确关闭一次加 2 分（包括辅助关闭按钮），每误点一次假关闭扣 1 分。其他广告点击和闪避记录供复盘参考。计分项、计时和广告记录齐全时，即使没动手，本轮也有 40 分基础分。
 
 | Scenario | Task | Speed | Safe interaction | Total |
 |---|---:|---:|---:|---:|
-| No evidence, no warm-up, including timeout or many popup closes | 0 | 0 | 0 | 0 |
-| All evidence, safe, ≤30 seconds | 60 | 20 | 20 | 100 |
-| Half evidence, safe, ≤30 seconds | 30 | 10 | 10 | 50 |
-| All evidence, safe, 60-second timeout | 60 | 0 | 20 | 80 |
-| All evidence, ≤30 seconds, one misleading-ad click | 60 | 20 | 15 | 95 |
-| All evidence, ≤30 seconds, four or more misleading-ad clicks | 60 | 20 | 0 | 80 |
-| No evidence, warm-up completed | 0 | 0 | 0 | **20** (floor) |
+| No task checks passed and no ad interactions | 10 | 20 | 10 | 40 |
+| Half the checks, submitted within 30 seconds, no ad interactions | 20 | 30 | 10 | 60 |
+| All checks, submitted within 30 seconds, one real close | 40 | 40 | 12 | 92 |
+| All checks, submitted within 30 seconds, five real closes | 40 | 40 | 20 | 100 |
+| All checks at timeout, five real closes | 40 | 20 | 20 | 80 |
 
-## Guaranteed warm-up floor / 热身保底
+## Warm-up / 热身保底
 
-Every task dialog carries a simple warm-up: tap the label shown in the top bar of the page, from three choices. It is untimed, can be retried, and needs no search or browsing, so every participant can finish it. Completing it sets `round.guaranteed`. When the Round has ended (submitted or timed out), `total = max(task + speed + safeInteraction, 20)`. The 100-point cap, the weights and the zero for a skipped warm-up with no evidence are unchanged. A cancelled (void) Round never scores. Staff Practice stays unscored.
+After entering the task site, open **View task** and pick the label from the top bar. You can retry before the round ends. Completing the warm-up keeps the total at or above 20 on submission or timeout. If the regular total is already 20 or higher, that total stands.
 
-每道任务的说明窗口都附带一个简单热身：从三个选项中点击页面顶部栏显示的任务标签。热身不计时、可重试，无需搜索或浏览，人人都能完成。完成后，本轮结束（提交或超时）时 `总分 = max(任务＋速度＋安全操作, 20)`。满分仍为 100，权重不变；未做热身且无证据仍为 0。作废轮次不计分，工作人员练习仍不计分。
+进入任务网站后，点顶部栏的「查看任务」，在「热身 · 保底20分」里选出顶部栏显示的标签。倒计时结束前可以重试。完成后，提交或超时时，本轮总分至少是 20 分。原本已达 20 分的轮次按实际总分结算。
 
-The 60-second deadline starts when the scene is ready and continues through navigation, reloads, task reminders and other tabs. Speed measures submission or timeout, rather than an inferred first-completion timestamp. The shared leaderboard tie-break continues using server Round duration from participant confirmation to saved finish, including briefing and loading.
+The 60-second clock starts when the scene is ready and keeps running through the task dialog, navigation, reloads and tab switches. Speed is based on when the player submits or times out. The shared leaderboard uses server round duration as its tie-break, from participant confirmation through the saved finish.
 
-Each scored Round draws one of all 13 tasks. Its assignment persists through refresh and redraw; manual task selection is reserved for Staff Practice. Random assignment removes selection of easier tasks for points, but does not prove that the tasks have equal difficulty. Before the event, use observed completion rates to assess whether the pool needs adjustment; these weights are an approved game rule, not an empirically validated skill test.
-
-The calibration shares the event’s 0–100 range and zero for no progress with Station 5. Its full-completion timeout value is 80; Station 5’s all-correct slow value approaches 60. The stations measure different actions and intentionally have different reward curves. There is no claim of matched score distributions without participant playtesting.
-
-See `docs/adr/0003-station2-event-scoring.md` at the repository root for the decision and trade-off. Run `node server/test/popup-score.js` for calibration and boundary assertions.
+Each scored round draws one of the 13 tasks. The assignment survives refresh and redraw. Staff can pick a task in Staff Practice. See the [decision record](../../../docs/adr/0003-station2-event-scoring.md) and run `node server/test/popup-score.js` to check the scoring boundaries.

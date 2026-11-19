@@ -32,7 +32,23 @@ def run():
      assert ending.locator('#score-number').inner_text()==str(f.evaluate('BROWSE_BOOTH_SCORE_LAST.total'))
      ending.get_by_role('button',name='View results').click()
      f.wait_for_selector('dialog[aria-label="Round ending"]',state='detached')
-    start();finish();print('PASS: first demo task starts and finishes')
+    start()
+    f=game(); deadline=f.evaluate('BROWSE_BOOTH.list()[0].deadline')
+    label=f.locator('.br-booth-badge').inner_text()
+    f.locator('#br-booth-bar [data-booth-task]').click()
+    options=f.locator('[data-booth-warmup]')
+    assert options.count()==3
+    f.locator('[data-booth-warmup]').filter(has_not_text=label).first.click()
+    assert 'try again' in f.locator('.br-booth-warmup-status').inner_text()
+    f.get_by_role('button',name=label,exact=True).click()
+    assert f.evaluate('BROWSE_BOOTH.list()[0].guaranteed') is True
+    assert f.evaluate('BROWSE_BOOTH.list()[0].deadline')==deadline
+    f.locator('[data-booth-dialog-close]').click()
+    finish()
+    score=game().evaluate('BROWSE_BOOTH_SCORE_LAST')
+    assert score['guaranteed']=={'done':True,'floor':20,'applied':False}
+    assert score['total']==40,score
+    print('PASS: first demo round records the warm-up without resetting the clock or adding 20 points')
     assert page.evaluate("JSON.parse(sessionStorage.getItem('close-popups:demo:v1:practice')).status")=='ended'
     # A returning visitor can use the game brand to choose another task.
     game().locator('.booth-brand').click();game().wait_for_selector('#booth-random')

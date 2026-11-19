@@ -94,10 +94,10 @@ def run():
                 page.reload()
                 page.wait_for_function("JSON.parse(sessionStorage.getItem('close-popups:station2:v1')).status==='saved'")
                 saved = state()
-                assert saved['score'] == saved['result']['pct'] == calls[0]['score'] == 0
+                assert saved['score'] == saved['result']['pct'] == calls[0]['score'] == 40
                 profile = api.ok('GET', '/api/participant/me', participant=people['POP001']['participantToken'])
                 assert profile['stations'][1]['score'] == saved['score']
-                assert profile['stations'][1]['name'] == 'Close the Popups'
+                assert profile['stations'][1]['name'] == 'Close the Pop-ups'
                 assert len(api.ok('GET', '/api/rounds/open', pin='5002')) == 0
                 print('PASS: displayed score equals participant score; lost finish response retries idempotently')
 
@@ -129,18 +129,21 @@ def run():
                 select('POP004'); start(movie=True)
                 frame().locator('[data-m-save="sintel"]').first.click(force=True)
                 frame().locator('[data-m-save="elephants-dream"]').first.click(force=True)
+                frame().locator('.br-interrupt:not([inert]) [data-br-close]:visible').first.click(timeout=8000)
                 frame().locator('[data-booth-submit]').click(force=True)
                 page.wait_for_function("JSON.parse(sessionStorage.getItem('close-popups:station2:v1')).status==='saved'")
-                assert state()['score'] == 100, state()
-                print('PASS: actual task controls earn 100; assigned task cannot be rerolled')
+                score = frame().evaluate('BROWSE_BOOTH_SCORE_LAST')
+                assert (score['task']['score'], score['time']['score'], score['resilience']['score']) == (40, 40, 12), score
+                assert state()['score'] == score['total'] == 92, state()
+                print('PASS: actual task controls and one real popup close earn 92; assignment cannot be rerolled')
                 for n, points in [(1,100), (3,100), (4,100), (5,60)]:
                     r = api.ok('POST', '/api/rounds', {'participantId':'POP004'}, pin=f'500{n}')
                     api.ok('POST', f'/api/rounds/{r["roundId"]}/finish', {'score':points,'maxScore':100}, pin=f'500{n}')
                 profile = api.ok('GET', '/api/participant/me', participant=people['POP004']['participantToken'])
-                assert profile['total'] == 460 and len(profile['stationsDone']) == 5
+                assert profile['total'] == 452 and len(profile['stationsDone']) == 5
                 leaderboard = api.ok('GET', '/api/leaderboard')
-                assert any(row['total'] == 460 for row in leaderboard['rows'])
-                print('PASS: Station 2 contributes exactly 100 to the five-station leaderboard total')
+                assert any(row['total'] == 452 for row in leaderboard['rows'])
+                print('PASS: Station 2 contributes exactly 92 to the five-station leaderboard total')
 
                 # Every shipped task has a reachable scene and local runtime dependencies.
                 probe = context.new_page(); probe.on('response', lambda r: missing.append(r.url) if r.status == 404 else None); probe.goto(BASE + '/games/close-the-popups/browse/booth.html?lang=en')

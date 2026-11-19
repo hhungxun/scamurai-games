@@ -407,7 +407,7 @@
     bar.innerHTML=`<div class="br-booth-time"><small>${translate('TIME LEFT','剩余时间')}</small><strong data-booth-clock role="timer" aria-live="off">1:00</strong></div><div class="br-booth-current"><span>${record.mode==='clean'?translate('CLEAN ROUND','无广告挑战'):translate('AD CHALLENGE','广告挑战')}</span><b>${escape(text(task.title))}</b>${task.badge?`<strong class="br-booth-badge">${escape(text(task.badge))}</strong>`:""}</div><div class="br-booth-actions"><button type="button" data-booth-task>${translate('View task','查看任务')}</button><button type="button" data-booth-submit>${translate('Submit','交卷')}</button><button type="button" data-booth-void aria-label="${translate('Staff: void this round','工作人员：作废本轮')}">${translate('Staff','工作人员')}</button></div>`;
     dialog=document.createElement('dialog');dialog.id='br-booth-task-dialog';dialog.setAttribute('aria-labelledby','br-booth-dialog-title');
     const goals=task.steps || task.goals || [];
-    // Guaranteed warm-up: tap this task's own bar label among three. Never timed, retryable, worth the 20-point floor.
+    // Pick the top-bar label to secure the 20-point floor. The round clock keeps running.
     const warmupOwn=text(task.badge||task.title),warmupOthers=(window.BROWSE_BOOTH_TASKS||[]).filter(t=>t.id!==task.id&&t.badge).map(t=>text(t.badge)).filter(x=>x!==warmupOwn);
     const warmupPos=parseInt(record.seed.slice(2,4),16)%3,warmupOffset=parseInt(record.seed.slice(4,6),16)%Math.max(1,warmupOthers.length-1);
     const warmupChoices=[warmupOthers[warmupOffset],warmupOthers[(warmupOffset+1)%warmupOthers.length]].filter(x=>x!==undefined);
