@@ -1,6 +1,6 @@
 # Phishing Fishing — operator case guide
 
-Event and practice rounds draw 10 balanced emails from 32 cases and run for 60 seconds. Correct answers earn 10, wrong answers deduct 10, and unanswered emails earn 0. The final score is floored at 0. Verification is voluntary and has no deduction. Practice scores are excluded from event results.
+Event and practice rounds draw 10 balanced emails from 32 cases and run for 60 seconds. Correct answers earn 10 points. Wrong and unanswered emails earn 0 points. Verification is optional and does not affect the score. Practice scores are excluded from event results.
 
 | Case | Label | Difficulty | Post-round decisive clue fields |
 |---|---|---|---|

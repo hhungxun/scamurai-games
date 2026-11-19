@@ -95,7 +95,7 @@ Both use Python Playwright with Chromium installed; the camera-feed test also ne
 | *(template)* | `games/_template/` | — | Copy this to start |
 | Spot the Fake Cash (Station 1) | `games/spot-the-fake-cash/` | — | Inspect five training samples in 60 seconds; +20 correct, −20 wrong, unanswered 0, floor 0, max 100 |
 | Close the Popups (Station 2) | `games/close-the-popups/` | Gary | A randomly assigned desktop task in 60 seconds, with misleading popups; shared participant selection, best score and exit survey |
-| Phishing Fishing (Station 3) | `games/phishing-fishing/` | ZYH | Investigate 10 balanced emails in 60 seconds; classify directly; +10 correct, −10 wrong, minimum 0 |
+| Phishing Fishing (Station 3) | `games/phishing-fishing/` | ZYH | Investigate 10 balanced emails in 60 seconds. Each correct answer earns 10 points. Wrong and unanswered emails earn 0. |
 | Real or AI? (Station 4) | `games/real-or-ai/` | tianxingjian2424-dotcom | 60-second quiz: judge 10 photos and voice clips as Real or AI (imported from github.com/tianxingjian2424-dotcom/Real-or-AI); +10 correct, −10 wrong, unanswered 0, minimum 0, max 100 |
 | Scan Me If You Can (Station 5) | `games/scan-me-if-you-can/` | Hung Xun | Game Master runs many players at once from one laptop; each scans a Join QR, then 8 of the 25 numbered board QRs (a fresh deal every round) and judges each site REAL or FAKE in 12 s using the in-game QR scanner |
 

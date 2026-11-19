@@ -43,8 +43,9 @@ async function restart(p){await p.locator('.new-player').first().click({force:tr
  assert.equal(await p.locator('.field-badges li').count(),lessons.size);
  console.log('PASS: offline play deals ten unique emails, five of each label, and ends after the tenth answer');
  await screenshot(p,'catch-report');
- await restart(p);for(let i=0;i<3;i++)await judgement(p);for(let i=0;i<2;i++)await judgement(p,{correct:false});await p.clock.fastForward(61000);assert.match(await p.locator('.score-circle strong').innerText(),/^10\s*\/\s*100$/);assert.match(await p.locator('.timeout-note').innerText(),/5 emails were unanswered/);
- console.log('PASS: partial timeout scores correct minus wrong; unanswered zero');
+ await restart(p);for(let i=0;i<3;i++)await judgement(p);for(let i=0;i<2;i++)await judgement(p,{correct:false});await p.clock.fastForward(61000);assert.match(await p.locator('.score-circle strong').innerText(),/^30\s*\/\s*100$/);assert.match(await p.locator('.timeout-note').innerText(),/5 emails were unanswered/);
+ assert.match(await p.locator('.score-breakdown').innerText(),/3 correct × 10 = 30 \/ 100\. Wrong and unanswered emails earn 0 points/);
+ console.log('PASS: three correct, two wrong and five unanswered display 30 points');
  assert.equal(await p.locator('.catch-fish.escaped,.catch-fish.miscast').count(),2);assert.equal(await p.locator('.catch-fish.untouched').count(),5);
  for(const v of [{width:1366,height:768},{width:1024,height:768},{width:768,height:1024},{width:390,height:844},{width:360,height:800}]){
   await p.setViewportSize(v);await restart(p);assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);
@@ -120,10 +121,14 @@ async function restart(p){await p.locator('.new-player').first().click({force:tr
  assert.notEqual(await escaped.locator('.catch-symbol').innerHTML(),await safe.locator('.catch-symbol').innerHTML());
  assert.equal(await escaped.evaluate(el=>getComputedStyle(el).borderStyle),'dashed');
  assert.equal(await safe.evaluate(el=>getComputedStyle(el).borderStyle),'solid');
- assert.deepEqual(await h.evaluate(()=>finishes.map(f=>f.score)),[60]);
+ assert.deepEqual(await h.evaluate(()=>finishes.map(f=>f.score)),[80]);
  await screenshot(h,'event-results');
  if(process.env.ARTIFACT_DIR)await game().locator('.catch-report').screenshot({path:path.join(process.env.ARTIFACT_DIR,'event-catch.png')});
- await h.reload();await h.frameLocator('iframe').locator('.catch-report').waitFor();assert.match(await game().locator('.score-circle strong').innerText(),/^60/);
+ await h.reload();await h.frameLocator('iframe').locator('.catch-report').waitFor();assert.match(await game().locator('.score-circle strong').innerText(),/^80/);
+ await h.evaluate(()=>{const snapshot=JSON.parse(sessionStorage.getItem('test-round'));snapshot.version=3;sessionStorage.setItem('test-round',JSON.stringify(snapshot))});
+ await h.reload();await h.frameLocator('iframe').locator('.catch-report').waitFor();
+ assert.match(await game().locator('.score-circle strong').innerText(),/^60/);
+ assert.match(await game().locator('.score-breakdown').innerText(),/Previous scoring rules/);
  await h.evaluate(()=>{const snapshot=JSON.parse(sessionStorage.getItem('test-round'));snapshot.questionIds[0]='penguin-qr';sessionStorage.setItem('test-round',JSON.stringify(snapshot))});
  await h.reload();await h.frameLocator('iframe').locator('.setup-error').waitFor();assert.equal(await h.evaluate(()=>finishes.length),0);
  const oldRound=new Round(bank,{...config,roundQuestions:bank.length});oldRound.start();

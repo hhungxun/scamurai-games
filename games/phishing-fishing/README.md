@@ -9,10 +9,10 @@ Every Round deals ten messages, five Phishing and five Legitimate. Both classes 
 For each classification:
 
 - Correct classification: **+10**.
-- Wrong label: **−10**.
+- Wrong label: **0**.
 - Unanswered: **0**.
 
-Final score is floored at 0 and displayed/submitted out of 100. The best completed Station 3 Round counts toward the event total. Existing event tie-break duration still includes time from participant confirmation through saving. All correct earns 100; blindly choosing one label throughout a balanced deal earns 0.
+The score is ten points per correct classification, out of 100. The best completed Station 3 Round counts toward the event total. Existing event tie-break duration includes time from participant confirmation through saving. A full round with one label on every email earns 50 because the deal has five of each label.
 
 ## How to investigate
 
@@ -28,7 +28,7 @@ The game keeps Scamurai's paper, charcoal and red colours. After an answer, the 
 
 The result screen shows scams caught, safe mail released, scams escaped, safe mail miscast and unchecked mail. Choose any card to open and focus its email explanation. Field badges recognise correctly identified techniques, such as excessive permissions or unsafe attachments; they do not add points or affect event records.
 
-Eight cases include light campus humour across both classifications: a lost penguin, digital attendance assistant, cat mascot election, supper draw, study-room booking, desk-duck receipt and internship interview. Humour is not a clue. All 32 cases, classification totals, difficulty buckets, the 60-second deadline and scoring rules are retained.
+Eight cases include light campus humour across both classifications: a lost penguin, digital attendance assistant, cat mascot election, supper draw, study-room booking, desk-duck receipt and internship interview. Humour is not a clue.
 
 Changed scenarios have new IDs. An unfinished event deal containing a retired case requires explicit staff cancellation; it is not silently regraded. A saved demo containing retired cases restarts without writing event data. Historical completed server scores stay unchanged.
 
@@ -40,7 +40,7 @@ For event play, open `/games/phishing-fishing/` on two or more Station 3 laptops
 
 Reload preserves the exact deal, submitted answers, verification state and original deadline. Lost score responses retry the frozen score on the same Round; finishing is idempotent. Pending finishes cannot be cancelled or replaced. Remote cancellation releases the original laptop when it reconciles the finish. Corrupt storage fails closed.
 
-The exercise uses snapshot version3. Active version2 Rounds migrate submitted labels and verification without extending the deadline; unsubmitted evidence drafts are discarded. Earlier-format demos restart safely. Finished older scored Rounds retain their historical scores and can hand over through Next participant. Existing completed server scores are not rewritten. Older incompatible unfinished Rounds require staff cancellation.
+Version 4 snapshots use the no-penalty scoring rule. Compatible unfinished version 2 or 3 event rounds carry their classifications, verification and deadline into the new rule. A finished version 3 round displays its original score, including when a save is pending. Older incompatible demos restart, and older incompatible unfinished event rounds require staff cancellation.
 
 All case notes are fictional training records, not real information about Participants. Every address uses reserved `.example` domains. Attachments, QR labels and destination controls are inert; no secrets are collected and no real remote-access tool is supplied.
 

@@ -65,11 +65,12 @@
     if (!initial && host) { host.next(window); return; }
     clearWork();
     let saved = initial && host ? host.snapshot(window) : null;
-    if (demo && saved && saved.version !== 3) {
+    const currentFormat = [3, 4].includes(saved?.version);
+    if (demo && saved && !currentFormat) {
       if(host.restartDemo)host.restartDemo(window);else window.parent.location.reload();
       return;
     }
-    if (saved && (saved.version !== 3 && !(saved.version === 2 && saved.status !== 'finished'))) {
+    if (saved && !currentFormat && !(saved.version === 2 && saved.status !== 'finished')) {
       main.innerHTML='<section class="setup-error"><h1>This exercise has been updated.</h1><p>This tab contains an earlier Round. Its saved score stays unchanged. Use Next participant if it is saved, or ask the Game Master to cancel an unfinished Round before starting the new exercise.</p></section>';
       return;
     }
@@ -109,7 +110,7 @@
             <div>${icon("trophy")}<span><strong>100 points</strong><small>A perfect score</small></span></div>
           </div>
           <button class="button primary start-button" id="start-game" type="button">Start Game ${icon("arrow")}</button>
-          <p class="scoring-note">${questionCount} emails · +${pointsPerEmail} for a correct classification, −${pointsPerEmail} for a wrong classification. Unanswered: 0. Final score cannot go below 0. ${demo ? "Unscored demo: no event result is saved." : "Your best completed Station 3 score counts."}</p>
+          <p class="scoring-note">${questionCount} emails · ${pointsPerEmail} points per correct answer. Wrong and unanswered emails earn 0 points. ${demo ? "Unscored demo: no event result is saved." : "Your best completed Station 3 score counts."}</p>
           <p class="start-note">Use Verify independently when you need the service record. Checking is free; the timer keeps running. A familiar sender alone proves nothing.</p>
         </div>
         <div class="hero-art fishing-hero" aria-hidden="true">
@@ -357,11 +358,16 @@
     const results = round.results();
     if (host) host.finish(window,round.snapshot(),results.score);
     const [title, message] = performanceMessage(results);
+    const earned = `${results.correct} correct × ${results.pointsPerEmail}`;
+    const finalScore = `<strong>${results.score} / ${results.maximum}</strong>`;
+    const scoreBreakdown = results.wrongAnswerPenalty
+      ? `Previous scoring rules: ${earned} − ${results.incorrect} wrong × ${results.wrongAnswerPenalty} = ${results.rawScore}. Final score: ${finalScore} (minimum 0).`
+      : `${earned} = ${finalScore}. Wrong and unanswered emails earn 0 points.`;
     main.className = "results-screen";
     main.innerHTML = `
       <div class="results-topline"><span class="eyebrow">THE INBOX CHALLENGE / ROUND COMPLETE</span><button class="button primary new-player" type="button">${icon("refresh")} New Player</button></div>
-      <section class="results-hero"><div class="score-circle" style="--score-angle:${results.score / results.maximum * 360}deg"><div><strong>${results.score}<span>/ ${results.maximum}</span></strong><small>YOUR SCORE</small></div></div><div class="results-copy"><span class="completion-label">${icon(results.correct === results.reviews.length ? "trophy" : "shield")} ${results.endReason === "timeout" ? "Time's up. Let's find the clues." : "Inbox checked. A little more awareness."}</span><h1 tabindex="-1">${title}</h1><p>${message}</p><div class="result-stats"><div><strong>${results.answered}</strong><small>Emails answered / ${questionCount}</small></div><div><strong>${(results.accuracy * 100).toFixed(1)}<span>%</span></strong><small>Label accuracy (${results.correct} right, ${results.incorrect} wrong)</small></div><div><strong>${results.timeUsed.toFixed(1)}<span>s</span></strong><small>Time used of ${esc(settings.roundSeconds)}s</small></div></div><p class="score-breakdown">${results.correct} correct × ${pointsPerEmail} − ${results.incorrect} wrong × ${pointsPerEmail} = <strong>${results.score} / 100</strong> (minimum 0). Unanswered emails earn 0. ${demo ? 'Demo only — this does not affect the event leaderboard.' : 'The same displayed score is submitted to your event record.'}</p></div></section>
-      ${results.unanswered ? `<div class="timeout-note">${icon("clock")} ${results.unanswered} email${results.unanswered === 1 ? " was" : "s were"} unanswered. Unanswered emails earn no points; wrong answers deduct ${pointsPerEmail} each.${results.answered ? "" : " No answers means zero points."}</div>` : ""}
+      <section class="results-hero"><div class="score-circle" style="--score-angle:${results.score / results.maximum * 360}deg"><div><strong>${results.score}<span>/ ${results.maximum}</span></strong><small>YOUR SCORE</small></div></div><div class="results-copy"><span class="completion-label">${icon(results.correct === results.reviews.length ? "trophy" : "shield")} ${results.endReason === "timeout" ? "Time's up. Let's find the clues." : "Inbox checked. A little more awareness."}</span><h1 tabindex="-1">${title}</h1><p>${message}</p><div class="result-stats"><div><strong>${results.answered}</strong><small>Emails answered / ${questionCount}</small></div><div><strong>${(results.accuracy * 100).toFixed(1)}<span>%</span></strong><small>Label accuracy (${results.correct} right, ${results.incorrect} wrong)</small></div><div><strong>${results.timeUsed.toFixed(1)}<span>s</span></strong><small>Time used of ${esc(settings.roundSeconds)}s</small></div></div><p class="score-breakdown">${scoreBreakdown} ${demo ? 'Practice score only.' : 'The displayed score counts toward your event result.'}</p></div></section>
+      ${results.unanswered ? `<div class="timeout-note">${icon("clock")} ${results.unanswered} email${results.unanswered === 1 ? " was" : "s were"} unanswered.</div>` : ""}
       ${catchReport(results)}
       <section class="answer-review" aria-labelledby="review-title"><div class="review-heading"><div><span class="eyebrow">THE DETAILS MAKE THE DIFFERENCE</span><h2 id="review-title">Review Answers</h2></div><span>Open an email to see the clues ${icon("chevron")}</span></div>${results.reviews.map(reviewCard).join("")}</section>
       <div class="takeaway"><span class="takeaway-icon">${icon("shield")}</span><div><strong>A familiar look is a clue. It isn't a guarantee.</strong><p>Sender addresses can be spoofed and genuine accounts compromised. Urgency, payment amounts and attachments do not automatically mean phishing. Inspect actual destinations, check permission requests, and verify through a known app, bookmark or contact. Never share passwords, PINs or one-time codes. The .example ending is used for every training message and is not a warning sign.</p></div></div>

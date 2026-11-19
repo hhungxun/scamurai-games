@@ -22,24 +22,46 @@ function play(a,c,settings=config){
  }
  if(r.status!=='finished'){now=61010;r.expire()}
  const out=r.results();assert.equal(out.correct,c);assert.equal(out.incorrect,a-c);
- assert.equal(out.score,Math.round(Math.max(0,(c-(a-c))*100/settings.roundQuestions)*10)/10);
+ assert.equal(out.score,Math.round(c*1000/settings.roundQuestions)/10);
  assert.deepEqual(Round.restore(bank,settings,r.snapshot(),{now:()=>now}).results(),out);return out;
 }
 for(let a=0;a<=10;a++)for(let c=0;c<=a;c++)play(a,c);
 for(let a=0;a<=32;a++)for(const c of new Set([0,Math.floor(a/2),a]))play(a,c,{...config,roundQuestions:32});
-assert.equal(play(10,10).score,100);assert.equal(play(10,5).score,0);assert.equal(play(8,7).score,60);
-for(const kind of ['phishing','legitimate']){const r=new Round(bank,config);r.start();for(const q of r.questions)r.answer(q.id,kind);assert.equal(r.results().score,0)}
-console.log('PASS: classification submits immediately; correct +10, wrong -10, unanswered0; blind-label0; verification never affects scoring');
+assert.equal(play(10,10).score,100);assert.equal(play(10,4).score,40);assert.equal(play(8,7).score,70);
+for(const kind of ['phishing','legitimate']){const r=new Round(bank,config);r.start();for(const q of r.questions)r.answer(q.id,kind);assert.equal(r.results().score,50)}
+console.log('PASS: each correct answer earns 10 points, wrong and unanswered earn zero, repeated labels earn 50 on a full round');
 let now=1000,r=new Round(bank,config,{now:()=>now});r.start();const q=r.questions[0];r.verify(q.id);
 const saved=r.snapshot();now=2000;const restored=Round.restore(bank,config,saved,{now:()=>now});assert.equal(restored.verified[0],true);assert.equal(restored.startedAt,1000);
 const legacy=structuredClone(saved);legacy.version=2;legacy.draft={classification:'phishing',evidenceId:'subject'};
-assert.equal(Round.restore(bank,config,legacy,{now:()=>now}).snapshot().version,3);
+assert.equal(Round.restore(bank,config,legacy,{now:()=>now}).snapshot().version,4);
 r.answer(q.id,q.classification);const legacyAnswered=r.snapshot();legacyAnswered.version=2;legacyAnswered.answers[0].evidenceId='subject';
 assert.deepEqual(Round.restore(bank,config,legacyAnswered).answers[0],{classification:q.classification});
 now=61010;assert.equal(restored.answer(q.id,q.classification),false);assert.equal(restored.results().timeUsed,60);assert.equal(restored.endedAt,61000);
 const oldFinished=restored.snapshot();oldFinished.version=2;assert.throws(()=>Round.restore(bank,config,oldFinished));
 for(const mutate of [d=>d.version=1,d=>d.questionIds[1]=d.questionIds[0],d=>d.answers[2]={classification:'phishing'},d=>d.verified[0]='yes',d=>d.lastElapsed=-1]){const d=structuredClone(saved);mutate(d);assert.throws(()=>Round.restore(bank,config,d))}
 console.log('PASS: verification/deadline persist; active v2 migrates labels; historical v2 scores protected; late clicks/corrupt snapshots rejected');
+
+const oldRound=new Round(bank,config,{now:()=>1000});
+oldRound.start();
+for(const [i,email] of oldRound.questions.entries()){
+ const answer=i<4?email.classification:email.classification==='phishing'?'legitimate':'phishing';
+ oldRound.answer(email.id,answer);
+ if(i!==8)continue;
+ const oldActive={...oldRound.snapshot(),version:3};
+ const upgraded=Round.restore(bank,config,oldActive,{now:()=>2000});
+ assert.equal(upgraded.snapshot().version,4);
+ assert.equal(upgraded.startedAt,oldActive.startedAt);
+ assert.deepEqual(upgraded.answers,oldActive.answers);
+ const lastEmail=upgraded.questions[9];
+ upgraded.answer(lastEmail.id,lastEmail.classification==='phishing'?'legitimate':'phishing');
+ assert.equal(upgraded.results().score,40);
+}
+const oldFinishedV3={...oldRound.snapshot(),version:3};
+const previousResult=Round.restore(bank,config,oldFinishedV3);
+assert.equal(previousResult.results().score,0,'finished rounds keep the original score for display and retries');
+assert.equal(previousResult.results().rawScore,-20);
+assert.equal(previousResult.snapshot().version,3);
+console.log('PASS: open v3 rounds keep their answers and deadline and use new scoring; completed v3 scores remain reproducible');
 for(const mutate of [b=>b[1].id=b[0].id,b=>delete b[0].context,b=>b[0].reasoning.evidence='',b=>b[0].acceptedEvidence=['body:999'],b=>b[0].body.find(x=>x.type==='link').url='https://external.invalid/',b=>b[0].indicators[0].text='missing clue']){const b=structuredClone(bank);mutate(b);assert.throws(()=>validateBank(b,config))}
 console.log('PASS: exact evidence keys, rationale, reserved domains and content validation');
 
