@@ -122,9 +122,9 @@ def run():
      p.goto(BASE+f'/games/{game}/?demo=1&lang=en');assert p.locator('.scm input[type=password]').count()==0
      f=frame(p,iframe)
      if game=='phishing-fishing':
-      f.wait_for_selector('#start-game');f.click('#start-game');assert f.locator('.email-progress li').count()==32
-      for _ in range(32):answer(p)
-      p.wait_for_function("JSON.parse(sessionStorage.getItem('scamurai.booth.1.demo.v1')).status==='saved'")
+      f.wait_for_selector('#start-game');f.click('#start-game');assert f.locator('.email-progress li').count()==10
+      for _ in range(10):answer(p)
+      p.wait_for_function("JSON.parse(sessionStorage.getItem('scamurai.booth.3.demo.v1')).status==='saved'")
      else:
       f.wait_for_selector('[data-booth-task]');f.locator('[data-booth-task="minute2-movie-animation"]').click();f.click('#booth-start');f.wait_for_selector('[data-booth-submit]');f.locator('[data-booth-submit]').click(force=True);f.wait_for_selector('.booth-score')
      assert not writes,writes;c.close()
@@ -133,12 +133,12 @@ def run():
     lp.add_init_script("""
       if(window===top&&!sessionStorage.getItem('legacy-seeded')) {
       sessionStorage.setItem('legacy-seeded','1');
-      sessionStorage.setItem('scamurai.booth.1.demo.v1',JSON.stringify({version:1,status:'open',roundId:null,participant:null,snapshot:{version:2,status:'playing'}}));
+      sessionStorage.setItem('scamurai.booth.3.demo.v1',JSON.stringify({version:1,status:'open',roundId:null,participant:null,snapshot:{version:2,status:'playing'}}));
       }
     """)
     lp.goto(BASE+'/games/phishing-fishing/?demo=1');frame(lp).wait_for_selector('#start-game');frame(lp).click('#start-game')
     assert lp.evaluate("sessionStorage.getItem('legacy-seeded')")=='1'
-    assert state(lp,'scamurai.booth.1.demo.v1')['snapshot']['version']==3 and not legacy_writes
+    assert state(lp,'scamurai.booth.3.demo.v1')['snapshot']['version']==3 and not legacy_writes
     legacy.close();print('PASS: an earlier-format demo restarts safely into the new exercise without event writes')
     assert not api.ok('GET','/api/rounds/open',pin='5003') and not api.ok('GET','/api/rounds/open',pin='5002')
     print('PASS: both public demos bypass PIN/identity, allow practice and write no event data')

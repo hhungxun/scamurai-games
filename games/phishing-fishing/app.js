@@ -4,7 +4,7 @@
   const announcer = document.querySelector("#announcer");
   const host = window.parent !== window ? window.parent.ScamuraiBooth : null;
   const demo = !host || host.demo;
-  const settings = {...window.GAME_CONFIG, roundQuestions:demo ? window.GAME_CONFIG.practiceQuestions : window.GAME_CONFIG.roundQuestions};
+  const settings = window.GAME_CONFIG;
   const questionCount = settings.roundQuestions;
   const pointsPerEmail = 100 / questionCount;
   const save = () => { if (host) host.update(window, round.snapshot()); };
@@ -73,7 +73,7 @@
     try {
       round = saved ? GameCore.Round.restore(window.EMAIL_BANK,settings,saved,{now:makeClock()}) : new GameCore.Round(window.EMAIL_BANK, settings, { now: makeClock() });
     } catch (error) {
-      // A practice deal with retired cases can restart; event Rounds need explicit cancellation.
+      // Old practice deals can restart, including those that used the full bank.
       if (saved && demo && host) { host.restartDemo(window); return; }
       throw error;
     }
@@ -234,7 +234,7 @@
     };
     bindLinkInspectors();
     // A newly rendered rail starts at the top; keep the current step visible
-    // when the full bank exceeds the available height on a booth laptop.
+    // when the progress rail exceeds the available height on a booth laptop.
     const rail = main.querySelector(".round-sidebar");
     const currentStep = rail.querySelector('[aria-current="step"]');
     if (currentStep.getBoundingClientRect().bottom > rail.getBoundingClientRect().bottom) {

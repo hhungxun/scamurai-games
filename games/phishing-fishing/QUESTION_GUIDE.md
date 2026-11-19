@@ -1,6 +1,6 @@
 # Phishing Fishing — operator case guide
 
-Scored rounds: 10 balanced emails, 60 seconds. +10 for a correct classification; wrong classifications −10; unanswered 0; final minimum 0. Verification is voluntary and has no deduction. The full 32-case demo is unscored for the event.
+Event and practice rounds draw 10 balanced emails from 32 cases and run for 60 seconds. Correct answers earn 10, wrong answers deduct 10, and unanswered emails earn 0. The final score is floored at 0. Verification is voluntary and has no deduction. Practice scores are excluded from event results.
 
 | Case | Label | Difficulty | Post-round decisive clue fields |
 |---|---|---|---|
