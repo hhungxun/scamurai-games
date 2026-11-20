@@ -395,10 +395,17 @@ route('POST', '/api/rounds/:id/finish', async (req, { id }) => {
   need(!r.cancelled, 409, 'Round was cancelled');
   let score, max;
   if (scoring.STATION_GAME[r.station]) {
-    const game = gameOf(r);
-    need(r.deal, 409, 'This Round was never dealt');
-    const res = scoring.scoreOf(game, JSON.parse(r.deal).ids, JSON.parse(r.answers || '{}'), KEYS);
-    score = res.score; max = scoring.maxOf(game);      // the browser's numbers are ignored
+    if (r.deal) {
+      const game = gameOf(r);
+      const res = scoring.scoreOf(game, JSON.parse(r.deal).ids, JSON.parse(r.answers || '{}'), KEYS);
+      score = res.score; max = scoring.maxOf(game);    // the server dealt: the browser's numbers are ignored
+    } else {
+      // No server deal yet (these games still score client-side): trust the browser's score, clamped.
+      max = scoring.maxOf();
+      score = Number(b.score);
+      need(Number.isFinite(score) && score >= 0, 400, 'score must be a non-negative number');
+      score = Math.min(score, max);
+    }
   } else {
     max = SELF_SCORED_MAX[r.station];
     score = Number(b.score);

@@ -122,12 +122,14 @@ async function main() {
     assert.equal((await call('POST', `/api/rounds/${r.roundId}/deal`, { pin: '0000' })).status, 401);
   });
 
-  await check('finish without a deal is refused; finishing twice is idempotent and keeps the first score', async () => {
+  await check('finish without a deal trusts the client score (clamped); a dealt round is still server-scored and idempotent', async () => {
     const lazy = await round(4);
-    assert.equal((await finish(lazy, { score: 100, maxScore: 100 })).status, 409);
+    assert.equal((await ok(finish(lazy, { score: 73, maxScore: 100 }))).pct, 73);     // legacy client-side game: score accepted
+    const over = await round(4);
+    assert.equal((await ok(finish(over, { score: 999, maxScore: 100 }))).pct, 100);  // clamped to the maximum
     const r = await round(4), d = await deal(r);
     for (const id of d.ids) await ok(answer(r, id, answerFor('real-or-ai', id)));
-    assert.equal((await ok(finish(r))).pct, 100);
+    assert.equal((await ok(finish(r, { score: 0, maxScore: 100 }))).pct, 100);       // dealt: the browser's numbers are ignored
     const second = await ok(finish(r, { score: 0, maxScore: 100 }));
     assert.equal(second.already, true);
     assert.equal(second.pct, 100);
