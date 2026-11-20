@@ -10,7 +10,7 @@ A self-contained **static website** designed for an event booth. Players identif
 - English interface, immediate next question, result page, answer review, replay.
 - No framework, no installation, no backend; relative paths work on GitHub Pages **and in a nested folder**.
 
-> ⚠️ CONTENT PROVENANCE: The five "Real" voice clips (V01, V03, V05, V07, V09) are genuine recordings supplied by the organisers (19 Nov 2026). The five "AI" voice clips (V02, V04, V06, V08, V10) are still synthetic demo speech; replace them with verified AI-generated clips (with a generation record) before the event if possible. Obtain consent before publishing images or recordings of classmates.
+> ⚠️ CONTENT PROVENANCE: The five "Real" voice clips (V01, V03, V05, V07, V09) are genuine recordings supplied by the organisers (19 Nov 2026). The five "AI" voice clips (V02, V04, V06, V08, V10) are AI-generated with ElevenLabs `eleven_multilingual_v2` (20 Nov 2026) using the premade voices Chris, Bella, Charlie, Sarah and Daniel. Obtain consent before publishing images or recordings of classmates.
 
 ## Booth integration (Station 4)
 
