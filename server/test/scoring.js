@@ -52,20 +52,21 @@ async function main() {
   for (let i = 0; i < 50; i++) { try { await fetch(BASE + '/api/config'); break; } catch { await new Promise(r => setTimeout(r, 100)); } }
   console.log(`Server on ${BASE}, data in ${dataDir}`);
 
-  await check('each question game deals 10 ids, never the key, and the deal is idempotent', async () => {
-    for (const n of [1, 3, 4]) {
+  await check('each question game deals the right number of ids, never the key, and the deal is idempotent', async () => {
+    for (const [n, expected] of [[1, 10], [3, 10], [4, 15]]) {
       const r = await round(n);
       const d = await deal(r);
-      assert.equal(d.ids.length, 10);
-      assert.equal(new Set(d.ids).size, 10);
+      assert.equal(d.ids.length, expected);
+      assert.equal(new Set(d.ids).size, expected);
       assert.ok(Object.keys(d).every(k => ['ids', 'seconds', 'answered'].includes(k)), Object.keys(d).join());
       assert.deepEqual((await deal(r)).ids, d.ids);
     }
   });
 
-  await check('deals follow the game rules (5 real + 5 AI; 5 phishing + 5 legitimate by difficulty)', async () => {
+  await check('deals follow the game rules (7 real + 8 AI; 5 phishing + 5 legitimate by difficulty)', async () => {
     const r4 = await round(4), d4 = await deal(r4);
-    assert.equal(d4.ids.filter(id => answerFor('real-or-ai', id) === 'real').length, 5);
+    assert.equal(d4.ids.filter(id => answerFor('real-or-ai', id) === 'real').length, 7);
+    assert.equal(d4.ids.filter(id => answerFor('real-or-ai', id) === 'ai').length, 8);
     const r3 = await round(3), d3 = await deal(r3);
     assert.equal(d3.ids.filter(id => answerFor('phishing-fishing', id) === 'phishing').length, 5);
   });
@@ -80,9 +81,9 @@ async function main() {
     assert.equal(again.correct, true);
     await ok(answer(r, b, answerFor('real-or-ai', b, false)));
     for (const id of rest) await ok(answer(r, id, answerFor('real-or-ai', id)));
-    // 9 right, 1 wrong -> (9-1)*100/10 = 80 ; the browser claims 100
+    // 14 right, 1 wrong -> (14-1)*100/15 = 86.7 ; the browser claims 100
     const f = await ok(finish(r, { score: 100, maxScore: 100 }));
-    assert.equal(f.pct, 80);
+    assert.equal(f.pct, 86.7);
   });
 
   await check('Spot the Fake Cash: 10 points per correct note, maxScore from the client is ignored', async () => {
@@ -136,7 +137,7 @@ async function main() {
   await check('a skipped question scores nothing; a blank round scores 0', async () => {
     const r = await round(4), d = await deal(r);
     for (const id of d.ids.slice(0, 5)) await ok(answer(r, id, answerFor('real-or-ai', id)));
-    assert.equal((await ok(finish(r))).pct, 50);
+    assert.equal((await ok(finish(r))).pct, 33.3);
     const blank = await round(1); await deal(blank);
     assert.equal((await ok(finish(blank, { score: 100, maxScore: 100 }))).pct, 0);
   });

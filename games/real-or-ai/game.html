@@ -25,18 +25,18 @@
   <div class="home-copy">
     <span class="eyebrow">STATION 04 / THE AUTHENTICITY CHALLENGE</span>
     <h1>THINK YOU CAN SPOT<br>WHAT'S <span class="or">REAL</span><span class="ai">?</span></h1>
-    <p class="intro">Ten photos and voices. One minute on the clock. Decide whether each one is real or AI-generated, then read the clue.</p>
+    <p class="intro">Fifteen photos and voices. One minute on the clock. Decide whether each one is real or AI-generated, then read the clue.</p>
     <div class="features"><span><b id="photoPoolCount">10</b> photo questions</span><span><b id="voicePoolCount">10</b> voice questions</span><span><b>60</b> seconds</span></div>
     <button class="button primary" id="startBtn" type="button">Start round</button>
-    <p class="scoring-note">Scoring: +10 for each correct answer, -10 for each wrong answer, 0 for unanswered, minimum 0. Maximum 100.</p>
-    <p class="footnote"><span id="homeIntroCount">20</span> questions loaded; each round draws 10 at random. Voice answer labels are temporary test values; the demo voices are synthetic. Replace them before the public event.</p>
+    <p class="scoring-note">Scoring: correct answers add points and wrong answers subtract the same, scaled to 100. Unanswered 0 · minimum 0 · maximum 100.</p>
+    <p class="footnote"><span id="homeIntroCount">20</span> questions loaded; each round draws 15 at random. Voice answer labels are temporary test values; the demo voices are synthetic. Replace them before the public event.</p>
   </div>
   <div class="sample-cards" aria-hidden="true"><img id="homePreview" alt=""><div class="roundtag">REAL OR AI?</div><div class="voice-sample"><span>VOICE SAMPLE</span><div class="wave" id="waveDecoration"></div></div></div>
 </section>
 
 <section id="screen-game" class="hidden">
   <div class="hud">
-    <div class="stat"><span>Question</span><strong id="questionCount">1 / 10</strong></div>
+    <div class="stat"><span>Question</span><strong id="questionCount">1 / 15</strong></div>
     <div class="stat"><span>Time left</span><strong class="time" id="timerText" aria-live="off">01:00</strong></div>
     <div class="stat"><span>Correct</span><strong id="scoreText">0</strong></div>
   </div>
@@ -63,7 +63,7 @@
     <div class="scoreboard">
       <div class="scorecircle" id="scoreCircle"><div><strong id="circleNum">0</strong><small>YOUR SCORE / 100</small></div></div>
       <div class="scores">
-        <div class="scorestat"><div class="key">Questions answered</div><div class="val" id="answeredNum">0 / 10</div></div>
+        <div class="scorestat"><div class="key">Questions answered</div><div class="val" id="answeredNum">0 / 15</div></div>
         <div class="scorestat"><div class="key">Correct</div><div class="val" id="correctNum">0</div></div>
         <div class="scorestat"><div class="key">Incorrect</div><div class="val" id="wrongNum">0</div></div>
         <div class="scorestat"><div class="key">Accuracy</div><div class="val" id="accuracyNum">0%</div></div>

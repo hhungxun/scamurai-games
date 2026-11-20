@@ -1,7 +1,7 @@
 /* Pure round logic for Real or AI? (no DOM). Used by game.js and tests/core.test.cjs. */
 (function (root) {
   'use strict';
-  const ROUND_QUESTIONS = 10, ROUND_SECONDS = 60, VERSION = 1;
+  const ROUND_QUESTIONS = 15, ROUND_SECONDS = 60, VERSION = 1;
 
   function shuffle(list, random = Math.random) {
     const a = list.slice();

@@ -4,7 +4,7 @@
 // and the score at /finish is computed here from the stored answers, never from numbers the client sends.
 const STATION_GAME = { 1: 'spot-the-fake-cash', 3: 'phishing-fishing', 4: 'real-or-ai' };
 const GRACE_MS = 10_000;                 // network slack on top of each game's own timer
-const ROUND_QUESTIONS = 10;
+const ROUND_QUESTIONS = { 'real-or-ai': 15, 'spot-the-fake-cash': 10, 'phishing-fishing': 10 };
 const DURATION_MS = { 'real-or-ai': 60_000, 'spot-the-fake-cash': 120_000, 'phishing-fishing': 60_000 };
 const CHOICES = {
   'real-or-ai': ['real', 'ai'],
@@ -27,12 +27,13 @@ const dealers = {
     const pool = Object.entries(keys.questions)
       .filter(([, q]) => q.enabled !== false && ['real', 'ai'].includes(q.answer) && ['photo', 'voice'].includes(q.type))
       .map(([id, q]) => ({ id, ...q }));
-    const half = ROUND_QUESTIONS / 2;
+    const N = ROUND_QUESTIONS['real-or-ai'];
+    const half = Math.floor(N / 2);
     const reals = shuffle(pool.filter(q => q.answer === 'real'), random);
     const ais = shuffle(pool.filter(q => q.answer === 'ai'), random);
-    const picked = [...reals.slice(0, half), ...ais.slice(0, half)];
-    const rest = shuffle([...reals.slice(half), ...ais.slice(half)], random);
-    while (picked.length < ROUND_QUESTIONS && rest.length) picked.push(rest.shift());
+    const picked = [...reals.slice(0, half), ...ais.slice(0, N - half)];
+    const rest = shuffle([...reals.slice(half), ...ais.slice(N - half)], random);
+    while (picked.length < N && rest.length) picked.push(rest.shift());
     const mixed = shuffle(picked, random);
     // alternate photo / voice from a random start, as the offline game does
     const byType = { photo: mixed.filter(q => q.type === 'photo'), voice: mixed.filter(q => q.type === 'voice') };
@@ -50,7 +51,7 @@ const dealers = {
   'spot-the-fake-cash'(keys, random) {
     // Even real/fake split so blind guessing scores 50%, mirroring the offline deal.
     const pool = keys.sets.map((set, i) => ({ i, isReal: set.isReal }));
-    const half = ROUND_QUESTIONS / 2;
+    const half = Math.floor(ROUND_QUESTIONS['spot-the-fake-cash'] / 2);
     const pick = want => shuffle(pool.filter(q => q.isReal === want), random).slice(0, half).map(q => q.i);
     return shuffle([...pick(true), ...pick(false)], random);
   },
