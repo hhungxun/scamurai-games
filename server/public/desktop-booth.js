@@ -97,7 +97,7 @@
       persist();
       const result = demo ? {pct:state.score,best:state.score,surveyDue:false} : await Scamurai.finishRound(state.roundId,{score:state.score,maxScore:100});
       if (!Number.isFinite(result.pct) || !Number.isFinite(result.best)) throw new Error('Invalid score response');
-      state.result = result; state.status = 'saved'; persist();
+      state.result = result; state.score = result.pct; state.status = 'saved'; persist();
       status(demo ? 'Demo complete. No event score was saved.' : `Score saved: ${result.pct} / 100 · Station best: ${result.best} / 100.${result.surveyDue ? ' All five stations complete — use Leaving for the exit survey after reviewing.' : ''}`);
     } catch (error) {
       let cancelled = false;
