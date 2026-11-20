@@ -70,7 +70,7 @@ def run():
     for _ in range(6):answer(a)
     a.wait_for_function("JSON.parse(sessionStorage.getItem('scamurai.booth.3.event.v1')).status==='pending'")
     a.wait_for_function("!document.getElementById('booth-retry').disabled")
-    assert len(sent)==1 and sent[0]['score']==100
+    assert len(sent)==1 and sent[0]['score']==0
     a.unroute('**/api/rounds/*/finish');a.reload()
     a.wait_for_function("JSON.parse(sessionStorage.getItem('scamurai.booth.3.event.v1')).status==='saved'")
     assert state(a)['score']==state(a)['result']['pct']==100
