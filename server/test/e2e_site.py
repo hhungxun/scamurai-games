@@ -199,6 +199,8 @@ def run():
                     assert page.locator('.lb th').count()==4 and page.locator('.dots').count()==0
                     for n in [2,3,4,5]:
                         r=api.ok('POST','/api/rounds',{'participantId':p['id']},pin=f'500{n}')
+                        if n==5:
+                            api.ok('POST',f'/api/rounds/{r["roundId"]}/events',{'data':{'t':'scan'}},token=r['token'])
                         api.ok('POST',f'/api/rounds/{r["roundId"]}/finish',{'score':0,'maxScore':100},pin=f'500{n}')
                     page.wait_for_function("document.getElementById('rows').textContent.includes('33.3')")
                     assert page.locator('#rows tr td').count()==4
