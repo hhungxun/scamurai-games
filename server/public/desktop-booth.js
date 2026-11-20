@@ -140,7 +140,7 @@
       if (!Number.isFinite(score) || score < 0 || score > 100 || snapshot.status !== 'finished') throw new Error('Invalid final score');
       state.snapshot = snapshot; state.score = score; state.status = 'pending';
       try { persist(); } catch { status('Storage unavailable. Keep this tab open and use Retry save.',true); controls(); return; }
-      controls(); flush();
+      controls(); return flush();   // resolve once /finish has run, so a game can fetch the server review afterwards
     },
     next(win) { verify(win); if (['saved','cancelled'].includes(state.status)) pick(); else status('Save or cancel the current Round before the next participant.',true); }
   };

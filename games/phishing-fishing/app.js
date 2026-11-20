@@ -390,6 +390,8 @@
     if (showingResults || page !== "playing" || round.status !== "finished") return;
     showingResults = true;
     clearWork();
+    // Finish first so the server closes and scores the round, then fetch the review.
+    if (host) { try { await host.finish(window, round.snapshot(), 0); } catch (e) {} }
     if (host && !demo) {
       try {
         const res = await host.review(window);
@@ -402,7 +404,6 @@
     page = "results";
     document.body.dataset.screen = page;
     const results = round.results();
-    if (host) host.finish(window,round.snapshot(),results.score);
     const [title, message] = performanceMessage(results);
     const earned = `${results.correct} correct × ${results.pointsPerEmail}`;
     const finalScore = `<strong>${results.score} / ${results.maximum}</strong>`;
