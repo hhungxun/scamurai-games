@@ -82,9 +82,9 @@ def run():
     print('PASS: lost finish response retries idempotently, all correct saves 100, using one label for every email saves 50, five-station total and survey handoff agree')
     b.click('#booth-next');select(b,'MAIL003');frame(b).wait_for_selector('#start-game')
     b.clock.install();frame(b).click('#start-game');answer(b)
-    b.clock.fast_forward(61000)
+    b.clock.fast_forward(91000)
     b.wait_for_function("JSON.parse(sessionStorage.getItem('scamurai.booth.3.event.v1')).status==='saved'")
-    timed=state(b);assert timed['score']==10 and timed['snapshot']['endedAt']-timed['snapshot']['startedAt']==60000
+    timed=state(b);assert timed['score']==10 and timed['snapshot']['endedAt']-timed['snapshot']['startedAt']==90000
     b.reload();frame(b).wait_for_selector('.score-circle');assert state(b)['score']==10
     print('PASS: scored email timeout retains partial credit, exact deadline and saved results through reload')
     b.click('#booth-next');select(b,'MAIL004');frame(b).wait_for_selector('#start-game')
@@ -96,7 +96,7 @@ def run():
     assert len(cancelled)==1
     assert api.ok('GET','/api/participant/me',participant=people['MAIL004']['participantToken'])['stations'][2]['score'] is None
     b.unroute('**/api/rounds/*/cancel');b.click('#booth-next');select(b,'MAIL005');frame(b).wait_for_selector('#start-game');frame(b).click('#start-game')
-    remote=state(b);api.ok('POST',f'/api/rounds/{remote["roundId"]}/cancel',pin='5003');b.clock.fast_forward(61000)
+    remote=state(b);api.ok('POST',f'/api/rounds/{remote["roundId"]}/cancel',pin='5003');b.clock.fast_forward(91000)
     b.wait_for_function("JSON.parse(sessionStorage.getItem('scamurai.booth.3.event.v1')).status==='cancelled'")
     assert b.locator('#booth-next').is_visible()
     print('PASS: cancellation on a different laptop releases the original email laptop without a score')
