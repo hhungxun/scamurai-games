@@ -5,7 +5,7 @@
 const STATION_GAME = { 1: 'spot-the-fake-cash', 3: 'phishing-fishing', 4: 'real-or-ai' };
 const GRACE_MS = 10_000;                 // network slack on top of each game's own timer
 const ROUND_QUESTIONS = { 'real-or-ai': 15, 'spot-the-fake-cash': 10, 'phishing-fishing': 10 };
-const DURATION_MS = { 'real-or-ai': 60_000, 'spot-the-fake-cash': 120_000, 'phishing-fishing': 60_000 };
+const DURATION_MS = { 'real-or-ai': 60_000, 'spot-the-fake-cash': 120_000, 'phishing-fishing': 90_000 };
 const CHOICES = {
   'real-or-ai': ['real', 'ai'],
   'spot-the-fake-cash': ['real', 'fake'],

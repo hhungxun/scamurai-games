@@ -15,8 +15,11 @@ const ref = opt('--ref'), out = path.resolve(opt('--out') || path.join(REPO, 'se
 
 const FILES = {
   roa: 'games/real-or-ai/data/questions.js',
+  roaAnswers: 'games/real-or-ai/data/demo-answers.js',
   cash: 'games/spot-the-fake-cash/js/game-core.js',
-  phish: 'games/phishing-fishing/emails.js'
+  cashAnswers: 'games/spot-the-fake-cash/js/demo-answers.js',
+  phish: 'games/phishing-fishing/emails.js',
+  phishAnswers: 'games/phishing-fishing/demo-answers.js'
 };
 function source(rel) {
   return ref ? execFileSync('git', ['show', `${ref}:${rel}`], { cwd: REPO, encoding: 'utf8', maxBuffer: 64e6 }) : fs.readFileSync(path.join(REPO, rel), 'utf8');
@@ -30,8 +33,11 @@ function run(rel) {
 }
 
 const roa = run(FILES.roa).win.REAL_OR_AI_QUESTIONS;
+const roaAnswers = run(FILES.roaAnswers).win.REAL_OR_AI_DEMO_ANSWERS;
 const cash = run(FILES.cash).mod.BANKNOTE_SETS;
+const cashAnswers = run(FILES.cashAnswers).win.FAKECASH_DEMO_ANSWERS;
 const phish = run(FILES.phish).mod;
+const phishAnswers = run(FILES.phishAnswers).win.EMAIL_DEMO_ANSWERS;
 
 const keys = { version: 1, builtAt: new Date().toISOString(), source: ref || 'working-tree', games: {
   'real-or-ai': { questions: {} },
@@ -39,17 +45,20 @@ const keys = { version: 1, builtAt: new Date().toISOString(), source: ref || 'wo
   'phishing-fishing': { emails: {} }
 } };
 for (const q of roa) {
-  if (!['real', 'ai'].includes(q.answer)) throw new Error(`ROA ${q.id}: no answer in source (already stripped? use --ref)`);
-  keys.games['real-or-ai'].questions[q.id] = { answer: q.answer, type: q.type, enabled: q.enabled !== false && !!q.src, demo: !!q.demo, explanation: q.explanation || '', clue: q.clue || '' };
+  const answer = roaAnswers[q.id];
+  if (!['real', 'ai'].includes(answer)) throw new Error(`ROA ${q.id}: no answer in demo-answers.js (already stripped? use --ref)`);
+  keys.games['real-or-ai'].questions[q.id] = { answer, type: q.type, enabled: q.enabled !== false && !!q.src, demo: !!q.demo, explanation: q.explanation || '', clue: q.clue || '' };
 }
-for (const s of cash) {
-  if (typeof s.isReal !== 'boolean') throw new Error(`Cash ${s.name}: no isReal in source (already stripped? use --ref)`);
-  keys.games['spot-the-fake-cash'].sets.push({ isReal: s.isReal, reason: s.reason });
+for (let i = 0; i < cash.length; i++) {
+  const s = cash[i], isReal = cashAnswers[i];
+  if (typeof isReal !== 'boolean') throw new Error(`Cash ${s.name}: no isReal in demo-answers.js (already stripped? use --ref)`);
+  keys.games['spot-the-fake-cash'].sets.push({ isReal, reason: s.reason });
 }
 for (const e of phish) {
-  if (!['phishing', 'legitimate'].includes(e.classification)) throw new Error(`Email ${e.id}: no classification in source (already stripped? use --ref)`);
+  const classification = phishAnswers[e.id];
+  if (!['phishing', 'legitimate'].includes(classification)) throw new Error(`Email ${e.id}: no classification in demo-answers.js (already stripped? use --ref)`);
   keys.games['phishing-fishing'].emails[e.id] = {
-    classification: e.classification, difficulty: e.difficulty, explanation: e.explanation, reasoning: e.reasoning,
+    classification, difficulty: e.difficulty, explanation: e.explanation, reasoning: e.reasoning,
     indicators: e.indicators, acceptedEvidence: e.acceptedEvidence
   };
 }

@@ -7,6 +7,11 @@ const host=window.parent!==window?window.parent.ScamuraiBooth:null;
 const demo=!host||host.demo;
 const VERSION=1;
 let items=(window.REAL_OR_AI_QUESTIONS||[]).map(q=>({...q}));
+// Demo/standalone only: merge the local answer key back in for judging. Event rounds
+// get their verdicts from the server, so the shipped questions.js carries no answers.
+if (demo && window.REAL_OR_AI_DEMO_ANSWERS) {
+  for (const q of items) { const a = window.REAL_OR_AI_DEMO_ANSWERS[q.id]; if (a) q.answer = a; }
+}
 let round=null,ticker=null,awaitingNext=false,submitting=false,finishReported=false,lastResult=null,page='home';
 const player=$('player');
 let clearMediaWatch=()=>{};

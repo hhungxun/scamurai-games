@@ -9,6 +9,11 @@
   <link rel="stylesheet" href="./css/styles.css">
   <link rel="icon" href="/assets/favicon.png" type="image/png">
   <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <script>/* Load the demo answer key only for demo/standalone play; event rounds never ship answers to the browser. */
+  if (new URLSearchParams(location.search).get('demo') === '1' || window.parent === window) {
+    document.write('<script src="./js/demo-answers.js"><\/script>');
+  }
+  </script>
   <script defer src="./js/game-core.js"></script>
   <script defer src="./js/game.js"></script>
 </head>

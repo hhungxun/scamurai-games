@@ -3,7 +3,6 @@ window.REAL_OR_AI_QUESTIONS = [
   {
     "id": "P01",
     "type": "photo",
-    "answer": "real",
     "title": "Fruit aisle",
     "subtitle": "PHOTO • LOOK CLOSELY",
     "explanation": "A real photo of packaged papaya, pineapple and mango in a supermarket cooler.",
@@ -15,7 +14,6 @@ window.REAL_OR_AI_QUESTIONS = [
   {
     "id": "P02",
     "type": "photo",
-    "answer": "ai",
     "title": "Café portrait",
     "subtitle": "PHOTO • LOOK CLOSELY",
     "explanation": "An AI-generated café portrait.",
@@ -27,7 +25,6 @@ window.REAL_OR_AI_QUESTIONS = [
   {
     "id": "P03",
     "type": "photo",
-    "answer": "real",
     "title": "Pond geese",
     "subtitle": "PHOTO • LOOK CLOSELY",
     "explanation": "A real photo of white geese on a green pond.",
@@ -39,7 +36,6 @@ window.REAL_OR_AI_QUESTIONS = [
   {
     "id": "P04",
     "type": "photo",
-    "answer": "ai",
     "title": "Office scene",
     "subtitle": "PHOTO • LOOK CLOSELY",
     "explanation": "An AI-generated scene of an office worker.",
@@ -51,7 +47,6 @@ window.REAL_OR_AI_QUESTIONS = [
   {
     "id": "P05",
     "type": "photo",
-    "answer": "real",
     "title": "Sunset towers",
     "subtitle": "PHOTO • LOOK CLOSELY",
     "explanation": "A real photo of two high-rise towers at sunset.",
@@ -63,7 +58,6 @@ window.REAL_OR_AI_QUESTIONS = [
   {
     "id": "P06",
     "type": "photo",
-    "answer": "ai",
     "title": "Evening street",
     "subtitle": "PHOTO • LOOK CLOSELY",
     "explanation": "An AI-generated city street scene.",
@@ -75,7 +69,6 @@ window.REAL_OR_AI_QUESTIONS = [
   {
     "id": "P07",
     "type": "photo",
-    "answer": "real",
     "title": "Crow on a speaker",
     "subtitle": "PHOTO • LOOK CLOSELY",
     "explanation": "A real photo of a crow perched on a horn speaker.",
@@ -87,7 +80,6 @@ window.REAL_OR_AI_QUESTIONS = [
   {
     "id": "P08",
     "type": "photo",
-    "answer": "ai",
     "title": "Café detail",
     "subtitle": "PHOTO • LOOK CLOSELY",
     "explanation": "An alternate crop of an AI-generated café scene, used temporarily for this demo.",
@@ -99,7 +91,6 @@ window.REAL_OR_AI_QUESTIONS = [
   {
     "id": "P09",
     "type": "photo",
-    "answer": "real",
     "title": "Lotus pond",
     "subtitle": "PHOTO • LOOK CLOSELY",
     "explanation": "A real photo of a lotus pond with a red pavilion.",
@@ -111,7 +102,6 @@ window.REAL_OR_AI_QUESTIONS = [
   {
     "id": "P10",
     "type": "photo",
-    "answer": "ai",
     "title": "Street detail",
     "subtitle": "PHOTO • LOOK CLOSELY",
     "explanation": "An alternate crop of an AI-generated city street, used temporarily for this demo.",
@@ -123,7 +113,6 @@ window.REAL_OR_AI_QUESTIONS = [
   {
     "id": "V01",
     "type": "voice",
-    "answer": "real",
     "title": "Voice message",
     "subtitle": "VOICE • LISTEN CLOSELY",
     "explanation": "This was a genuine recording of a real person, made with their consent. Natural speech has uneven pacing, breaths and small hesitations, though good AI voices can imitate them.",
@@ -135,7 +124,6 @@ window.REAL_OR_AI_QUESTIONS = [
   {
     "id": "V02",
     "type": "voice",
-    "answer": "ai",
     "title": "Parcel delivery",
     "subtitle": "VOICE • LISTEN CLOSELY",
     "explanation": "An AI-generated voice created with ElevenLabs. Its smooth, even pacing and absence of natural breaths are typical of synthetic speech, though the best AI voices are now hard to tell apart from a real person.",
@@ -148,7 +136,6 @@ window.REAL_OR_AI_QUESTIONS = [
   {
     "id": "V03",
     "type": "voice",
-    "answer": "real",
     "title": "Quick question",
     "subtitle": "VOICE • LISTEN CLOSELY",
     "explanation": "This was a genuine recording of a real person, made with their consent. Natural speech has uneven pacing, breaths and small hesitations, though good AI voices can imitate them.",
@@ -160,7 +147,6 @@ window.REAL_OR_AI_QUESTIONS = [
   {
     "id": "V04",
     "type": "voice",
-    "answer": "ai",
     "title": "Booking confirmation",
     "subtitle": "VOICE • LISTEN CLOSELY",
     "explanation": "An AI-generated voice created with ElevenLabs. Its smooth, even pacing and absence of natural breaths are typical of synthetic speech, though the best AI voices are now hard to tell apart from a real person.",
@@ -173,7 +159,6 @@ window.REAL_OR_AI_QUESTIONS = [
   {
     "id": "V05",
     "type": "voice",
-    "answer": "real",
     "title": "Casual chat",
     "subtitle": "VOICE • LISTEN CLOSELY",
     "explanation": "This was a genuine recording of a real person, made with their consent. Natural speech has uneven pacing, breaths and small hesitations, though good AI voices can imitate them.",
@@ -185,7 +170,6 @@ window.REAL_OR_AI_QUESTIONS = [
   {
     "id": "V06",
     "type": "voice",
-    "answer": "ai",
     "title": "On the way",
     "subtitle": "VOICE • LISTEN CLOSELY",
     "explanation": "An AI-generated voice created with ElevenLabs. Its smooth, even pacing and absence of natural breaths are typical of synthetic speech, though the best AI voices are now hard to tell apart from a real person.",
@@ -198,7 +182,6 @@ window.REAL_OR_AI_QUESTIONS = [
   {
     "id": "V07",
     "type": "voice",
-    "answer": "real",
     "title": "Short note",
     "subtitle": "VOICE • LISTEN CLOSELY",
     "explanation": "This was a genuine recording of a real person, made with their consent. Natural speech has uneven pacing, breaths and small hesitations, though good AI voices can imitate them.",
@@ -210,7 +193,6 @@ window.REAL_OR_AI_QUESTIONS = [
   {
     "id": "V08",
     "type": "voice",
-    "answer": "ai",
     "title": "Study reminder",
     "subtitle": "VOICE • LISTEN CLOSELY",
     "explanation": "An AI-generated voice created with ElevenLabs. Its smooth, even pacing and absence of natural breaths are typical of synthetic speech, though the best AI voices are now hard to tell apart from a real person.",
@@ -223,7 +205,6 @@ window.REAL_OR_AI_QUESTIONS = [
   {
     "id": "V09",
     "type": "voice",
-    "answer": "real",
     "title": "Heard in passing",
     "subtitle": "VOICE • LISTEN CLOSELY",
     "explanation": "This was a genuine recording of a real person, made with their consent. Natural speech has uneven pacing, breaths and small hesitations, though good AI voices can imitate them.",
@@ -235,7 +216,6 @@ window.REAL_OR_AI_QUESTIONS = [
   {
     "id": "V10",
     "type": "voice",
-    "answer": "ai",
     "title": "Customer assistance",
     "subtitle": "VOICE • LISTEN CLOSELY",
     "explanation": "An AI-generated voice created with ElevenLabs. Its smooth, even pacing and absence of natural breaths are typical of synthetic speech, though the best AI voices are now hard to tell apart from a real person.",

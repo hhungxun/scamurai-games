@@ -1,6 +1,14 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const path = require('node:path');
 const { BANKNOTE_SETS, DURATION_MS, NOTE_COUNT, Round } = require('../js/game-core.js');
+
+// Rebuild the local answer key (as the demo/standalone build does) so the tests exercise judging.
+const demoWin = {};
+vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../js/demo-answers.js'), 'utf8'), { window: demoWin });
+BANKNOTE_SETS.forEach((s, i) => { s.isReal = demoWin.FAKECASH_DEMO_ANSWERS[i]; });
 
 test('draws ten distinct notes, five real and five fake, with labels and review clues', () => {
   const round = new Round({ random: () => 0 });

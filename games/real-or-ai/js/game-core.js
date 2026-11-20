@@ -8,7 +8,7 @@
     for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
     return a;
   }
-  function usable(bank) { return bank.filter(q => q && q.enabled !== false && q.src && ['real', 'ai'].includes(q.answer) && ['photo', 'voice'].includes(q.type)); }
+  function usable(bank) { return bank.filter(q => q && q.enabled !== false && q.src && ['photo', 'voice'].includes(q.type)); }
 
   /* Pick up to `count` questions, shuffled, balanced between real/ai and alternating photo/voice where possible. */
   function selectQuestions(bank, count = ROUND_QUESTIONS, random = Math.random) {

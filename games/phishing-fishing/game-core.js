@@ -20,19 +20,20 @@
       throw new Error("The bank must contain emails with unique IDs.");
     if (![10,bank.length].includes(settings.roundQuestions) || settings.roundQuestions > bank.length)
       throw new Error("roundQuestions must be 10 or the full practice bank.");
-    if (settings.roundQuestions === 10 && ["phishing","legitimate"].some(kind => bank.filter(e => e.classification === kind).length < 5))
+    const hasAnswers = bank.some(e => e.classification !== undefined);
+    if (hasAnswers && settings.roundQuestions === 10 && ["phishing","legitimate"].some(kind => bank.filter(e => e.classification === kind).length < 5))
       throw new Error("A scored deal needs five messages of each classification.");
     for (const email of bank) {
       if (!email.context || typeof email.context.source !== 'string' || !email.context.source.trim() || !Array.isArray(email.context.facts) || email.context.facts.length < 1 || email.context.facts.some(fact=>typeof fact !== 'string' || !fact.trim())) throw new Error("Every email needs independent case notes.");
       if (!email.reasoning || ['evidence','contrast','nextStep'].some(key=>typeof email.reasoning[key] !== 'string' || !email.reasoning[key].trim())) throw new Error("Every classification needs evidence, a counterpoint and a safe next step.");
-      if (!email.id || !["phishing", "legitimate"].includes(email.classification)) throw new Error("Every email needs an ID and valid classification.");
+      if (!email.id || (hasAnswers && !["phishing", "legitimate"].includes(email.classification))) throw new Error("Every email needs an ID and valid classification.");
       if (!email.senderName || !email.senderEmail || !email.subject || !email.body?.length || !email.explanation || !email.indicators?.length) throw new Error("An email is missing required content.");
       if (!["Easy", "Medium", "Hard"].includes(email.difficulty)) throw new Error("Unknown email difficulty.");
       const institution = reference.find(item => item.id === email.institution);
       if (!institution || !email.objective || !email.brand) throw new Error("Every email needs a reference institution, brand and learning objective.");
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.senderEmail)) throw new Error("Every sender must have a well-formed email address.");
       if (email.recipient && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.recipient)) throw new Error("A recipient, when present, must have a well-formed email address.");
-      if (email.classification === "legitimate" && !belongsTo(email.senderEmail.split("@")[1], institution.domain)) throw new Error("A legitimate sender must use its reference institution's domain.");
+      if (hasAnswers && email.classification === "legitimate" && !belongsTo(email.senderEmail.split("@")[1], institution.domain)) throw new Error("A legitimate sender must use its reference institution's domain.");
       if (!email.body[0] || email.body[0].type !== "banner" || !email.body[0].text?.trim()) throw new Error("The banner must be the first block of every email.");
       for (const block of email.body) {
         if (!["banner", "paragraph", "detail", "link", "button", "attachment", "footer"].includes(block.type) || typeof block.text !== "string" || !block.text.trim()) throw new Error("Unknown or incomplete email body block.");
@@ -41,8 +42,8 @@
           const url = new URL(block.url);
           if (url.protocol !== "https:" || url.username || url.password || url.port) throw new Error("Simulated destinations must be HTTPS addresses without credentials or ports.");
           const host = url.hostname;
-          if (email.classification === "legitimate" && !belongsTo(host, institution.domain)) throw new Error("A legitimate destination must belong to its reference institution's domain.");
-          if (email.classification === "phishing" && belongsTo(host, institution.domain)) throw new Error("A phishing destination must not belong to its claimed institution's domain.");
+          if (hasAnswers && email.classification === "legitimate" && !belongsTo(host, institution.domain)) throw new Error("A legitimate destination must belong to its reference institution's domain.");
+          if (hasAnswers && email.classification === "phishing" && belongsTo(host, institution.domain)) throw new Error("A phishing destination must not belong to its claimed institution's domain.");
         }
       }
       if (!Array.isArray(email.acceptedEvidence) || !email.acceptedEvidence.length || email.acceptedEvidence.some(id=>!evidenceChoices(email).includes(id))) throw new Error("Evidence keys must identify selectable details in the message or verification record.");
@@ -124,7 +125,8 @@
       validateBank(bank, settings);
       if (![2,3,4].includes(data?.version) || data.version===2&&data.status==='finished' || data.roundSeconds !== settings.roundSeconds || !Array.isArray(data.questionIds) || data.questionIds.length !== settings.roundQuestions || new Set(data.questionIds).size !== data.questionIds.length || !Array.isArray(data.answers) || data.answers.length !== data.questionIds.length || !["ready","playing","finished"].includes(data.status)) throw new Error("Saved inbox uses a different exercise version or is damaged. Ask the Game Master to cancel this Round.");
       const questions=data.questionIds.map(id=>bank.find(q=>q.id===id));
-      if (questions.some(q=>!q) || (settings.roundQuestions===10 && questions.filter(q=>q.classification==='phishing').length!==5)) throw new Error("Invalid saved email deal.");
+      const hasAnswers = questions.some(q => q.classification !== undefined);
+      if (questions.some(q=>!q) || (hasAnswers && settings.roundQuestions===10 && questions.filter(q=>q.classification==='phishing').length!==5)) throw new Error("Invalid saved email deal.");
       const count=data.answers.filter(a=>a!==null).length;
       if (data.index!==count || data.answers.some((a,i)=> i<count ? (!a||!['phishing','legitimate'].includes(a.classification)) : a!==null)) throw new Error("Invalid saved answers.");
       if(!Array.isArray(data.verified)||data.verified.length!==questions.length||data.verified.some(v=>typeof v!=='boolean'))throw new Error('Invalid verification record.');

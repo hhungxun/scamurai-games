@@ -5,6 +5,11 @@
   const { BANKNOTE_SETS, DURATION_MS, NOTE_COUNT, SNAPSHOT_VERSION, Round } = window.FakeCashCore;
   const booth = window.parent !== window ? window.parent.ScamuraiBooth : null;
   const demo = new URLSearchParams(location.search).get('demo') === '1';
+  // Demo/standalone only: merge the local answer key back in for judging. Event rounds get
+  // verdicts from the server, so the shipped game-core.js carries no isReal values.
+  if ((!booth || demo) && window.FAKECASH_DEMO_ANSWERS) {
+    BANKNOTE_SETS.forEach((s, i) => { s.isReal = window.FAKECASH_DEMO_ANSWERS[i]; });
+  }
 
   const FEEDBACK_MS = 1700;
   const MIN_BANKNOTE_ZOOM = 1;

@@ -1,8 +1,12 @@
 'use strict';
 const assert=require('node:assert/strict');
+const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const bank=require('../emails.js'),config=require('../config.js');
 const {Round,selectQuestions,validateBank,evidenceChoices}=require('../game-core.js');
 const fishing=require('../catch.js');
+// Rebuild the local answer key (as the demo/standalone build does) so the tests exercise judging.
+const demoWin={};vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../demo-answers.js'),'utf8'),{window:demoWin});
+for(const email of bank){const c=demoWin.EMAIL_DEMO_ANSWERS[email.id];if(c)email.classification=c;}
 validateBank(bank,config);assert.equal(bank.length,32);assert.equal(config.roundSeconds,90);
 let seed=7314;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
 const orders=new Set(),seen=new Set(),easyLegit=new Set();

@@ -5,6 +5,14 @@
   const host = window.parent !== window ? window.parent.ScamuraiBooth : null;
   const demo = !host || host.demo;
   const settings = window.GAME_CONFIG;
+  // Demo/standalone only: merge the local answer key back in for judging. Event rounds get
+  // verdicts from the server, so the shipped emails.js carries no classifications.
+  if (demo && window.EMAIL_DEMO_ANSWERS) {
+    for (const email of window.EMAIL_BANK) {
+      const c = window.EMAIL_DEMO_ANSWERS[email.id];
+      if (c) email.classification = c;
+    }
+  }
   const questionCount = settings.roundQuestions;
   const pointsPerEmail = 100 / questionCount;
   const save = () => { if (host) host.update(window, round.snapshot()); };
@@ -39,7 +47,7 @@
   }
   function label(kind) { return kind === "phishing" ? "Phishing" : kind === "legitimate" ? "Legitimate" : "Unanswered"; }
   const formatClock = seconds => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
-  let round, ticker = null, transition = null, locked = false, page = "welcome", lastAnnouncement = null, emailObserver = null;
+  let round, ticker = null, transition = null, locked = false, page = "welcome", lastAnnouncement = null, emailObserver = null, showingResults = false;
 
   // Monotonic time during normal use, with a wall-clock fallback for laptop sleep.
   function makeClock() {
@@ -378,9 +386,19 @@
       <div class="field-badges" aria-label="Earned field badges"><h3>Field badges</h3>${report.badges.length ? `<ul>${report.badges.map(badge=>`<li>${icon('shield')}<div><strong>${badge.title}</strong><p>${badge.detail} <span>${badge.count} caught.</span></p></div></li>`).join('')}</ul>` : '<p>No badges this round. Catch a scam to earn a badge for the trick you spotted.</p>'}<p class="badge-note">Badges celebrate what you spotted. Your score is shown above.</p></div>
     </section>`;
   }
-  function showResults() {
-    if (page !== "playing" || round.status !== "finished") return;
+  async function showResults() {
+    if (showingResults || page !== "playing" || round.status !== "finished") return;
+    showingResults = true;
     clearWork();
+    if (host && !demo) {
+      try {
+        const res = await host.review(window);
+        for (const r of (res && res.review) || []) {
+          const email = round.questions.find(q => q.id === r.id);
+          if (email) email.classification = r.classification;
+        }
+      } catch (e) { /* keep going; review cards fall back to unanswered */ }
+    }
     page = "results";
     document.body.dataset.screen = page;
     const results = round.results();

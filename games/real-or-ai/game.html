@@ -93,6 +93,11 @@
 <div id="announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 <noscript><p style="padding:24px">Please enable JavaScript to play.</p></noscript>
 <script src="./data/questions.js"></script>
+<script>/* Load the demo answer key only for demo/standalone play; event rounds never ship answers to the browser. */
+if (new URLSearchParams(location.search).get('demo') === '1' || window.parent === window) {
+  document.write('<script src="./data/demo-answers.js"><\/script>');
+}
+</script>
 <script src="./js/game-core.js"></script>
 <script src="./js/game.js"></script>
 </body>

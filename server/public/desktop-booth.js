@@ -132,6 +132,7 @@
     // The server stores both and computes the score at finish, so the browser never needs the answer key.
     deal(win) { verify(win); if (demo) return { demo: true }; return Scamurai.api(`/api/rounds/${state.roundId}/deal`, { method: 'POST' }); },
     answer(win, qid, choice) { verify(win); if (demo) return { demo: true }; return Scamurai.api(`/api/rounds/${state.roundId}/answer`, { method: 'POST', body: { qid, choice } }); },
+    review(win) { verify(win); if (demo) return { demo: true }; return Scamurai.api(`/api/rounds/${state.roundId}/review`); },
     update(win, snapshot) { verify(win); if (state.status !== 'open') throw new Error('This Round has already ended.'); state.snapshot = snapshot; persist(); },
     finish(win, snapshot, score) {
       verify(win);
