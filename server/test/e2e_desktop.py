@@ -26,7 +26,7 @@ def run():
     r=api.ok('POST','/api/rounds',{'participantId':'MAIL001'},pin=f'500{n}')
     if n==5:
      api.ok('POST',f'/api/rounds/{r["roundId"]}/events',{'data':{'t':'scan'}},token=r['token'])
-    api.ok('POST',f'/api/rounds/{r["roundId"]}/finish',{'score':25,'maxScore':100},pin=f'500{n}')
+    api.ok('POST',f'/api/rounds/{r["roundId"]}/finish',{'score':200 if n==5 else 25,'maxScore':800 if n==5 else 100},pin=f'500{n}')
    with sync_playwright() as pw:
     browser=pw.chromium.launch();errors=[]
     def laptop(game,station):
