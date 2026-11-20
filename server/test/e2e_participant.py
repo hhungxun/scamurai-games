@@ -124,6 +124,7 @@ def run():
                 round_at(3, 100); round_at(4, 100); r5 = round_at(5)
                 page.click('#refresh')
                 page.wait_for_function("document.querySelector('[data-station=\"5\"] .playing')")
+                ok('POST', f'/api/rounds/{r5["roundId"]}/events', {'data': {'t': 'scan', 'slug': 'slug1'}}, token=r5['token'])
                 ok('POST', f'/api/rounds/{r5["roundId"]}/finish', {'score': 100, 'maxScore': 100}, pin='5005')
                 ok('POST', '/api/checkout', {'participantId': 'PORTAL001', 'answers': full_survey()}, pin='5005')
                 page.click('#refresh')
