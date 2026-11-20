@@ -20,6 +20,7 @@
   let side = 'front';
   let gameTimerInterval = null;
   let feedback = null;
+  let submitting = false;
   let initialized = false;
   let isUVOn = true;
   let flipping = false;
@@ -148,7 +149,7 @@
   }
 
   function setVerdictAvailability() {
-    const enabled = round?.status === 'playing' && !feedback;
+    const enabled = round?.status === 'playing' && !feedback && !submitting;
     $('pass-btn').disabled = !enabled;
     $('reject-btn').disabled = !enabled;
   }
@@ -230,10 +231,15 @@
     }, 200);
   }
 
-  function startGame() {
+  async function startGame() {
     if (!initialized || round) return;
     try {
-      round = new Round();
+      if (booth && !demo) {
+        const deal = await booth.deal(window);
+        round = new Round({ order: deal.ids });
+      } else {
+        round = new Round();
+      }
       saveProgress();
       showRound();
     } catch (error) {
@@ -245,15 +251,36 @@
     }
   }
 
-  function evaluateChoice(userChoice) {
-    if (!round || feedback || round.status !== 'playing') return;
+  async function evaluateChoice(userChoice) {
+    if (!round || feedback || submitting || round.status !== 'playing') return;
     const judgedNote = round.note;
-    const result = round.answer(userChoice);
-    if (!result) {
-      endGame();
-      return;
+    let correct;
+    if (booth && !demo) {
+      submitting = true;
+      setVerdictAvailability();
+      if (round.expire()) { submitting = false; endGame(); return; }
+      const noteIndex = round.order[round.index];
+      let verdict;
+      try {
+        verdict = await booth.answer(window, noteIndex, userChoice ? 'real' : 'fake');
+      } catch (error) {
+        submitting = false;
+        setStatus(t('scoreFail') + (error.message || error));
+        setVerdictAvailability();
+        return;
+      }
+      correct = !!verdict.correct;
+      if (!round.recordAnswer(userChoice)) { submitting = false; endGame(); return; }
+      submitting = false;
+    } else {
+      const result = round.answer(userChoice);
+      if (!result) {
+        endGame();
+        return;
+      }
+      correct = result.correct;
     }
-    feedback = { correct: result.correct, note: judgedNote };
+    feedback = { correct, note: judgedNote };
     const card = $('feedback');
     $('feedback-title').textContent = t(feedback.correct ? 'correctPlus' : 'wrongPlus');
     $('feedback-reason').textContent = lang === 'zh' ? feedback.note.reasonZh : feedback.note.reason;

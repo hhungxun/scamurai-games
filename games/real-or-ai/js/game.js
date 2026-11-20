@@ -7,7 +7,7 @@ const host=window.parent!==window?window.parent.ScamuraiBooth:null;
 const demo=!host||host.demo;
 const VERSION=1;
 let items=(window.REAL_OR_AI_QUESTIONS||[]).map(q=>({...q}));
-let round=null,ticker=null,awaitingNext=false,finishReported=false,lastResult=null,page='home';
+let round=null,ticker=null,awaitingNext=false,submitting=false,finishReported=false,lastResult=null,page='home';
 const player=$('player');
 let clearMediaWatch=()=>{};
 function makeClock(){const wallOrigin=Date.now(),monoOrigin=performance.now();return()=>wallOrigin+Math.max(performance.now()-monoOrigin,Date.now()-wallOrigin);}
@@ -52,8 +52,16 @@ async function start(){
  starting=true;$('startBtn').disabled=true;
  try{
   clearInterval(ticker);stopAudio();
-  const r=new Core.Round(items,{now:makeClock()});
-  // Load every stimulus before the 60-second clock starts.
+  let r;
+  if(demo){
+    r=new Core.Round(items,{now:makeClock()});
+  }else{
+    const deal=await host.deal(window);
+    const questions=deal.ids.map(id=>items.find(q=>q.id===id)).filter(Boolean);
+    if(questions.length!==deal.ids.length)throw new Error('This round draws questions missing from this build. Ask the Game Master to cancel the Round.');
+    r=new Core.Round(items,{questions,seconds:deal.seconds,now:makeClock()});
+  }
+  // Load every stimulus before the clock starts.
   const oks=await Promise.all(r.questions.map(q=>preloadOne(q,15000)));
   if(oks.some(ok=>!ok)){toast('Some questions did not load. Check the connection and try again.');return;}
   round=r;finishReported=false;round.start();
@@ -108,19 +116,32 @@ function renderQuestion(){
  }
  announce('Question '+(round.index+1)+' of '+n+'. '+(q.type==='photo'?'Photo.':'Voice.'));
 }
-function answer(choice){
- if(page!=='game'||awaitingNext||!round||round.status!=='playing')return;
- const q=round.current;const res=round.answer(choice);
- if(!res){try{save();}catch(e){return;}showResults();return;}
+async function answer(choice){
+ if(page!=='game'||awaitingNext||submitting||!round||round.status!=='playing')return;
+ const q=round.current;
+ let verdict;
+ if(demo){
+  const res=round.answer(choice);
+  if(!res){try{save();}catch(e){return;}showResults();return;}
+  verdict={correct:res.correct,answer:q.answer,clue:q.clue,explanation:q.explanation};
+ }else{
+  submitting=true;setAnswerButtons(true);       // block a double-submit while the server judges
+  if(round.expire()){submitting=false;try{save();}catch(e){return;}showResults();return;}
+  try{verdict=await host.answer(window,q.id,choice);}
+  catch(e){submitting=false;setAnswerButtons(false);toast('Could not submit your answer: '+(e.message||'server error')+' — try again.');return;}
+  submitting=false;
+  const res=round.recordAnswer(choice,verdict.correct);
+  if(!res){try{save();}catch(e){return;}showResults();return;}
+ }
  try{save();}catch(e){return;}
  if(round.status==='finished'&&host){try{host.finish(window,round.snapshot(),round.score);finishReported=true;}catch(e){storageFailure(e);return;}}
  awaitingNext=true;setAnswerButtons(true);clearMediaWatch();player.pause();
- const f=$('feedback');f.classList.remove('hidden','right','wrong');f.classList.add(res.correct?'right':'wrong');
- const head=(res.correct?'Correct. ':'Not quite. ')+'It was '+(q.answer==='ai'?'AI':'REAL')+'.';
- setText('feedbackHead',head);setText('feedbackClue',q.clue||q.explanation||'');
+ const f=$('feedback');f.classList.remove('hidden','right','wrong');f.classList.add(verdict.correct?'right':'wrong');
+ const head=(verdict.correct?'Correct. ':'Not quite. ')+'It was '+(verdict.answer==='ai'?'AI':'REAL')+'.';
+ setText('feedbackHead',head);setText('feedbackClue',verdict.clue||verdict.explanation||'');
  setText('scoreText',round.correct);$('progressFill').style.width=(round.index/round.questions.length*100)+'%';
  const last=round.status==='finished';$('nextBtn').textContent=last?'See results':'Next question';
- $('nextBtn').focus({preventScroll:true});announce(head+' '+(q.clue||q.explanation||''));
+ $('nextBtn').focus({preventScroll:true});announce(head+' '+(verdict.clue||verdict.explanation||''));
 }
 function next(){
  if(!awaitingNext)return;

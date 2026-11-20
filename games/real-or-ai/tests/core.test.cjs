@@ -28,4 +28,13 @@ t += 45000; assert.equal(r.answer('real'), null); assert.equal(r.status, 'finish
 assert.equal(r.remainingMs(), 0); assert.throws(() => r.answer('real'));
 const perfect = new Round(bank, { now, random }); perfect.start(); while (perfect.current) perfect.answer(perfect.current.answer);
 assert.equal(perfect.status, 'finished'); assert.equal(perfect.endReason, 'complete'); assert.equal(perfect.score, 100);
+
+// Deal flow: server-dealt questions and server-judged answers recorded via recordAnswer.
+const dealt = bank.slice(0, 5);
+const dr = new Round(bank, { questions: dealt, now, random });
+dr.start();
+for (const correct of [true, true, false, true, true]) dr.recordAnswer('real', correct);
+assert.equal(dr.status, 'finished'); assert.equal(dr.correct, 4); assert.equal(dr.wrong, 1);
+assert.equal(dr.score, scoreOf(4, 1, 5));
+
 console.log('real-or-ai core tests passed');

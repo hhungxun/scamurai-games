@@ -61,7 +61,7 @@
     if (heading) heading.focus({ preventScroll: true });
   }
   function announce(text) { announcer.textContent = text; }
-  function resetGame(initial = false) {
+  async function resetGame(initial = false) {
     if (!initial && host) { host.next(window); return; }
     clearWork();
     let saved = initial && host ? host.snapshot(window) : null;
@@ -75,7 +75,16 @@
       return;
     }
     try {
-      round = saved ? GameCore.Round.restore(window.EMAIL_BANK,settings,saved,{now:makeClock()}) : new GameCore.Round(window.EMAIL_BANK, settings, { now: makeClock() });
+      if (saved) {
+        round = GameCore.Round.restore(window.EMAIL_BANK,settings,saved,{now:makeClock()});
+      } else if (host && !demo) {
+        const deal = await host.deal(window);
+        const questions = deal.ids.map(id => window.EMAIL_BANK.find(e => e.id === id)).filter(Boolean);
+        if (questions.length !== deal.ids.length) throw new Error('This round draws emails missing from this build. Ask the Game Master to cancel the Round.');
+        round = new GameCore.Round(window.EMAIL_BANK, settings, { questions, now: makeClock() });
+      } else {
+        round = new GameCore.Round(window.EMAIL_BANK, settings, { now: makeClock() });
+      }
     } catch (error) {
       // Old practice deals can restart, including those that used the full bank.
       if (saved && demo && host) { host.restartDemo(window); return; }
@@ -290,14 +299,19 @@
     focusHeading();
     announce(`Email ${round.index + 1} of ${round.questions.length}. ${email.subject}`);
   }
-  function submitAnswer(questionId, classification) {
+  async function submitAnswer(questionId, classification) {
     if (page !== "playing" || locked) return;
+    locked = true;
     if (!round.answer(questionId,classification)) {
+      locked = false;
       if (round.status === "finished") showResults();
       return;
     }
+    if (host && !demo) {
+      try { await host.answer(window, questionId, classification); }
+      catch (error) { announce("Could not reach the server. Your answer will be re-sent if possible."); }
+    }
     try { save(); } catch (error) { storageFailure(error); return; }
-    locked = true;
     main.querySelectorAll("[data-answer]").forEach(button => {
       button.disabled = true;
       if (button.dataset.answer === round.answers[round.index-1]?.classification) button.classList.add("answer-recorded");
@@ -434,8 +448,7 @@
     if (page === "playing") return; // Protect a live participant's round.
     resetGame();
   });
-  try { resetGame(true); }
-  catch (error) {
+  resetGame(true).catch(error => {
     main.innerHTML = `<div class="setup-error"><h1>Let's check the game files.</h1><p>${esc(error.message)}</p><p>See README.md for the question bank and settings format, then reload this page.</p></div>`;
-  }
+  });
 })();

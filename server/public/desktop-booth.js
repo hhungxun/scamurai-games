@@ -128,6 +128,10 @@
     demo,
     restartDemo(win) { verify(win); if (!demo || busy) return; state = null; persist(); pick(); },
     snapshot(win) { verify(win); return state.snapshot && JSON.parse(JSON.stringify(state.snapshot)); },
+    // Server-side scoring (Stations 1/3/4): the game asks for the deal and submits answers one at a time.
+    // The server stores both and computes the score at finish, so the browser never needs the answer key.
+    deal(win) { verify(win); if (demo) return { demo: true }; return Scamurai.api(`/api/rounds/${state.roundId}/deal`, { method: 'POST' }); },
+    answer(win, qid, choice) { verify(win); if (demo) return { demo: true }; return Scamurai.api(`/api/rounds/${state.roundId}/answer`, { method: 'POST', body: { qid, choice } }); },
     update(win, snapshot) { verify(win); if (state.status !== 'open') throw new Error('This Round has already ended.'); state.snapshot = snapshot; persist(); },
     finish(win, snapshot, score) {
       verify(win);

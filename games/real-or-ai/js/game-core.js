@@ -71,6 +71,17 @@
       if (this.answers.length >= this.questions.length) this.finish('complete');
       return result;
     }
+    // Record an answer whose correctness was already judged by the server (deal/answer flow).
+    recordAnswer(choice, correct) {
+      if (this.status !== 'playing') throw new Error('Round is not running.');
+      if (!['real', 'ai'].includes(choice)) throw new Error('Invalid choice.');
+      if (this.expire()) return null;
+      const q = this.questions[this.index];
+      const result = { id: q.id, choice, correct: !!correct };
+      this.answers.push(result);
+      if (this.answers.length >= this.questions.length) this.finish('complete');
+      return result;
+    }
     finish(reason) { if (this.status === 'finished') return; this.status = 'finished'; this.endedAt = this.now(); this.endReason = reason; }
     snapshot() {
       return { version: VERSION, seconds: this.seconds, questionIds: this.questions.map(q => q.id), answers: this.answers.map(a => ({ ...a })),

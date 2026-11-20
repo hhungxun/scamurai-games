@@ -71,7 +71,7 @@
     constructor(bank, settings, options = {}) {
       this.settings = settings;
       this.now = options.now || (() => Date.now());
-      this.questions = selectQuestions(bank, settings, options.random || Math.random);
+      this.questions = options.questions || selectQuestions(bank, settings, options.random || Math.random);
       this.answers = new Array(this.questions.length).fill(null);
       this.index = 0;
       this.verified = new Array(this.questions.length).fill(false);

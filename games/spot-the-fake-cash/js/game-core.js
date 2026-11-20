@@ -116,9 +116,9 @@
   }
 
   class Round {
-    constructor({ now = Date.now, random = Math.random } = {}) {
+    constructor({ now = Date.now, random = Math.random, order = null } = {}) {
       this.now = now;
-      this.order = shuffleNotes(random);
+      this.order = order || shuffleNotes(random);
       this.deadline = now() + DURATION_MS;
       this.answers = [];
       this.status = 'playing';
@@ -158,6 +158,19 @@
         this.endReason = 'complete';
       }
       return { correct: choice === note.isReal, reason: note.reason };
+    }
+
+    // Record a verdict already judged by the server (deal/answer flow). Returns the note that was judged.
+    recordAnswer(choice) {
+      if (typeof choice !== 'boolean') throw new Error('Invalid verdict');
+      if (this.status !== 'playing' || this.expire()) return null;
+      const note = this.note;
+      this.answers.push(choice);
+      if (this.index === NOTE_COUNT) {
+        this.status = 'finished';
+        this.endReason = 'complete';
+      }
+      return note;
     }
 
     review() {
