@@ -22,6 +22,8 @@ def run():
     people[pid]=api.ok('POST','/api/participants',{'id':pid,'name':pid,'ageGroup':'19–21','pbbAccount':False,'scamExposure':'no','consent':True},pin='1111')
    for n in [1,2,4,5]:
     r=api.ok('POST','/api/rounds',{'participantId':'MAIL001'},pin=f'500{n}')
+    if n==5:
+     api.ok('POST',f'/api/rounds/{r["roundId"]}/events',{'data':{'t':'scan'}},token=r['token'])
     api.ok('POST',f'/api/rounds/{r["roundId"]}/finish',{'score':25,'maxScore':100},pin=f'500{n}')
    with sync_playwright() as pw:
     browser=pw.chromium.launch();errors=[]
