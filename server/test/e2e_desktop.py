@@ -11,6 +11,8 @@ ROOT=Path(__file__).resolve().parents[2]
 BASE=api.BASE='http://127.0.0.1:3048'
 EMAIL_KEY='scamurai.booth.3.event.v1'
 POPUP_KEY='close-popups:station2:v1'
+import re
+CLASSIFICATION=json.loads(re.search(r'=\s*(\{.*\})',(ROOT/'games/phishing-fishing/demo-answers.js').read_text(),re.S).group(1))
 
 def run():
  with tempfile.TemporaryDirectory(prefix='scamurai-desktop-') as data:
@@ -38,7 +40,7 @@ def run():
     def state(p,key=EMAIL_KEY):return p.evaluate('(key)=>JSON.parse(sessionStorage.getItem(key))',key)
     def answer(p,correct=True,kind=None):
      f=frame(p);qid=f.locator('[data-question]').first.get_attribute('data-question')
-     actual=f.evaluate('(id)=>EMAIL_BANK.find(e=>e.id===id).classification',qid)
+     actual=CLASSIFICATION[qid]
      choice=kind or (actual if correct else 'phishing' if actual=='legitimate' else 'legitimate')
      f.locator(f'[data-answer="{choice}"]').click()
      f.wait_for_function('(old)=>document.querySelector("[data-question]")?.dataset.question!==old',arg=qid)
