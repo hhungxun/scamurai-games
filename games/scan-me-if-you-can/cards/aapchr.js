@@ -25,6 +25,6 @@ SimCards.register({
  "tells": [
   "The address is mytax-hasil.gov-my.org. The real one is mytax.hasil.gov.my: a real Malaysian government site ends in .gov.my, but here it ends in .org and \"gov-my\" is just a label someone put in the name.",
   "LHDN never asks you to pick your bank and type your online banking username and password to receive a refund. A tax refund is paid into the bank account you already registered with LHDN.",
-  "A surprise refund with a \"Tamat dalam 15:00\" countdown is there to rush you. Check a refund only by typing mytax.hasil.gov.my yourself."
+  "A surprise refund with a 15:00 countdown is there to rush you. Check a refund only by typing mytax.hasil.gov.my yourself."
  ]
 });

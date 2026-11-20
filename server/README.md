@@ -16,7 +16,7 @@ Live: https://scamurai.physicsxmum.my (labvps, via the existing Cloudflare tunne
 | `/games/close-the-popups/` | Station 2 participant-played desktop laptops, participant picker and scored challenge |
 | `/games/scan-me-if-you-can/board.html` | Print the 25 Station 5 QR codes |
 | `/stations.html` | Print the five public station QR codes |
-| `/station.html?n=1…5` | Participant station screen (1–2 direct to the laptops; 5 explains the Join QR; 3–4 coming soon) |
+| `/station.html?n=1…5` | Participant station screen (1–4 direct to the laptops; 5 explains the Join QR) |
 
 ## Run locally
 

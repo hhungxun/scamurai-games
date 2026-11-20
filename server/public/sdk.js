@@ -110,7 +110,7 @@
     escCancel = null;
     if (!root) { root = h('<div class="scm"></div>'); document.body.appendChild(root); }
     root.style.display = 'flex';
-    root.innerHTML = `<div class="scm-card"><a class="scm-home" href="${API}/">← Scamurai home</a><div class="scm-top"><img src="${API}/assets/logo.jpg" alt="">
+    root.innerHTML = `<div class="scm-card"><div class="scm-top"><img src="${API}/assets/logo.jpg" alt="">
       <div><h1>Scam<em>urai</em></h1><p class="tag">Forewarned is forearmed</p></div></div>${html}</div>`;
     return root.firstChild;
   }
@@ -278,8 +278,9 @@
       res = TEST ? { pct: Math.round(score / maxScore * 1000) / 10, best: 0, stationsDone: [STATION], surveyDue: false }
         : await api(`/api/rounds/${round.id}/finish`, { method: 'POST', body: { score, maxScore } });
     } catch (e) {
-      screen(`<p class="err">Could not save the score: ${esc(e.message)}</p><button class="go">Try again</button>`)
-        .querySelector('.go').onclick = () => { round.done = false; finish({ score, maxScore }); };
+      const cancelled = e.status === 409;
+      screen(`<p class="err">Could not save the score: ${esc(e.message)}</p><button class="go">${cancelled ? 'Next player' : 'Try again'}</button>`)
+        .querySelector('.go').onclick = () => { if (cancelled) return nextPlayer(); round.done = false; finish({ score, maxScore }); };
       return;
     }
     round.result = res;
@@ -294,7 +295,7 @@
       ${res.surveyDue ? '<div class="row"><span></span><button class="ghost more">Play more first</button></div>' : ''}`);
     el.querySelector('.go').onclick = () => res.surveyDue ? survey(participant, res.stationsDone, true) : nextPlayer();
     const more = el.querySelector('.more'); if (more) more.onclick = () => nextPlayer();
-    const reloadTimer = !res.surveyDue && setTimeout(() => location.reload(), 30000);
+    const reloadTimer = !res.surveyDue && setTimeout(() => location.reload(), 120000);
     el.querySelector('.personal').onclick = () => { clearTimeout(reloadTimer); personalQR(el.querySelector('.personal-qr'), participant); };
     return res;
   }

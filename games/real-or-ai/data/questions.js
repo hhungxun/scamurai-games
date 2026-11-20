@@ -82,7 +82,7 @@ window.REAL_OR_AI_QUESTIONS = [
     "type": "photo",
     "title": "Café detail",
     "subtitle": "PHOTO • LOOK CLOSELY",
-    "explanation": "An alternate crop of an AI-generated café scene, used temporarily for this demo.",
+    "explanation": "An alternate crop of an AI-generated café scene.",
     "clue": "Zoom in on small details such as cups, text and edges; AI crops often blur or merge objects.",
     "src": "assets/images/P08.jpg",
     "enabled": true,
@@ -104,7 +104,7 @@ window.REAL_OR_AI_QUESTIONS = [
     "type": "photo",
     "title": "Street detail",
     "subtitle": "PHOTO • LOOK CLOSELY",
-    "explanation": "An alternate crop of an AI-generated city street, used temporarily for this demo.",
+    "explanation": "An alternate crop of an AI-generated city street.",
     "clue": "Check lettering, windows and lamp posts; AI often bends straight lines or invents unreadable signs.",
     "src": "assets/images/P10.jpg",
     "enabled": true,
@@ -224,5 +224,16 @@ window.REAL_OR_AI_QUESTIONS = [
     "src": "assets/audio/V10.mp3",
     "enabled": true,
     "demo": true
+  },
+  {
+    "id": "V11",
+    "type": "voice",
+    "title": "Computer voice",
+    "subtitle": "VOICE • LISTEN CLOSELY",
+    "explanation": "A genuine recording of a person reading automated-system lines in a flat, emotionless monotone. It sounds like a machine, but a real human said it — 'sounds robotic' is not proof of AI.",
+    "clue": "Listen past the monotone: a subtle breath or the uneven start of a word can still give away a real person.",
+    "src": "assets/audio/V11.mp3",
+    "enabled": true,
+    "demo": false
   }
 ];

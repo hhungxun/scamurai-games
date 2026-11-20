@@ -20,5 +20,6 @@ window.REAL_OR_AI_DEMO_ANSWERS = {
   "V07": "real",
   "V08": "ai",
   "V09": "real",
-  "V10": "ai"
+  "V10": "ai",
+  "V11": "real"
 };

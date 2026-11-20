@@ -174,7 +174,7 @@ const need = (cond, code, msg) => { if (!cond) throw new HttpError(code, msg); }
 function auth(req, roles) {
   const ip = clientIp(req);
   need(!tooManyFailures(ip), 429, 'Too many different wrong PINs from this network. Wait 10 minutes.');
-  const pin = req.headers['x-pin'] || new URL(req.url, 'http://x').searchParams.get('pin');
+  const pin = req.headers['x-pin'];
   const who = pin && PINS[pin];
   if (!who) { wrongPins(ip).set(String(pin || ''), Date.now()); throw new HttpError(401, 'Wrong PIN'); }
   need(who.role === 'admin' || roles.includes(who.role), 403, 'This PIN cannot do that');
@@ -197,7 +197,7 @@ function cors(req, res) {
   }
 }
 const send = (res, code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(obj)); };
-const csvCell = v => { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v; };
+const csvCell = v => { v = v == null ? '' : String(v); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v; };
 const csv = rows => rows.map(r => r.map(csvCell).join(',')).join('\n') + '\n';
 const iso = t => t ? new Date(t).toISOString() : '';
 
@@ -300,6 +300,7 @@ route('POST', '/api/rounds', async req => {
   const id = cleanId(b.participantId);
   const p = q.getP.get(id);
   need(p, 404, 'Not registered: send them to the front desk');
+  need(!p.checked_out_at, 409, `${p.name} has already checked out. Re-check them in to start another round.`);
   const token = crypto.randomBytes(9).toString('base64url');
   let r;
   db.transaction(() => {   // one open Round per Participant per Station
@@ -369,7 +370,8 @@ route('POST', '/api/rounds/:id/answer', async (req, { id }) => {
   const key = KEYS.games[game];
   const lookup = game === 'real-or-ai' || game === 'phishing-fishing' ? qid : +qid;
   if (!(qid in answers)) {
-    need(Date.now() - d.at <= scoring.DURATION_MS[game] + scoring.GRACE_MS, 409, 'Time is up');
+    const slack = scoring.PRELOAD_SLACK_MS[game] || 0;
+    need(Date.now() - d.at <= scoring.DURATION_MS[game] + scoring.GRACE_MS + slack, 409, 'Time is up');
     answers[qid] = choice;
     q.setAnswers.run(JSON.stringify(answers), r.id);
   }
@@ -390,8 +392,8 @@ route('GET', '/api/rounds/:id/review', async (req, { id }) => {
 const SELF_SCORED_MAX = { 2: 100, 5: 800 };
 
 route('POST', '/api/rounds/:id/finish', async (req, { id }) => {
-  const r = ownRound(req, id);
   const b = await readJson(req);
+  const r = ownRound(req, id);
   need(!r.cancelled, 409, 'Round was cancelled');
   let score, max;
   if (scoring.STATION_GAME[r.station]) {
@@ -446,7 +448,7 @@ route('GET', '/api/rounds/:id/events', async (req, { id }) => {
   if (req.headers['x-round-token'] !== r.token) {
     // A phone with a stale round (e.g. from a rehearsal database) polls with an old token. That is not a PIN
     // guess, so it must not count towards the PIN lockout: every phone and laptop on campus Wi-Fi shares one IP.
-    const pin = req.headers['x-pin'] || new URL(req.url, 'http://x').searchParams.get('pin');
+    const pin = req.headers['x-pin'];
     need(pin, 403, 'Bad round token');
     const who = auth(req, ['station']);
     need(who.role === 'admin' || who.station === r.station, 403, 'Not your station\'s round');
@@ -483,7 +485,7 @@ route('POST', '/api/checkout', async req => {
   const p = q.getP.get(id);
   need(p, 404, 'Not registered');
   const s = summaryOf(id);
-  need(!s.surveyDone || who.role !== 'station', 409, 'Exit survey already submitted for this participant');
+  need((!p.checked_out_at && !s.surveyDone) || who.role !== 'station', 409, 'Exit survey already submitted for this participant');
   const clean = validateSurvey(b.answers, s.stationsDone);
   q.checkout.run(Date.now(), who.station || null, JSON.stringify({ stationsDone: s.stationsDone, answers: clean, at: Date.now() }), id);
   return { ok: true, stationsDone: s.stationsDone };
@@ -494,13 +496,14 @@ route('GET', '/api/leaderboard', () => {
   const rows = allSummaries().map(({ s }) => s).filter(s => CONFIG.stations.every(st => s.stationsDone.includes(st.n)))
     .sort((a, b) => b.total - a.total || a.totalMs - b.totalMs);
   let prize = 0;
+  const ranked = rows.map((s, i) => ({
+    rank: i + 1, who: mask(s.name, s.id), total: s.total, done: s.stationsDone.length,
+    mins: Math.round(s.totalMs / 6000) / 10, eligible: s.eligible, prize: s.eligible && prize < 3 ? ++prize : null,
+  }));
   return {
     stations: STATION_COUNT,
     registered: rows.length,
-    rows: rows.slice(0, 30).map((s, i) => ({
-      rank: i + 1, who: mask(s.name, s.id), total: s.total, done: s.stationsDone.length,
-      mins: Math.round(s.totalMs / 6000) / 10, eligible: s.eligible, prize: s.eligible && prize < 3 ? ++prize : null,
-    })),
+    rows: ranked.slice(0, 30),
   };
 });
 
@@ -543,7 +546,7 @@ function serveStatic(req, res, pathname) {
   if (pathname.startsWith('/games/')) { base = path.join(ROOT, 'games'); rel = pathname.slice('/games'.length); }
   if (rel.endsWith('/')) rel += 'index.html';
   // preview.html shows every Site Card with its answer: only on this machine, never through the tunnel or LAN.
-  if (/\/preview\.html$/.test(rel) && !isLocal(req)) return false;
+  if (/\/preview\.html$/.test(rel) && (!isLocal(req) && (process.env.ALLOW_PREVIEW !== '1' || req.headers['cf-connecting-ip']))) return false;
   let file; try { file = path.normalize(path.join(base, decodeURIComponent(rel))); } catch { return false; }
   if (!file.startsWith(base + path.sep) || /\/\./.test(rel)) return false;
   let st; try { st = fs.statSync(file); } catch { return false; }
@@ -565,6 +568,24 @@ function serveStatic(req, res, pathname) {
   if (path.extname(file) === '.css') {
     const css = fs.readFileSync(file, 'utf8').replace(/(@import\s+url\(["'])([^"'?#]+\.css)(["']\))/g, `$1$2?v=${BUILD}$3`);
     res.writeHead(200, head); res.end(css); return true;
+  }
+  head['Accept-Ranges'] = 'bytes';
+  // Safari and iOS need Range requests to seek/replay <audio> and <video>.
+  const range = req.headers.range;
+  if (range) {
+    const m = /^bytes=(\d*)-(\d*)$/.exec(range);
+    if (m && (m[1] !== '' || m[2] !== '')) {
+      const size = st.size;
+      let start, end;
+      if (m[1] === '') { start = Math.max(0, size - (+m[2])); end = size - 1; }
+      else { start = +m[1]; end = m[2] === '' ? size - 1 : Math.min(+m[2], size - 1); }
+      if (start > end || start >= size) { res.writeHead(416, { 'Content-Range': `bytes */${size}` }); res.end(); return true; }
+      head['Content-Range'] = `bytes ${start}-${end}/${size}`;
+      head['Content-Length'] = String(end - start + 1);
+      res.writeHead(206, head);
+      fs.createReadStream(file, { start, end }).pipe(res);
+      return true;
+    }
   }
   res.writeHead(200, head);
   fs.createReadStream(file).pipe(res);
@@ -596,4 +617,10 @@ const server = http.createServer(async (req, res) => {
     console.error(e); send(res, 500, { error: 'Server error' });
   }
 });
+route('GET', '/api/health', () => ({ ok: !!KEYS, keys: !!KEYS, db: true }));
+
+server.on('error', err => { console.error('[server]', err.message); process.exit(1); });
+for (const sig of ['SIGTERM', 'SIGINT']) {
+  process.on(sig, () => server.close(() => { db.close(); process.exit(0); }));
+}
 server.listen(PORT, HOST, () => console.log(`Scamurai on http://${HOST}:${PORT}`));

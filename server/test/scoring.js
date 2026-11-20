@@ -148,7 +148,7 @@ async function main() {
     const r = await round(4), d = await deal(r);
     const db = new Database(path.join(dataDir, 'scamurai.db'));
     const row = db.prepare('SELECT deal FROM rounds WHERE id=?').get(r.roundId);
-    const old = { ...JSON.parse(row.deal), at: Date.now() - 80_000 };
+    const old = { ...JSON.parse(row.deal), at: Date.now() - 95_000 };
     db.prepare('UPDATE rounds SET deal=? WHERE id=?').run(JSON.stringify(old), r.roundId);
     db.close();
     assert.equal((await answer(r, d.ids[0], 'real')).status, 409);
