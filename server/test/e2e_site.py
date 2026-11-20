@@ -188,9 +188,9 @@ def run():
                     p=register('TIE001','Tie Tester')
                     first=api.ok('POST','/api/rounds',{'participantId':p['id']},pin='5001')
                     cross_station_blocked = api.call('GET',f'/api/rounds/{first["roundId"]}/events',pin='5002')[0]==403
-                    api.ok('POST',f'/api/rounds/{first["roundId"]}/finish',{'score':1,'maxScore':3},pin='5001')
+                    api.ok('POST',f'/api/rounds/{first["roundId"]}/finish',{'score':33,'maxScore':100},pin='5001')
                     second=api.ok('POST','/api/rounds',{'participantId':p['id']},pin='5001');time.sleep(1.1)
-                    api.ok('POST',f'/api/rounds/{second["roundId"]}/finish',{'score':1,'maxScore':3},pin='5001')
+                    api.ok('POST',f'/api/rounds/{second["roundId"]}/finish',{'score':33,'maxScore':100},pin='5001')
                     req=urllib.request.Request(BASE+'/api/export/participants.csv',headers={'X-Pin':'9999'})
                     rows=list(csv.DictReader(io.StringIO(urllib.request.urlopen(req).read().decode('utf-8-sig'))))
                     row=next(r for r in rows if r['participant_id']==p['id']);assert cross_station_blocked and row['s1_best_secs']=='0', {'cross_station_blocked':cross_station_blocked,'best_secs':row['s1_best_secs']}
@@ -202,7 +202,7 @@ def run():
                         if n==5:
                             api.ok('POST',f'/api/rounds/{r["roundId"]}/events',{'data':{'t':'scan'}},token=r['token'])
                         api.ok('POST',f'/api/rounds/{r["roundId"]}/finish',{'score':0,'maxScore':100},pin=f'500{n}')
-                    page.wait_for_function("document.getElementById('rows').textContent.includes('33.3')")
+                    page.wait_for_function("document.getElementById('rows').textContent.includes('33')")
                     assert page.locator('#rows tr td').count()==4
                     assert 'TIE001' not in page.inner_text('#rows')
                     page.screenshot(path=str(OUT/'leaderboard-desktop.png'),full_page=True)
