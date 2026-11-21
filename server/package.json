@@ -3,7 +3,7 @@
   "private": true,
   "description": "Scamurai backbone: registration, rounds, exit survey, leaderboard",
   "main": "server.js",
-  "scripts": { "start": "node server.js", "test": "node test/popup-score.js && node ../games/phishing-fishing/tests/core.test.cjs && node test/pressure.js && node test/scoring.js && node test/backup-restore.js" },
+  "scripts": { "start": "node server.js", "test": "node ../games/spot-the-fake-cash/tests/core.test.cjs && node test/popup-score.js && node ../games/phishing-fishing/tests/core.test.cjs && node test/pressure.js && node test/scoring.js && node test/backup-restore.js" },
   "engines": { "node": ">=20" },
   "dependencies": { "better-sqlite3": "^12.4.1" }
 }

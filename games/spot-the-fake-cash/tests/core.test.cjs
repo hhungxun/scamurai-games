@@ -3,40 +3,31 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
-const { BANKNOTE_SETS, DURATION_MS, NOTE_COUNT, Round } = require('../js/game-core.js');
+const { BANKNOTE_SETS, DENOMINATIONS, DURATION_MS, NOTE_COUNT, Round } = require('../js/game-core.js');
 
-// Rebuild the local answer key (as the demo/standalone build does) so the tests exercise judging.
+// Rebuild the local answer key (as the demo/standalone build does) so tests exercise judging.
 const demoWin = {};
 vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../js/demo-answers.js'), 'utf8'), { window: demoWin });
 BANKNOTE_SETS.forEach((s, i) => { s.isReal = demoWin.FAKECASH_DEMO_ANSWERS[i]; });
 
-test('draws ten distinct notes, five real and five fake, with labels and review clues', () => {
-  const round = new Round({ random: () => 0 });
-  assert.equal(round.order.length, 10);
-  // balanced draw: exactly five genuine and five fake, so blind guessing scores 50%
-  assert.equal(round.review().filter(item => item.note.isReal).length, NOTE_COUNT / 2);
-  assert.equal(round.review().filter(item => !item.note.isReal).length, NOTE_COUNT / 2);
+test('draws ten distinct notes across all five denominations with even 5-real/5-fake split', () => {
   assert.equal(NOTE_COUNT, 10);
-  assert.equal(BANKNOTE_SETS.length, 18);
-  // six genuine (one per denomination), then twelve fakes
-  assert.deepEqual(BANKNOTE_SETS.map(note => note.isReal), [
-    true, true, true, true, true, true,
-    false, false, false, false, false, false,
-    false, false, false, false, false, false,
-  ]);
-  for (const seed of [0, 0.3, 0.7, 0.999]) {
-    const order = new Round({ random: () => seed }).order;
+  assert.equal(BANKNOTE_SETS.length, 20);
+  assert.equal(BANKNOTE_SETS.filter(n => n.isReal).length, 6);
+  assert.equal(BANKNOTE_SETS.filter(n => !n.isReal).length, 14);
+  for (const seed of [0, 0.25, 0.6, 0.999]) {
+    const round = new Round({ random: () => seed });
+    const order = round.order;
+    assert.equal(order.length, NOTE_COUNT);
     assert.equal(new Set(order).size, NOTE_COUNT);
     assert.ok(order.every(id => id >= 0 && id < BANKNOTE_SETS.length));
-    assert.equal(order.filter(id => BANKNOTE_SETS[id].isReal).length, NOTE_COUNT / 2);
+    const reals = order.filter(id => BANKNOTE_SETS[id].isReal).length;
+    assert.equal(reals, NOTE_COUNT / 2);
+    const denoms = new Set(order.map(id => BANKNOTE_SETS[id].denomination));
+    for (const d of DENOMINATIONS) assert.ok(denoms.has(d), `missing denomination ${d}`);
   }
   assert.ok(BANKNOTE_SETS.every(note => note.reason.length > 0 && note.reasonZh.length > 0));
-  assert.ok(BANKNOTE_SETS.every(note => note.front.endsWith('.png') && note.back.endsWith('.png')));
-  assert.equal(new Set(BANKNOTE_SETS.map(note => note.denomination)).size, 6);
-  assert.equal(BANKNOTE_SETS.filter(note => note.isReal).length, 6);
-  assert.equal(BANKNOTE_SETS.filter(note => !note.isReal).length, 12);
-  // only genuine notes are named "Genuine" and carry no defects
-  assert.ok(BANKNOTE_SETS.every(note => note.isReal === (note.defects.length === 0 && note.name.startsWith('Genuine'))));
+  assert.ok(BANKNOTE_SETS.every(note => note.frontDay && note.frontUV && note.backDay && note.backUV));
 });
 
 test('scores ten points per correct answer and closes the round after the tenth verdict', () => {
@@ -51,6 +42,21 @@ test('scores ten points per correct answer and closes the round after the tenth 
   assert.equal(round.streak, 10);
   assert.equal(round.answer(false), null);
   assert.equal(round.score, 100);
+});
+
+test('server-dealt order + recordAnswer tracks score, streak and review without client isReal', () => {
+  const order = [0, 1, 7, 8, 11, 12, 14, 15, 17, 18];
+  const round = new Round({ now: () => 5_000, order });
+  assert.deepEqual(round.order, order);
+  round.recordAnswer(true, true);
+  round.recordAnswer(false, true);
+  round.recordAnswer(true, false);
+  assert.equal(round.score, 20);
+  assert.equal(round.streak, 0);
+  const restored = Round.restore(JSON.parse(JSON.stringify(round.snapshot())), { now: () => 9_000 });
+  assert.equal(restored.score, 20);
+  assert.equal(restored.review()[0].correct, true);
+  assert.equal(restored.review()[2].correct, false);
 });
 
 test('wrong and unjudged notes earn zero and a wrong answer resets the streak', () => {
