@@ -45,6 +45,45 @@
   function esc(value) {
     return String(value).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]);
   }
+  function playerFirstName() {
+    try {
+      const full = host?.participantName?.(window);
+      if (full && typeof full === "string") {
+        const first = full.trim().split(/\s+/)[0];
+        if (first) return first;
+      }
+    } catch {}
+    return "Aisha";
+  }
+  function personalize(text) {
+    const first = playerFirstName();
+    return first === "Aisha" ? text : String(text).replace(/\bAisha\b/g, first);
+  }
+  const AVATAR_PALETTE = ["#0f6cbd", "#038387", "#4f6bed", "#8764b8", "#ca5010", "#498205", "#986f0b", "#005b70"];
+  function avatarColor(name) {
+    let h = 0;
+    for (const ch of String(name || "")) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return AVATAR_PALETTE[h % AVATAR_PALETTE.length];
+  }
+  function initialsOf(name) {
+    return String(name || "?").replace(/[^a-zA-Z0-9\s]/g, " ").trim().split(/\s+/).slice(0, 2).map(w => w[0] || "").join("").toUpperCase() || "M";
+  }
+  function snippetOf(email) {
+    const p = email.body.find(b => b.type === "paragraph" && b.text.length > 22)
+      || email.body.find(b => b.type === "banner")
+      || email.body[1]
+      || email.body[0];
+    return personalize(p ? p.text.replace(/\s+/g, " ").trim() : "");
+  }
+  function attKind(text) {
+    const s = String(text || "").toLowerCase();
+    if (/\.exe\b/.test(s)) return ["exe", "EXE"];
+    if (/\.html\b/.test(s)) return ["html", "HTML"];
+    if (/\.docm\b/.test(s)) return ["docm", "DOCM"];
+    if (/\.(png|jpg|jpeg|webp)\b/.test(s)) return ["img", "IMG"];
+    if (/\.pdf\b/.test(s)) return ["pdf", "PDF"];
+    return ["file", "FILE"];
+  }
   function label(kind) { return kind === "phishing" ? "Phishing" : kind === "legitimate" ? "Legitimate" : "Unanswered"; }
   const formatClock = seconds => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
   let round, ticker = null, transition = null, locked = false, page = "welcome", lastAnnouncement = null, emailObserver = null, showingResults = false;
@@ -56,6 +95,7 @@
   }
   function clearWork() {
     if (referenceDialog.open) referenceDialog.close();
+    window.SitePopups?.close();
     clearInterval(ticker);
     clearTimeout(transition);
     ticker = transition = null;
@@ -72,19 +112,20 @@
   async function resetGame(initial = false) {
     if (!initial && host) { host.next(window); return; }
     clearWork();
+    showingResults = false;
     let saved = initial && host ? host.snapshot(window) : null;
     const currentFormat = [3, 4].includes(saved?.version);
     if (demo && saved && !currentFormat) {
-      if(host.restartDemo)host.restartDemo(window);else window.parent.location.reload();
+      if (host.restartDemo) host.restartDemo(window); else window.parent.location.reload();
       return;
     }
     if (saved && !currentFormat && !(saved.version === 2 && saved.status !== 'finished')) {
-      main.innerHTML='<section class="setup-error"><h1>This exercise has been updated.</h1><p>This tab contains an earlier Round. Its saved score stays unchanged. Use Next participant if it is saved, or ask the Game Master to cancel an unfinished Round before starting the new exercise.</p></section>';
+      main.innerHTML = '<section class="setup-error"><h1>This exercise has been updated.</h1><p>This tab contains an earlier Round. Its saved score stays unchanged. Use Next participant if it is saved, or ask the Game Master to cancel an unfinished Round before starting the new exercise.</p></section>';
       return;
     }
     try {
       if (saved) {
-        round = GameCore.Round.restore(window.EMAIL_BANK,settings,saved,{now:makeClock()});
+        round = GameCore.Round.restore(window.EMAIL_BANK, settings, saved, { now: makeClock() });
       } else if (host && !demo) {
         const deal = await host.deal(window);
         const questions = deal.ids.map(id => window.EMAIL_BANK.find(e => e.id === id)).filter(Boolean);
@@ -94,14 +135,13 @@
         round = new GameCore.Round(window.EMAIL_BANK, settings, { now: makeClock() });
       }
     } catch (error) {
-      // Old practice deals can restart, including those that used the full bank.
       if (saved && demo && host) { host.restartDemo(window); return; }
       throw error;
     }
     if (round.status !== 'ready') {
       page = 'playing'; document.body.dataset.screen = page;
       if (round.status === 'finished' || round.expire()) { showResults(); return; }
-      renderEmail(); ticker = setInterval(tick,100); tick(); return;
+      renderEmail(); ticker = setInterval(tick, 100); tick(); return;
     }
     page = "welcome";
     document.body.dataset.screen = page;
@@ -120,15 +160,15 @@
           <span class="eyebrow"><span class="tiny-line"></span> THE INBOX CHALLENGE</span>
           <h1 tabindex="-1">Phishing<br><span>Fishing</span><span class="title-dot">.</span></h1>
           <p class="hero-subtitle">Catch the scams.<br>Let safe mail swim.</p>
-          <p class="hero-description">Inspect the sender, actual destination and requested action, then choose Legitimate or Phishing. Your choice submits immediately.</p>
+          <p class="hero-description">Triage your XMUM Outlook inbox. Inspect the sender, hover or click links &amp; attachments safely, and use Check Yourself on the right whenever you’re unsure.</p>
           <div class="round-facts" aria-label="Round details">
-            <div>${icon("mail")}<span><strong>${questionCount} emails</strong><small>One inbox challenge</small></span></div>
+            <div>${icon("mail")}<span><strong>${questionCount} emails</strong><small>One Outlook inbox</small></span></div>
             <div>${icon("clock")}<span><strong>${esc(settings.roundSeconds)} seconds</strong><small>One shared timer</small></span></div>
             <div>${icon("trophy")}<span><strong>100 points</strong><small>A perfect score</small></span></div>
           </div>
           <button class="button primary start-button" id="start-game" type="button">Start Game ${icon("arrow")}</button>
           <p class="scoring-note">${questionCount} emails · ${pointsPerEmail} points per correct answer. Wrong and unanswered emails earn 0 points. ${demo ? "Unscored demo: no event result is saved." : "Your best completed Station 3 score counts."}</p>
-          <p class="start-note">Use Verify independently when you need the service record. Checking is free; the timer keeps running. A familiar sender alone proves nothing.</p>
+          <p class="start-note">Use Check Yourself on the right when you want to verify against your own app or portal. Checking is free; the timer keeps running.</p>
         </div>
         <div class="hero-art fishing-hero" aria-hidden="true">
           <div class="art-grid"></div>
@@ -163,18 +203,25 @@
     tick();
   }
   function progressRail() {
-    return `<aside class="round-sidebar" aria-label="Round progress">
-      <div class="sidebar-title">${icon("mail")} Your inbox <span>${round.questions.length}</span></div>
-      <ol class="email-progress">${round.questions.map((_, i) => {
-        const done = round.answers[i] !== null, active = i === round.index;
-        return `<li class="${done ? "answered" : active ? "current" : "pending"}" ${active ? 'aria-current="step"' : ""}><span class="progress-icon">${done ? icon("check") : icon("mail")}</span><span><strong>Email ${String(i + 1).padStart(2, "0")}</strong><small>${done ? "Answer recorded" : active ? "Reading now" : "Up next"}</small></span>${active ? '<span class="current-dot"></span>' : ""}</li>`;
+    return `<aside class="round-sidebar" aria-label="Inbox message list">
+      <ol class="email-progress">${round.questions.map((em, i) => {
+        const ans = round.answers[i], done = ans !== null, active = i === round.index;
+        const hasAtt = em.body.some(b => b.type === "attachment");
+        const tag = done ? `<span class="ol-row-tag ${ans.classification === "phishing" ? "phish" : "safe"}">${ans.classification === "phishing" ? "Reported" : "Marked Safe"}</span>` : "";
+        return `<li class="${done ? "answered" : active ? "current" : "pending"}" ${active ? 'aria-current="step"' : ""}>
+          <span class="ol-row-avatar" style="background:${avatarColor(em.senderName)}">${esc(initialsOf(em.senderName))}</span>
+          <div class="ol-row-body">
+            <div class="ol-row-top"><span class="ol-row-sender">${esc(em.senderName)}</span><span class="ol-row-time">${hasAtt ? icon("paperclip") : ""}${esc(em.received || "Today")}</span></div>
+            <span class="ol-row-subj">${esc(em.subject)}</span>
+            <span class="ol-row-snip">${esc(snippetOf(em))}</span>
+            ${tag}
+          </div>
+        </li>`;
       }).join("")}</ol>
-      <div class="sidebar-reminder">${icon("eye")}<h2>Take a closer look.</h2><p>The sender, the destination and the request all tell a story.</p><div class="reminder-line"></div><p>Your answers stay private until the round ends.</p></div>
-      <span class="sidebar-simulation">${icon("lock")} Safe training environment</span>
     </aside>`;
   }
   function highlighted(value, target, email, review, evidenceId) {
-    if (!review) return esc(value);
+    if (!review) return esc(personalize(value));
     const clues = email.indicators.filter(ind => ind.target === target).map(ind => ind.text).sort((a, b) => b.length - a.length);
     if (!clues.length) return esc(value);
     // Escape all data and highlight literal matches; no email HTML is executed.
@@ -187,113 +234,262 @@
     }
     return result + esc(value.slice(offset));
   }
-  function caseContext(email,review=false) {
-    return `<aside class="case-context" aria-label="Independent verification record"><div><strong>INDEPENDENT SERVICE RECORD</strong><span>${esc(email.context.source)}</span></div><ul>${email.context.facts.map((fact,i)=>`<li>${esc(fact)} </li>`).join('')}</ul></aside>`;
+  function caseContext(email) {
+    return `<aside class="case-context" aria-label="Check yourself record"><div><strong>YOUR OWN APP / PORTAL</strong><span>${esc(email.context.source)}</span></div><ul>${email.context.facts.map(fact => `<li>${esc(fact)} </li>`).join('')}</ul></aside>`;
   }
   function emailContent(email, review = false) {
-    const initials=email.senderName.split(/\s+/).slice(0,2).map(word=>word[0]).join('');
-    return `<div class="email-heading"><span class="inbox-tag">Inbox</span><h${review?'4':'1'} ${review?'':'tabindex="-1"'}>${highlighted(email.subject,'subject',email,review,'subject')}</h${review?'4':'1'}></div>
-      <div class="sender-row"><span class="sender-avatar">${esc(initials)}</span><div class="sender-details"><div><strong>${esc(email.senderName)}</strong><span class="sender-address">&lt;${highlighted(email.senderEmail,'sender',email,review,'sender')}&gt;</span></div><small>to ${esc(email.recipient||'student@xmum.edu.my')}</small></div></div>
-      <div class="email-body" ${review?'':'tabindex="0" role="region" aria-label="Email message; scroll to read the full text"'}>${email.body.map((block,i)=>{
+    const initials = initialsOf(email.senderName);
+    const color = avatarColor(email.senderName);
+    const recipientAddr = email.recipient || "student@xmum.edu.my";
+    const recipientDisplay = review ? recipientAddr : `${playerFirstName()} <${recipientAddr}>`;
+    const senderDomain = (email.senderEmail.split("@")[1] || "").trim();
+    const headerRow = review
+      ? `<div class="email-heading"><span class="inbox-tag">Inbox</span><h4>${highlighted(email.subject, 'subject', email, true, 'subject')}</h4></div>
+         <div class="sender-row"><span class="sender-avatar">${esc(initials)}</span><div class="sender-details"><div><strong>${esc(email.senderName)}</strong><span class="sender-address">&lt;${highlighted(email.senderEmail, 'sender', email, true, 'sender')}&gt;</span></div><small>to ${esc(recipientDisplay)}</small></div></div>`
+      : `<div class="sender-row">
+           <span class="sender-avatar" style="background:${color}">${esc(initials)}</span>
+           <div class="sender-details">
+             <div class="ol-sender-line">
+               <strong>${esc(email.senderName)}</strong>
+               <span class="sender-address">&lt;${esc(email.senderEmail)}&gt;</span>
+               <button class="ol-sender-pill" id="ol-inspect-sender" type="button" aria-expanded="false" aria-controls="ol-sender-card" title="View domain &amp; header details">Details ▾</button>
+             </div>
+             <div class="ol-to-line">To: ${esc(recipientDisplay)}</div>
+             <div class="ol-sender-card" id="ol-sender-card" hidden>
+               <div><span>From</span><span class="sender-address">&lt;${esc(email.senderEmail)}&gt;</span></div>
+               <div><span>Domain</span><span class="sender-address">${esc(senderDomain)}</span></div>
+             </div>
+           </div>
+           <div class="ol-msg-meta">
+             <span>${esc(email.received || "Today")}</span>
+             <div class="ol-reply-icons" aria-hidden="true">
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 14 4 9l5-5"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m15 14 5-5-5-5"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg>
+             </div>
+           </div>
+         </div>`;
+    return `${headerRow}
+      <div class="email-body" ${review ? '' : 'tabindex="0" role="region" aria-label="Email message; scroll to read the full text"'}>${email.body.map((block, i) => {
         const bodyId = 'body:' + i, destinationId = 'destination:' + i;
         if (block.type === 'banner') {
-          const variant = ['alert','warn','info','success','neutral','prize'].includes(block.variant) ? block.variant : 'info';
-          const subtext = block.subtext ? `<small>${highlighted(block.subtext,'body',email,review,bodyId)}</small>` : '';
-          return `<div class="email-banner banner-${variant}"><strong>${highlighted(block.text,'body',email,review,bodyId)}</strong>${subtext}</div>`;
+          const variant = ['alert', 'warn', 'info', 'success', 'neutral', 'prize'].includes(block.variant) ? block.variant : 'info';
+          const subtext = block.subtext ? `<small>${highlighted(block.subtext, 'body', email, review, bodyId)}</small>` : '';
+          return `<div class="email-banner banner-${variant}"><strong>${highlighted(block.text, 'body', email, review, bodyId)}</strong>${subtext}</div>`;
         }
-        if (block.type === 'button') {
-          if (review) return `<div class="email-link-block"><span class="simulated-link">${highlighted(block.text,'body',email,true,bodyId)}</span><span class="link-destination review-destination"><small>ACTUAL SIMULATED DESTINATION</small>${highlighted(block.url,'body',email,true,destinationId)}</span></div>`;
-          const did=`destination-${email.id}-${i}-play`;
-          return `<div class="email-link-block email-action" data-link-inspector><div class="link-controls"><button class="email-action-button" type="button" data-inspect-link aria-expanded="false" aria-controls="${did}"><span>${esc(block.text)}</span>${icon('arrow')}</button><button class="inspect-link" type="button" data-inspect-link aria-expanded="false" aria-controls="${did}" aria-label="Inspect destination for ${esc(block.text)}">${icon('eye')} <span>Inspect link</span></button></div><span id="${did}" class="link-destination" role="note" hidden><small>SIMULATED DESTINATION</small><span class="destination-url">${esc(block.url)}</span><span class="destination-note">Inspection only. Nothing will open.</span></span></div>`;
+        if (block.type === 'button' || block.type === 'link') {
+          if (review) {
+            return `<div class="email-link-block"><span class="simulated-link">${highlighted(block.text, 'body', email, true, bodyId)}</span><span class="link-destination review-destination"><small>ACTUAL SIMULATED DESTINATION</small>${highlighted(block.url, 'body', email, true, destinationId)}</span></div>`;
+          }
+          const did = `destination-${email.id}-${i}-play`;
+          const previewHtml = block.preview ? `<div class="ol-preview-meta"><strong>App consent preview:</strong> ${esc(block.preview.app)}<br><span>Requested scopes: <code>${esc(block.preview.scopes)}</code></span></div>` : "";
+          const ctaBtn = block.type === 'button'
+            ? `<button class="email-action-button" type="button" data-open-site title="Open safe simulated website preview"><span>${esc(block.text)}</span>${icon('arrow')}</button>`
+            : `<button class="simulated-link" type="button" data-open-site title="Open safe simulated website preview">${esc(block.text)}</button>`;
+          return `<div class="email-link-block ${block.type === 'button' ? 'email-action' : ''}" data-link-inspector data-block-idx="${i}" data-url="${esc(block.url)}"><div class="link-controls">${ctaBtn}<button class="inspect-link" type="button" data-inspect-link aria-expanded="false" aria-controls="${did}" aria-label="Inspect destination for ${esc(block.text)}">${icon('eye')} <span>Inspect URL</span></button></div><span id="${did}" class="link-destination" role="note" hidden><small>ACTUAL DESTINATION</small><span class="destination-url">${esc(block.url)}</span>${previewHtml}<span class="destination-note">Safe inspection only — or click the button/link to preview the site in a safe sandbox.</span></span></div>`;
         }
-        if (block.type === 'link') {
-          if (review) return `<div class="email-link-block"><span class="simulated-link">${highlighted(block.text,'body',email,true,bodyId)}</span><span class="link-destination review-destination"><small>ACTUAL SIMULATED DESTINATION</small>${highlighted(block.url,'body',email,true,destinationId)}</span></div>`;
-          const did=`destination-${email.id}-${i}-play`;
-          return `<div class="email-link-block" data-link-inspector><div class="link-controls"><button class="simulated-link" type="button" data-inspect-link aria-expanded="false" aria-controls="${did}">${esc(block.text)} ${icon('arrow')}</button><button class="inspect-link" type="button" data-inspect-link aria-expanded="false" aria-controls="${did}" aria-label="Inspect destination for ${esc(block.text)}">${icon('eye')} <span>Inspect link</span></button></div><span id="${did}" class="link-destination" role="note" hidden><small>SIMULATED DESTINATION</small><span class="destination-url">${esc(block.url)}</span><span class="destination-note">Inspection only. Nothing will open.</span></span></div>`;
+        if (block.type === 'attachment') {
+          const [cls, badge] = attKind(block.text);
+          if (review) return `<div class="message-detail simulated-attachment">${icon('paperclip')}<span>${highlighted(block.text, 'body', email, true, bodyId)}</span></div>`;
+          const aid = `att-${email.id}-${i}-play`;
+          const fType = block.preview?.fileType || `${badge} Attachment`;
+          const fBehav = block.preview?.behavior || "Safe inspection only — file will not execute or download.";
+          return `<div class="ol-att-wrap" data-att-inspector data-block-idx="${i}"><div class="ol-att-row"><button type="button" class="message-detail simulated-attachment ol-att-btn" data-open-att title="Preview attachment in safe sandbox"><span class="ol-att-badge ${cls}">${badge}</span><span>${esc(personalize(block.text))}</span><span class="ol-att-cta">Open Preview ↗</span></button><button type="button" class="inspect-link" data-inspect-att aria-expanded="false" aria-controls="${aid}">File info ▾</button></div><div id="${aid}" class="ol-att-preview" role="note" hidden><small>SAFE FILE INFO</small><div><strong>Type:</strong> ${esc(fType)}</div><div><strong>When opened:</strong> ${esc(fBehav)}</div></div></div>`;
         }
         if (block.type === 'footer') {
-          return `<div class="email-footer">${highlighted(block.text,'body',email,review,bodyId)}</div>`;
+          return `<div class="email-footer">${highlighted(block.text, 'body', email, review, bodyId)}</div>`;
         }
-        return `<div class="message-detail ${block.type==='detail'?'email-detail':block.type==='attachment'?'simulated-attachment':''}">${block.type==='attachment'?icon('paperclip'):''}<span>${highlighted(block.text,'body',email,review,bodyId)}</span></div>`;
+        return `<div class="message-detail ${block.type === 'detail' ? 'email-detail' : ''}"><span>${highlighted(block.text, 'body', email, review, bodyId)}</span></div>`;
       }).join('')}</div>`;
   }
   function bindLinkInspectors() {
-    main.querySelectorAll("[data-link-inspector]").forEach(block => {
+    const urlBar = main.querySelector("#ol-url-bar");
+    const showBar = url => { if (urlBar) { urlBar.textContent = url; urlBar.hidden = false; } };
+    const hideBar = () => { if (urlBar) urlBar.hidden = true; };
+    const senderBtn = main.querySelector("#ol-inspect-sender");
+    const senderCard = main.querySelector("#ol-sender-card");
+    if (senderBtn && senderCard) {
+      senderBtn.addEventListener("click", () => {
+        const open = senderCard.hidden;
+        senderCard.hidden = !open;
+        senderBtn.setAttribute("aria-expanded", String(open));
+        senderBtn.textContent = open ? "Hide details ▴" : "Details ▾";
+      });
+    }
+    const currentEmail = round.questions[round.index];
+    const popupOpts = () => {
+      const rem = Math.ceil(round.remainingMs() / 1000);
+      return { playerName: playerFirstName(), clockText: formatClock(rem), urgent: rem <= 10 };
+    };
+    main.querySelectorAll("[data-att-inspector]").forEach(wrap => {
+      const openBtn = wrap.querySelector("[data-open-att]");
+      const infoBtn = wrap.querySelector("[data-inspect-att]");
+      const box = wrap.querySelector(".ol-att-preview");
+      const block = currentEmail?.body[Number(wrap.dataset.blockIdx)];
+      if (openBtn && block) {
+        openBtn.addEventListener("click", () => window.SitePopups?.openAttachment(currentEmail, block, popupOpts()));
+      }
+      if (infoBtn && box) {
+        infoBtn.addEventListener("click", () => {
+          const open = box.hidden;
+          box.hidden = !open;
+          infoBtn.setAttribute("aria-expanded", String(open));
+          infoBtn.textContent = open ? "Hide info ▴" : "File info ▾";
+          wrap.closest(".email-body")?.dispatchEvent(new Event("scroll"));
+        });
+      }
+    });
+    main.querySelectorAll("[data-link-inspector]").forEach(blockEl => {
       let pinned = false;
-      const destination = block.querySelector(".link-destination");
-      const controls = block.querySelectorAll("[data-inspect-link]");
+      const destination = blockEl.querySelector(".link-destination");
+      const inspectBtn = blockEl.querySelector("[data-inspect-link]");
+      const openSiteBtn = blockEl.querySelector("[data-open-site]");
+      const targetUrl = blockEl.dataset.url || "";
+      const block = currentEmail?.body[Number(blockEl.dataset.blockIdx)];
       function show(visible) {
         destination.hidden = !visible;
-        controls.forEach(button => button.setAttribute("aria-expanded", String(visible)));
-        block.querySelector(".inspect-link span").textContent = pinned ? "Hide destination" : "Inspect link";
-        block.closest(".email-body").dispatchEvent(new Event("scroll"));
+        if (inspectBtn) inspectBtn.setAttribute("aria-expanded", String(visible));
+        const sp = blockEl.querySelector(".inspect-link span");
+        if (sp) sp.textContent = pinned ? "Hide URL" : "Inspect URL";
+        blockEl.closest(".email-body")?.dispatchEvent(new Event("scroll"));
       }
-      controls.forEach(button => button.addEventListener("click", () => {
-        pinned = !pinned;
-        show(pinned);
-      }));
-      block.addEventListener("pointerenter", event => { if (event.pointerType !== "touch") show(true); });
-      block.addEventListener("pointerleave", () => { if (!pinned && !block.contains(document.activeElement)) show(false); });
-      block.addEventListener("focusin", () => show(true));
-      block.addEventListener("focusout", event => { if (!pinned && !block.contains(event.relatedTarget)) show(false); });
-      block.addEventListener("keydown", event => {
-        if (event.key === "Escape") { pinned = false; show(false); event.stopPropagation(); }
+      if (openSiteBtn && block) {
+        openSiteBtn.addEventListener("click", () => window.SitePopups?.openLink(currentEmail, block, popupOpts()));
+      }
+      if (inspectBtn) {
+        inspectBtn.addEventListener("click", () => {
+          pinned = !pinned;
+          show(pinned);
+          if (pinned) showBar(targetUrl); else hideBar();
+        });
+      }
+      blockEl.addEventListener("pointerenter", event => { if (event.pointerType !== "touch") showBar(targetUrl); });
+      blockEl.addEventListener("pointerleave", () => { if (!pinned) hideBar(); });
+      blockEl.addEventListener("focusin", () => { showBar(targetUrl); });
+      blockEl.addEventListener("focusout", event => { if (!pinned && !blockEl.contains(event.relatedTarget)) hideBar(); });
+      blockEl.addEventListener("keydown", event => {
+        if (event.key === "Escape") { pinned = false; show(false); hideBar(); event.stopPropagation(); }
       });
     });
-  }
-  function renderGameTopbar() {
-    main.innerHTML = `
-      <div class="game-topbar"><div><span class="eyebrow">THE INBOX CHALLENGE</span><p>Email <strong id="email-number"></strong> of ${round.questions.length}</p></div>
-        <div class="fishing-cast" aria-hidden="true">
-          <span class="fishing-water">
-            <span class="fishing-ripple"></span>
-            <span class="fishing-rig"><span class="fishing-hook"></span><span class="fishing-mail">${icon('mail')}</span></span>
-          </span>
-          <span class="cast-feedback">Reeling in…</span>
-        </div>
-        <div class="timer" id="timer" role="timer" aria-live="off" aria-label="Time remaining">${icon("clock")}<div><small>TIME LEFT</small><strong id="timer-value">${formatClock(Math.ceil(round.remainingMs() / 1000))}</strong></div><span class="timer-unit">shared across<br>all ${round.questions.length} emails</span></div>
-      </div>`;
-    const rig = main.querySelector('.fishing-rig');
-    const resetReel = () => rig.closest('.fishing-cast').classList.remove('is-reeling');
-    rig.addEventListener('animationend', resetReel);
-    rig.addEventListener('animationcancel', resetReel);
   }
   function renderEmail() {
     if (page !== "playing") return;
     const email = round.questions[round.index];
+    const remainingCount = round.questions.length - round.index;
+    const reportedCount = round.answers.filter(a => a && a.classification === "phishing").length;
+    const userInitials = initialsOf(playerFirstName());
+    const verified = round.verified[round.index];
+    let panelOpen = true;
     main.className = "game-screen";
-    // Keep the top bar mounted so the hook can finish moving as the next email opens.
-    if (!main.querySelector('.game-topbar')) renderGameTopbar();
-    main.querySelector('#email-number').textContent = round.index + 1;
-    main.querySelector('.game-workspace')?.remove();
-    main.insertAdjacentHTML('beforeend', `
-      <div class="game-workspace">${progressRail()}<section class="message-area" aria-label="Current email">
-        <div class="verification-tools"><button id="verify-independent" type="button" aria-expanded="${round.verified[round.index]}">${icon('shield')} Verify independently</button><span>Optional · no deduction · timer continues</span></div><div id="verification-record" ${round.verified[round.index]?'':'hidden'}>${caseContext(email)}</div><article class="email-card"><div class="email-toolbar"><span>${icon("mail")} Message</span><span>SIMULATED EMAIL</span></div>${emailContent(email)}<div class="email-training-note">${icon("info")} Hover or tap links to inspect. No sites or files will open.<span class="scroll-hint" hidden>Scroll to read more ${icon("chevron")}</span></div></article>
-        <div class="decision-heading"><h2>Is this request legitimate for this case?</h2><span>Choose one to continue ${icon("arrow")}</span></div>
-        <div class="answer-buttons">
-          <button class="answer-button legitimate-button" type="button" data-answer="legitimate" data-question="${esc(email.id)}">${icon("shield")}<span><strong>LEGITIMATE</strong><small>This request is appropriate.</small></span><kbd>L</kbd></button>
-          <button class="answer-button phishing-button" type="button" data-answer="phishing" data-question="${esc(email.id)}">${icon("flag")}<span><strong>PHISHING</strong><small>This request is deceptive or unsafe.</small></span><kbd>P</kbd></button>
+    main.innerHTML = `
+      <header class="ol-topbar" aria-label="Outlook mailbox bar">
+        <div class="ol-brand">
+          <svg class="ol-waffle" viewBox="0 0 18 18" fill="currentColor" aria-hidden="true"><rect x="1" y="1" width="4" height="4" rx=".6"/><rect x="7" y="1" width="4" height="4" rx=".6"/><rect x="13" y="1" width="4" height="4" rx=".6"/><rect x="1" y="7" width="4" height="4" rx=".6"/><rect x="7" y="7" width="4" height="4" rx=".6"/><rect x="13" y="7" width="4" height="4" rx=".6"/><rect x="1" y="13" width="4" height="4" rx=".6"/><rect x="7" y="13" width="4" height="4" rx=".6"/><rect x="13" y="13" width="4" height="4" rx=".6"/></svg>
+          <span>Outlook</span>
+          <span class="ol-mail-tag">XMUM Mail</span>
         </div>
-        <p class="answer-hint">${icon('lock')} Answers are revealed after the round. <span><kbd>L</kbd>/<kbd>P</kbd> answers immediately</span></p>
-      </section></div>`);
-    main.querySelectorAll("[data-answer]").forEach(button => button.addEventListener("click", () => submitAnswer(button.dataset.question,button.dataset.answer)));
-    main.querySelector('#verify-independent').onclick=()=>{
-      if(round.verify(email.id)) {
-        try { save(); } catch(error) { storageFailure(error); return; }
-        const record=main.querySelector('#verification-record');record.hidden=!record.hidden;
-        main.querySelector('#verify-independent').setAttribute('aria-expanded',String(!record.hidden));
+        <div class="ol-search" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <span>Search mail</span>
+        </div>
+        <div class="ol-topbar-right">
+          <span class="ol-progress-pill">Email <strong id="email-number">${round.index + 1}</strong> / ${round.questions.length}</span>
+          <div class="ol-timer" id="timer" role="timer" aria-live="off" aria-label="Time remaining">${icon("clock")}<strong id="timer-value">${formatClock(Math.ceil(round.remainingMs() / 1000))}</strong></div>
+          <button class="ol-top-btn" id="ol-open-reference" type="button" aria-haspopup="dialog" aria-controls="reference-dialog">${icon("info")} How to verify</button>
+          <span class="ol-user-avatar" title="${esc(email.recipient || 'student@xmum.edu.my')}">${esc(userInitials)}</span>
+        </div>
+      </header>
+      <div class="ol-ribbon" role="toolbar" aria-label="Mail actions">
+        <button class="ol-cmd ol-cmd-safe" type="button" data-answer="legitimate" data-question="${esc(email.id)}">${icon("shield")} <span>Mark Safe</span> <kbd>L</kbd></button>
+        <button class="ol-cmd ol-cmd-phish" type="button" data-answer="phishing" data-question="${esc(email.id)}">${icon("flag")} <span>Report Phishing</span> <kbd>P</kbd></button>
+        <span class="ol-sep" aria-hidden="true"></span>
+        <button class="ol-cmd ol-cmd-verify" id="verify-independent" type="button" aria-expanded="${verified}">${icon("eye")} <span>${verified ? "Checked ✓" : "Check Yourself"}</span> <kbd>V</kbd></button>
+        <span class="ol-ribbon-hint">Answers revealed at end of round</span>
+      </div>
+      <div class="ol-workspace">
+        <nav class="ol-nav" aria-label="Mail folders">
+          <div class="ol-folder ol-folder-active">${icon("mail")} <span>Inbox</span> <b>${remainingCount}</b></div>
+          <div class="ol-folder">${icon("arrow")} <span>Sent Items</span></div>
+          <div class="ol-folder">${icon("paperclip")} <span>Drafts</span></div>
+          <div class="ol-folder">${icon("flag")} <span>Junk Email</span> ${reportedCount ? `<b>${reportedCount}</b>` : ""}</div>
+          <div class="ol-nav-foot">${icon("lock")} student@xmum.edu.my<br>Safe training mailbox</div>
+        </nav>
+        <section class="ol-list-pane" aria-label="Inbox messages">
+          <div class="ol-list-head"><div class="ol-tabs"><span class="ol-tab-active">Focused</span><span class="ol-tab-dim">Other</span></div><span class="ol-list-count">${remainingCount} unread</span></div>
+          ${progressRail()}
+        </section>
+        <section class="ol-reading-pane message-area" aria-label="Reading pane">
+          <div class="ol-subject-bar"><h1 tabindex="-1">${esc(email.subject)}</h1><span class="ol-inbox-badge">Inbox</span></div>
+          <article class="email-card">
+            ${emailContent(email)}
+            <div class="email-training-note"><span>${icon("info")} Click Details, hover/click links, or click attachments to inspect safely.</span><span class="scroll-hint" hidden>Scroll to read more ${icon("chevron")}</span></div>
+          </article>
+          <div id="ol-url-bar" class="ol-url-bar" hidden></div>
+          <div class="ol-decision-bar">
+            <button class="answer-button legitimate-button" type="button" data-answer="legitimate" data-question="${esc(email.id)}">${icon("shield")} <strong>Keep in Inbox · Legitimate</strong> <kbd>L</kbd></button>
+            <button class="answer-button phishing-button" type="button" data-answer="phishing" data-question="${esc(email.id)}">${icon("flag")} <strong>Report Phishing</strong> <kbd>P</kbd></button>
+          </div>
+        </section>
+        <aside id="verification-record" class="ol-addin" aria-label="Check Yourself">
+          <div class="ol-addin-head"><strong>${icon("shield")} Check Yourself</strong><button class="ol-addin-close" id="close-verify" type="button" aria-label="Hide Check Yourself pane">×</button></div>
+          <div id="portal-launcher" class="ol-portal-launcher" ${verified ? "hidden" : ""}>
+            <span class="ol-portal-source">${esc(email.context.source)}</span>
+            <p>Not sure? Open your own app or portal directly to double-check this email.</p>
+            <button class="ol-portal-btn" id="portal-lookup-btn" type="button">${icon("eye")} Check It Yourself <kbd>V</kbd></button>
+            <p class="ol-addin-note">Free to check (no score penalty) · timer keeps running.</p>
+          </div>
+          <div id="portal-result" ${verified ? "" : "hidden"}>
+            ${caseContext(email)}
+            <p class="ol-addin-note">What shows up in your own app or portal — compare it against the sender, links, and request.</p>
+          </div>
+        </aside>
+      </div>`;
+
+    main.querySelectorAll("[data-answer]").forEach(button => button.addEventListener("click", () => submitAnswer(button.dataset.question, button.dataset.answer)));
+    main.querySelector("#ol-open-reference").onclick = () => referenceDialog.showModal();
+
+    const recordPane = main.querySelector("#verification-record");
+    const ribbonVerify = main.querySelector("#verify-independent");
+    const launcher = main.querySelector("#portal-launcher");
+    const lookupBtn = main.querySelector("#portal-lookup-btn");
+    const resultEl = main.querySelector("#portal-result");
+
+    const openCheckYourself = () => {
+      if (!panelOpen) { panelOpen = true; recordPane.hidden = false; }
+      if (!round.verified[round.index]) {
+        if (!round.verify(email.id)) return;
+        try { save(); } catch (error) { storageFailure(error); return; }
       }
+      if (launcher) launcher.hidden = true;
+      if (resultEl) resultEl.hidden = false;
+      ribbonVerify.setAttribute("aria-expanded", "true");
+      const sp = ribbonVerify.querySelector("span");
+      if (sp) sp.textContent = "Checked ✓";
+      announce("Your app or portal record loaded.");
     };
+
+    if (lookupBtn) lookupBtn.onclick = openCheckYourself;
+    ribbonVerify.onclick = () => {
+      if (!round.verified[round.index]) { openCheckYourself(); return; }
+      panelOpen = !panelOpen;
+      recordPane.hidden = !panelOpen;
+      ribbonVerify.setAttribute("aria-expanded", String(panelOpen));
+    };
+    main.querySelector("#close-verify").onclick = () => {
+      panelOpen = false;
+      recordPane.hidden = true;
+      ribbonVerify.setAttribute("aria-expanded", "false");
+    };
+
     bindLinkInspectors();
-    // A newly rendered rail starts at the top; keep the current step visible
-    // when the progress rail exceeds the available height on a booth laptop.
+
     const rail = main.querySelector(".round-sidebar");
     const currentStep = rail.querySelector('[aria-current="step"]');
-    if (currentStep.getBoundingClientRect().bottom > rail.getBoundingClientRect().bottom) {
-      rail.scrollTop += currentStep.getBoundingClientRect().bottom - rail.getBoundingClientRect().bottom + 8;
+    if (currentStep) {
+      const rRect = rail.getBoundingClientRect(), cRect = currentStep.getBoundingClientRect();
+      if (cRect.bottom > rRect.bottom || cRect.top < rRect.top) {
+        rail.scrollTop += cRect.top - rRect.top - 40;
+      }
     }
-    const progress = rail.querySelector(".email-progress");
-    progress.scrollLeft = Math.max(0, currentStep.offsetLeft - progress.offsetLeft - (progress.clientWidth - currentStep.offsetWidth) / 2);
     emailObserver?.disconnect();
     const messageBody = main.querySelector(".email-card .email-body");
     const scrollHint = main.querySelector(".scroll-hint");
@@ -310,7 +506,8 @@
   async function submitAnswer(questionId, classification) {
     if (page !== "playing" || locked) return;
     locked = true;
-    if (!round.answer(questionId,classification)) {
+    window.SitePopups?.close();
+    if (!round.answer(questionId, classification)) {
       locked = false;
       if (round.status === "finished") showResults();
       return;
@@ -322,15 +519,12 @@
     try { save(); } catch (error) { storageFailure(error); return; }
     main.querySelectorAll("[data-answer]").forEach(button => {
       button.disabled = true;
-      if (button.dataset.answer === round.answers[round.index-1]?.classification) button.classList.add("answer-recorded");
+      if (button.dataset.answer === round.answers[round.index - 1]?.classification) button.classList.add("answer-recorded");
     });
     announce("Answer recorded.");
     if (round.status === "finished") {
       showResults();
       return;
-    }
-    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      main.querySelector('.fishing-cast').classList.add('is-reeling');
     }
     // Keep the old question locked long enough to absorb double clicks/key repeats.
     transition = setTimeout(() => {
@@ -346,9 +540,11 @@
     if (page !== "playing") return;
     if (round.expire()) { showResults(); return; }
     const remaining = Math.ceil(round.remainingMs() / 1000);
+    const clockStr = formatClock(remaining);
     const timer = document.querySelector("#timer");
-    document.querySelector("#timer-value").textContent = formatClock(remaining);
+    document.querySelector("#timer-value").textContent = clockStr;
     timer.classList.toggle("timer-urgent", remaining <= 10);
+    window.SitePopups?.syncClock(clockStr, remaining <= 10);
     timer.setAttribute("aria-label", `${remaining} seconds remaining, shared across all ${round.questions.length} emails`);
     if ([30, 10, 5].includes(remaining) && remaining !== lastAnnouncement) {
       lastAnnouncement = remaining;
@@ -366,24 +562,24 @@
       ["You're building your radar.", "Every clue you learn makes the next suspicious email easier to recognise."],
       ["Your instincts are taking shape.", "A few small details made the difference. Take a look at the clues below."],
       ["You've got a sharp eye.", "Good accuracy. Review the details that slipped through and try again."]
-    ][Math.min(3,Math.floor((results.correct / results.answered) * 4))];
+    ][Math.min(3, Math.floor((results.correct / results.answered) * 4))];
   }
   function reviewCard(review, i) {
-    const {email,answer,correct}=review;
-    return `<details class="review-card" ${!correct?'open':''}><summary><span class="review-status ${correct?'correct':answer?'incorrect':'unanswered'}">${icon(correct?'check':answer?'cross':'clock')}</span><span class="review-summary"><span class="review-overline">EMAIL ${String(i+1).padStart(2,'0')} · ${esc(email.difficulty)}</span><strong>${esc(email.subject)}</strong><span class="review-answer-line">Your answer: <b>${label(answer)}</b> · Correct: <b class="classification-${email.classification}">${label(email.classification)}</b></span></span><span class="result-badge ${correct?'correct':answer?'incorrect':'unanswered'}">${correct?'Correct':answer?'Incorrect':'Unanswered'}</span>${icon('chevron','review-chevron')}</summary>
-    <div class="review-content"><div class="review-explanation"><span class="explanation-label">${email.classification==='phishing'?'Why this request is phishing':'Why this request is legitimate in this case'}</span><p>${esc(email.explanation)}</p>${caseContext(email,true)}<dl class="decision-reasoning"><dt>Decisive clues</dt><dd>${esc(email.reasoning.evidence)}</dd><dt>Why not ${email.classification==='phishing'?'Legitimate':'Phishing'}?</dt><dd>${esc(email.reasoning.contrast)}</dd><dt>Safe next step</dt><dd>${esc(email.reasoning.nextStep)}</dd></dl><ul class="clue-list">${email.indicators.map(ind=>`<li><strong>${esc(ind.text)}</strong><p>${esc(ind.explanation)}</p></li>`).join('')}</ul></div><article class="review-email ${email.classification==='phishing'?'review-risk':'review-trust'}" aria-label="Email ${i+1} with highlighted clues">${emailContent(email,true)}</article></div></details>`;
+    const { email, answer, correct } = review;
+    return `<details class="review-card" ${!correct ? 'open' : ''}><summary><span class="review-status ${correct ? 'correct' : answer ? 'incorrect' : 'unanswered'}">${icon(correct ? 'check' : answer ? 'cross' : 'clock')}</span><span class="review-summary"><span class="review-overline">EMAIL ${String(i + 1).padStart(2, '0')} · ${esc(email.difficulty)}</span><strong>${esc(email.subject)}</strong><span class="review-answer-line">Your answer: <b>${label(answer)}</b> · Correct: <b class="classification-${email.classification}">${label(email.classification)}</b></span></span><span class="result-badge ${correct ? 'correct' : answer ? 'incorrect' : 'unanswered'}">${correct ? 'Correct' : answer ? 'Incorrect' : 'Unanswered'}</span>${icon('chevron', 'review-chevron')}</summary>
+    <div class="review-content"><div class="review-explanation"><span class="explanation-label">${email.classification === 'phishing' ? 'Why this request is phishing' : 'Why this request is legitimate in this case'}</span><p>${esc(email.explanation)}</p>${caseContext(email)}<dl class="decision-reasoning"><dt>Decisive clues</dt><dd>${esc(email.reasoning.evidence)}</dd><dt>Why not ${email.classification === 'phishing' ? 'Legitimate' : 'Phishing'}?</dt><dd>${esc(email.reasoning.contrast)}</dd><dt>Safe next step</dt><dd>${esc(email.reasoning.nextStep)}</dd></dl><ul class="clue-list">${email.indicators.map(ind => `<li><strong>${esc(ind.text)}</strong><p>${esc(ind.explanation)}</p></li>`).join('')}</ul></div><article class="review-email ${email.classification === 'phishing' ? 'review-risk' : 'review-trust'}" aria-label="Email ${i + 1} with highlighted clues">${emailContent(email, true)}</article></div></details>`;
   }
   function storageFailure(error) {
-    clearWork(); page='error';
-    main.innerHTML=`<section class="setup-error"><h1>Keep this tab open.</h1><p>Your laptop could not preserve this Round: ${esc(error.message)}. Ask the Game Master to cancel it before another participant starts.</p></section>`;
+    clearWork(); page = 'error';
+    main.innerHTML = `<section class="setup-error"><h1>Keep this tab open.</h1><p>Your laptop could not preserve this Round: ${esc(error.message)}. Ask the Game Master to cancel it before another participant starts.</p></section>`;
   }
   function catchReport(results) {
     const report = FishingCatch.summarize(results.reviews);
     return `<section class="catch-report" aria-labelledby="catch-title">
       <div class="catch-heading"><div><span class="eyebrow">THE DAY'S FISHING REPORT</span><h2 id="catch-title">Your catch.</h2></div><p>Choose a card to open its email explanation.</p></div>
-      <dl class="catch-counts">${Object.entries(report.counts).map(([outcome, count])=>`<div class="catch-count ${outcome}"><dt>${FishingCatch.outcomes[outcome]}</dt><dd>${count}</dd></div>`).join('')}</dl>
-      <div class="catch-net" aria-label="Email catches">${report.catches.map(item=>`<button type="button" class="catch-fish ${item.outcome}" data-review-index="${item.index}" aria-controls="review-${item.index}" aria-label="Email ${item.index+1}: ${esc(item.email.subject)}. ${item.title}. Open explanation.">${icon(catchIcons[item.outcome], 'catch-symbol')}<span><strong>${String(item.index+1).padStart(2,'0')}</strong><small>${item.title}</small></span>${icon('chevron')}</button>`).join('')}</div>
-      <div class="field-badges" aria-label="Earned field badges"><h3>Field badges</h3>${report.badges.length ? `<ul>${report.badges.map(badge=>`<li>${icon('shield')}<div><strong>${badge.title}</strong><p>${badge.detail} <span>${badge.count} caught.</span></p></div></li>`).join('')}</ul>` : '<p>No badges this round. Catch a scam to earn a badge for the trick you spotted.</p>'}<p class="badge-note">Badges celebrate what you spotted. Your score is shown above.</p></div>
+      <dl class="catch-counts">${Object.entries(report.counts).map(([outcome, count]) => `<div class="catch-count ${outcome}"><dt>${FishingCatch.outcomes[outcome]}</dt><dd>${count}</dd></div>`).join('')}</dl>
+      <div class="catch-net" aria-label="Email catches">${report.catches.map(item => `<button type="button" class="catch-fish ${item.outcome}" data-review-index="${item.index}" aria-controls="review-${item.index}" aria-label="Email ${item.index + 1}: ${esc(item.email.subject)}. ${item.title}. Open explanation.">${icon(catchIcons[item.outcome], 'catch-symbol')}<span><strong>${String(item.index + 1).padStart(2, '0')}</strong><small>${item.title}</small></span>${icon('chevron')}</button>`).join('')}</div>
+      <div class="field-badges" aria-label="Earned field badges"><h3>Field badges</h3>${report.badges.length ? `<ul>${report.badges.map(badge => `<li>${icon('shield')}<div><strong>${badge.title}</strong><p>${badge.detail} <span>${badge.count} caught.</span></p></div></li>`).join('')}</ul>` : '<p>No badges this round. Catch a scam to earn a badge for the trick you spotted.</p>'}<p class="badge-note">Badges celebrate what you spotted. Your score is shown above.</p></div>
     </section>`;
   }
   async function showResults() {
@@ -433,12 +629,17 @@
   }
 
   document.addEventListener("keydown", event => {
-    if (page !== "playing" || referenceDialog.open || locked || event.repeat || event.ctrlKey || event.altKey || event.metaKey) return;
+    if (page !== "playing" || referenceDialog.open || window.SitePopups?.isOpen() || locked || event.repeat || event.ctrlKey || event.altKey || event.metaKey) return;
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName)) return;
     const key = event.key.toLowerCase();
+    if (key === "v") {
+      event.preventDefault();
+      main.querySelector("#portal-lookup-btn:not([hidden])")?.click() || main.querySelector("#verify-independent")?.click();
+      return;
+    }
     if (key !== "l" && key !== "p") return;
     event.preventDefault();
-    submitAnswer(round.questions[round.index]?.id,key === "l" ? "legitimate" : "phishing");
+    submitAnswer(round.questions[round.index]?.id, key === "l" ? "legitimate" : "phishing");
   });
   document.addEventListener("visibilitychange", () => { if (!document.hidden) tick(); });
   window.addEventListener("pageshow", tick);
