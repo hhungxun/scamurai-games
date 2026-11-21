@@ -630,9 +630,9 @@
                 if (winMask > 0.5) alpha = 0.44;
               }
 
+              // Note textures are already sRGB; ShaderMaterial skips auto-linearization in r128,
+              // so output directly without #include <encodings_fragment> to avoid double-gamma washout.
               gl_FragColor = vec4(color, alpha);
-              #include <tonemapping_fragment>
-              #include <encodings_fragment>
             }
           `,
           side: THREE.DoubleSide
