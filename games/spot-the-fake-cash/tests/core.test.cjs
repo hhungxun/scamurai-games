@@ -10,22 +10,34 @@ const demoWin = {};
 vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../js/demo-answers.js'), 'utf8'), { window: demoWin });
 BANKNOTE_SETS.forEach((s, i) => { s.isReal = demoWin.FAKECASH_DEMO_ANSWERS[i]; });
 
-test('draws ten distinct notes across all five denominations with even 5-real/5-fake split', () => {
+test('draws ten distinct notes unpredictably (3-7 genuine, multiple genuine per denom possible)', () => {
   assert.equal(NOTE_COUNT, 10);
-  assert.equal(BANKNOTE_SETS.length, 20);
-  assert.equal(BANKNOTE_SETS.filter(n => n.isReal).length, 6);
+  assert.equal(BANKNOTE_SETS.length, 29);
+  assert.equal(BANKNOTE_SETS.filter(n => n.isReal).length, 15);
   assert.equal(BANKNOTE_SETS.filter(n => !n.isReal).length, 14);
-  for (const seed of [0, 0.25, 0.6, 0.999]) {
-    const round = new Round({ random: () => seed });
-    const order = round.order;
+  for (const d of DENOMINATIONS) {
+    assert.equal(BANKNOTE_SETS.filter(n => n.denomination === d && n.isReal).length, 3, `${d} should have 3 genuine entries`);
+  }
+
+  let sawMultiRealSameDenom = false;
+  const realCounts = new Set();
+  for (let trial = 0; trial < 200; trial++) {
+    const order = new Round().order;
     assert.equal(order.length, NOTE_COUNT);
     assert.equal(new Set(order).size, NOTE_COUNT);
     assert.ok(order.every(id => id >= 0 && id < BANKNOTE_SETS.length));
-    const reals = order.filter(id => BANKNOTE_SETS[id].isReal).length;
-    assert.equal(reals, NOTE_COUNT / 2);
-    const denoms = new Set(order.map(id => BANKNOTE_SETS[id].denomination));
-    for (const d of DENOMINATIONS) assert.ok(denoms.has(d), `missing denomination ${d}`);
+    const reals = order.filter(id => BANKNOTE_SETS[id].isReal);
+    assert.ok(reals.length >= 3 && reals.length <= 7, `unexpected real count ${reals.length}`);
+    realCounts.add(reals.length);
+    const byDenom = new Map();
+    for (const id of reals) {
+      const d = BANKNOTE_SETS[id].denomination;
+      byDenom.set(d, (byDenom.get(d) || 0) + 1);
+      if (byDenom.get(d) >= 2) sawMultiRealSameDenom = true;
+    }
   }
+  assert.ok(sawMultiRealSameDenom, 'rounds should allow >=2 genuine notes of the same denomination');
+  assert.ok(realCounts.size >= 4, 'real/fake split should vary across rounds to prevent card-counting');
   assert.ok(BANKNOTE_SETS.every(note => note.reason.length > 0 && note.reasonZh.length > 0));
   assert.ok(BANKNOTE_SETS.every(note => note.frontDay && note.frontUV && note.backDay && note.backUV));
 });
@@ -45,7 +57,7 @@ test('scores ten points per correct answer and closes the round after the tenth 
 });
 
 test('server-dealt order + recordAnswer tracks score, streak and review without client isReal', () => {
-  const order = [0, 1, 7, 8, 11, 12, 14, 15, 17, 18];
+  const order = [0, 1, 8, 11, 14, 15, 19, 22, 24, 27];
   const round = new Round({ now: () => 5_000, order });
   assert.deepEqual(round.order, order);
   round.recordAnswer(true, true);

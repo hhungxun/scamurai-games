@@ -50,11 +50,18 @@ const dealers = {
     return out;
   },
   'spot-the-fake-cash'(keys, random) {
-    // Even real/fake split so blind guessing scores 50%, mirroring the offline deal.
-    const pool = keys.sets.map((set, i) => ({ i, isReal: set.isReal }));
-    const half = Math.floor(ROUND_QUESTIONS['spot-the-fake-cash'] / 2);
-    const pick = want => shuffle(pool.filter(q => q.isReal === want), random).slice(0, half).map(q => q.i);
-    return shuffle([...pick(true), ...pick(false)], random);
+    // Truly unpredictable deal: vary the real/fake split between 3–7 genuine notes (mean 5.0)
+    // and draw freely from all genuine & fake entries so players cannot card-count by denomination or total!
+    const N = ROUND_QUESTIONS['spot-the-fake-cash'];
+    const reals = [], fakes = [];
+    keys.sets.forEach((set, i) => (set.isReal ? reals : fakes).push(i));
+    const weights = [3, 4, 4, 5, 5, 5, 6, 6, 7];
+    const rawWant = weights[Math.floor(random() * weights.length)];
+    const wantReal = Math.max(Math.max(0, N - fakes.length), Math.min(Math.min(N, reals.length), rawWant));
+    return shuffle([
+      ...shuffle(reals, random).slice(0, wantReal),
+      ...shuffle(fakes, random).slice(0, N - wantReal),
+    ], random);
   },
   'phishing-fishing'(keys, random) {
     const emails = Object.entries(keys.emails).map(([id, e]) => ({ id, ...e }));

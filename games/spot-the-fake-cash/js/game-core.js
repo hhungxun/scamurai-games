@@ -66,13 +66,31 @@
       'Genuine RM50: print motifs, UV fibres, back 5-block UV thread, and tilt hologram colour-shift all check out.',
       '真钞 RM50：双面印刷、正面红蓝防伪纤维、背面 5 段紫外安全线以及倾斜金属全息变色全部合格。'
     ),
+    noteSet(
+      'RM50', 'Genuine RM50 (C)', '真钞 RM50 (C)',
+      'front-real', 'front-uv-real', 'back-clear', 'back-uv', true,
+      'Genuine RM50: authentic Hibiscus, intact biotech molecules on back, full 365nm UV fluorescence, and iridescent tilt strip.',
+      '真钞 RM50：正面大红花与背面生物分子完整，365nm 紫外特征清晰，倾斜全息条变色明显。'
+    ),
 
     // ===== RM100 (Real scans + daylight fakes + UV + Tilt) =====
     noteSet(
-      'RM100', 'Genuine RM100 (Kinabalu)', '真钞 RM100（神山）',
+      'RM100', 'Genuine RM100 (A)', '真钞 RM100 (A)',
       'rm100-front-real', 'rm100-front-uv-real', 'rm100-back-real', 'rm100-back-uv-real', true,
       'Genuine RM100: authentic purple Mt. Kinabalu & Pinnacles, matching serials (AD9360956), intact BNM Kijang shield, UV glow, and colour-shifting blue thread on tilt.',
       '真钞 RM100：神山与石林图案清晰，双面编号一致（AD9360956），国行鼠鹿徽章完整，紫外与倾斜变色安全线全部合格。'
+    ),
+    noteSet(
+      'RM100', 'Genuine RM100 (B)', '真钞 RM100 (B)',
+      'rm100-front-real', 'rm100-front-uv-real', 'rm100-back-real', 'rm100-back-uv-real', true,
+      'Genuine RM100: blue & yellow two-colour UV 100 on back, 5-block RM100 UV thread, matching serials, and metallic blue tilt shimmer.',
+      '真钞 RM100：背面蓝黄双色紫外 100、5 段 RM100 安全线、双面一致编号及倾斜蓝色变色均正常。'
+    ),
+    noteSet(
+      'RM100', 'Genuine RM100 (C)', '真钞 RM100 (C)',
+      'rm100-front-real', 'rm100-front-uv-real', 'rm100-back-real', 'rm100-back-uv-real', true,
+      'Genuine RM100: Hibiscus & BANK NEGARA MALAYSIA intact, real Agong 100 UV watermark, and shimmering Kinabalu security band.',
+      '真钞 RM100：正面大红花与银行名称正确，紫外水印 100 与神山背面防伪条全部合格。'
     ),
     noteSet(
       'RM100', 'RM100 · Rafflesia front & Malaya spelling', 'RM100 · 正面大王花 + 错字假钞',
@@ -95,10 +113,22 @@
 
     // ===== RM20 (Real scans + daylight fakes + bleached UV + Tilt) =====
     noteSet(
-      'RM20', 'Genuine RM20 (Turtles)', '真钞 RM20（海龟）',
+      'RM20', 'Genuine RM20 (A)', '真钞 RM20 (A)',
       'rm20-front-real', 'rm20-front-uv-real', 'rm20-back-real', 'rm20-back-uv-real', true,
       'Genuine RM20: both Hawksbill & Leatherback turtles on the back, matching serials (AS0907531), Kijang shield intact, RM 20 UV glow, and shimmering green-gold thread.',
       '真钞 RM20：背面两只海龟完整，双面编号一致（AS0907531），鼠鹿徽章完好，紫外显示 RM 20 且倾斜安全线变色明显。'
+    ),
+    noteSet(
+      'RM20', 'Genuine RM20 (B)', '真钞 RM20 (B)',
+      'rm20-front-real', 'rm20-front-uv-real', 'rm20-back-real', 'rm20-back-uv-real', true,
+      'Genuine RM20: real blue Agong 20 UV watermark, crimson Hibiscus & fibres, both turtles on back, and glowing red-yellow 20 under UV.',
+      '真钞 RM20：紫外蓝色元首 20 水印、红花与防伪纤维清晰，背面两只海龟完整且红黄双色 20 发光正常。'
+    ),
+    noteSet(
+      'RM20', 'Genuine RM20 (C)', '真钞 RM20 (C)',
+      'rm20-front-real', 'rm20-front-uv-real', 'rm20-back-real', 'rm20-back-uv-real', true,
+      'Genuine RM20: authentic print details, 5-block vertical RM20 UV thread on back, matching serials, and shimmering green-gold tilt thread.',
+      '真钞 RM20：印刷细节完整，背面 5 段 RM20 紫外安全线、双面编号一致及倾斜变色安全线全部合格。'
     ),
     noteSet(
       'RM20', 'RM20 · Missing second turtle & mismatched serial', 'RM20 · 背面缺海龟 + 编号不符',
@@ -115,10 +145,22 @@
 
     // ===== RM10 (Real scans + daylight fakes + UV + Tilt) =====
     noteSet(
-      'RM10', 'Genuine RM10 (Rafflesia)', '真钞 RM10（大王花）',
+      'RM10', 'Genuine RM10 (A)', '真钞 RM10 (A)',
       'rm10-front-real', 'rm10-front-uv-real', 'rm10-back-real', 'rm10-back-uv-real', true,
       'Genuine RM10: Hibiscus on front, Rafflesia on back, matching serials (FR4435222), intact Kijang shield, UV features, and shimmering colour-shift thread.',
       '真钞 RM10：正面大红花、背面大王花印刷正确，编号一致（FR4435222），鼠鹿徽章完好，紫外与倾斜全息安全线均正常。'
+    ),
+    noteSet(
+      'RM10', 'Genuine RM10 (B)', '真钞 RM10 (B)',
+      'rm10-front-real', 'rm10-front-uv-real', 'rm10-back-real', 'rm10-back-uv-real', true,
+      'Genuine RM10: blue Agong 10 UV watermark, crimson Hibiscus & glowing fibres on front, and red-yellow two-colour 10 + 5-block RM10 thread on back.',
+      '真钞 RM10：正面紫外 10 水印与红花纤维齐全，背面红黄双色 10 与 5 段 RM10 安全线清晰。'
+    ),
+    noteSet(
+      'RM10', 'Genuine RM10 (C)', '真钞 RM10 (C)',
+      'rm10-front-real', 'rm10-front-uv-real', 'rm10-back-real', 'rm10-back-uv-real', true,
+      'Genuine RM10: authentic BANK NEGARA MALAYSIA print, Rafflesia reverse, matching serials, full 365nm UV glow, and live tilt shimmer.',
+      '真钞 RM10：银行名称、背面大王花、双面编号、紫外防伪与倾斜金属变色全部合格。'
     ),
     noteSet(
       'RM10', 'RM10 · Wrong front flower & Malaya spelling', 'RM10 · 正面大王花 + 错字假钞',
@@ -135,10 +177,24 @@
 
     // ===== RM5 (Real Polymer scans + daylight fakes + UV + Tilt) =====
     noteSet(
-      'RM5', 'Genuine RM5 (Polymer Hornbill)', '真钞 RM5（塑料钞·犀鸟）',
+      'RM5', 'Genuine RM5 (A)', '真钞 RM5 (A)',
       'rm5-front-real', 'rm5-front-uv-real', 'rm5-back-real', 'rm5-back-uv-real', true,
       'Genuine RM5 polymer: clear see-through hornbill window & crescent/star on left, matching serials (AA0015115), Kijang shield intact, UV glow, and iridescent crest on tilt.',
       '真钞 RM5 塑料钞：左侧透明犀鸟视窗与星月徽标清晰，编号一致（AA0015115），鼠鹿徽章完整，紫外与倾斜光泽正常。',
+      { clearWindow: true }
+    ),
+    noteSet(
+      'RM5', 'Genuine RM5 (B)', '真钞 RM5 (B)',
+      'rm5-front-real', 'rm5-front-uv-real', 'rm5-back-real', 'rm5-back-uv-real', true,
+      'Genuine RM5 polymer: glassy translucent hornbill window, neon-green crescent & Tengkolok star under UV, and red-yellow two-colour 5 on back.',
+      '真钞 RM5 塑料钞：透明犀鸟视窗透光自然，紫外下星月与元首徽星发绿光，背面红黄双色 5 清晰。',
+      { clearWindow: true }
+    ),
+    noteSet(
+      'RM5', 'Genuine RM5 (C)', '真钞 RM5 (C)',
+      'rm5-front-real', 'rm5-front-uv-real', 'rm5-back-real', 'rm5-back-uv-real', true,
+      'Genuine RM5 polymer: authentic BANK NEGARA MALAYSIA lettering, clear polymer window, intact Kijang deer shield, matching serials, and live tilt sheen.',
+      '真钞 RM5 塑料钞：银行拼写正确，透明塑料视窗、国行鼠鹿徽章、一致编号及倾斜反光全部合格。',
       { clearWindow: true }
     ),
     noteSet(
@@ -177,38 +233,22 @@
     return out;
   }
 
-  // Ensures every 10-note demo round features ALL 5 denominations and an even 5-real / 5-fake split.
+  // Truly unpredictable draw: varies the real/fake split between 3–7 genuine notes (centered at 5)
+  // and draws freely across all denominations so seeing one genuine RM20 never implies the next RM20 is fake!
+  const REAL_COUNT_WEIGHTS = [3, 4, 4, 5, 5, 5, 6, 6, 7];
   function shuffleNotes(random) {
     const reals = [];
     const fakes = [];
     BANKNOTE_SETS.forEach((n, idx) => (n.isReal ? reals : fakes).push(idx));
 
-    const picked = new Set();
-    const half = NOTE_COUNT / 2;
+    const rawWant = REAL_COUNT_WEIGHTS[Math.floor(random() * REAL_COUNT_WEIGHTS.length)];
+    const minReal = Math.max(0, NOTE_COUNT - fakes.length);
+    const maxReal = Math.min(NOTE_COUNT, reals.length);
+    const wantReal = Math.max(minReal, Math.min(maxReal, rawWant));
 
-    // Pick 1 genuine from each of the 5 denominations (if available) for guaranteed 5-denom coverage
-    for (const d of shuffleArray(DENOMINATIONS, random)) {
-      if (picked.size >= half) break;
-      const dReals = shuffleArray(reals.filter(i => BANKNOTE_SETS[i].denomination === d), random);
-      if (dReals.length) picked.add(dReals[0]);
-    }
-    for (const i of shuffleArray(reals, random)) {
-      if (picked.size >= half) break;
-      picked.add(i);
-    }
-
-    // Pick 5 distinct fakes across as many denominations as possible
-    for (const d of shuffleArray(DENOMINATIONS, random)) {
-      if (picked.size >= NOTE_COUNT) break;
-      const dFakes = shuffleArray(fakes.filter(i => BANKNOTE_SETS[i].denomination === d && !picked.has(i)), random);
-      if (dFakes.length) picked.add(dFakes[0]);
-    }
-    for (const i of shuffleArray(fakes, random)) {
-      if (picked.size >= NOTE_COUNT) break;
-      picked.add(i);
-    }
-
-    return shuffleArray([...picked], random);
+    const pickedReals = shuffleArray(reals, random).slice(0, wantReal);
+    const pickedFakes = shuffleArray(fakes, random).slice(0, NOTE_COUNT - wantReal);
+    return shuffleArray([...pickedReals, ...pickedFakes], random);
   }
 
   class Round {
