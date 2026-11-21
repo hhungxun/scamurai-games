@@ -418,6 +418,17 @@
     const _noteNormal = new THREE.Vector3();
     const _camWorldPos = new THREE.Vector3();
     const _toCam = new THREE.Vector3();
+    const _halfX = new THREE.Vector3();
+    const _halfY = new THREE.Vector3();
+    const DESK_CLEAR_Y = 0.928;
+
+    function keepAboveDesk() {
+      if (!banknoteMesh) return;
+      _halfX.set(0.225, 0, 0).applyQuaternion(banknoteMesh.quaternion);
+      _halfY.set(0, 0.1125, 0).applyQuaternion(banknoteMesh.quaternion);
+      const halfDrop = (Math.abs(_halfX.y) + Math.abs(_halfY.y)) * banknoteZoom;
+      banknoteMesh.position.y = Math.max(NOTE_BASE_POS[1], DESK_CLEAR_Y + halfDrop);
+    }
 
     function makeFallbackTexture(label, uvMode) {
       const canvas = document.createElement('canvas');
@@ -744,6 +755,7 @@
       }
 
       if (banknoteMesh) {
+        keepAboveDesk();
         banknoteMesh.getWorldQuaternion(_worldQuat);
         _noteNormal.set(0, 0, 1).applyQuaternion(_worldQuat).normalize();
         const activeCam = renderer.xr.isPresenting ? renderer.xr.getCamera(camera) : camera;
