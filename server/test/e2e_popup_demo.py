@@ -51,7 +51,15 @@ def run():
     badge.wait_for(timeout=7000)
     assert badge.evaluate('(node) => getComputedStyle(node).animationName')=='none'
     f.locator('.br-ad-player-error').get_by_text('XX13-V',exact=False).wait_for(timeout=7000)
-    print('PASS: official ad mix shows the sidebar, bonus and player error, with reduced motion respected')
+    teaser=f.locator('.br-ad-video-teaser.br-ad-corn')
+    teaser.get_by_role('heading',name='Popular videos this week').wait_for(timeout=7000)
+    f.wait_for_function('''() => {
+     const images = [...document.querySelectorAll('.br-ad-video-teaser .br-corn-photo-strip img')];
+     return images.length === 3 && images.every(img => img.complete && img.naturalWidth > 0);
+    }''',timeout=2000)
+    assert 'site=corn' in teaser.get_by_role('link',name='Watch now').get_attribute('href')
+    assert teaser.locator('.br-corner-close').is_visible()
+    print('PASS: official ad mix shows the sidebar, bonus, player error and Cornhub teaser')
     ad=f.locator('.br-stack-modal-stage')
     ad.wait_for(timeout=15000)
     ad_id=ad.get_attribute('data-br-entry')
@@ -77,7 +85,11 @@ def run():
     assert page.evaluate("JSON.parse(sessionStorage.getItem('close-popups:demo:v1:practice')).status")=='ended'
     # A returning visitor can use the game brand to choose another task.
     game().locator('.booth-brand').click();game().wait_for_selector('#booth-random')
-    start();finish();print('PASS: another task starts after returning through the game header')
+    start()
+    teaser=game().locator('.br-ad-video-teaser')
+    teaser.get_by_role('button',name='Dismiss advertisement').click(timeout=9000)
+    teaser.wait_for(state='detached')
+    finish();print('PASS: another task starts after returning through the game header and the Cornhub teaser closes')
     page.reload();game().wait_for_selector('.booth-score');game().locator('.booth-brand').click()
     start('minute3-search-official')
     f=game();f.locator('[data-official-result]').click()

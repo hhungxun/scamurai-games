@@ -126,7 +126,7 @@
   const deck = shuffle(validSites, 'destinations');
   const chosen = validSites.includes(params.get('ad')) ? params.get('ad') : null;
   const ads = {
-    corn:['Cornhub',t('Popular videos this week','本周热门视频'),t('Watch now','立即观看'),'Featured channel'],
+    corn:['Cornhub',t('Popular videos this week','本周热门视频'),t('Watch now','立即观看'),t('Featured channel','精选频道')],
     desk:['Form & Field',t('Upgrade your desk. From RM39.','桌面配件，RM39 起。'),t('Shop now','立即选购'),'Desk accessories'],
     stock:['Framekind',t('Find stock images for your next project','为下一个项目挑选图库素材'),t('Browse images','浏览图片'),'Photos & creative assets'],
     game:['Tiny Arcade',t('Quick games. No installation.','即开即玩，无需安装。'),t('Play free','免费试玩'),'Free browser games'],
@@ -141,7 +141,7 @@
   const defaultAdVisual = site => `<div class="br-ad-visual br-visual-${site}" aria-hidden="true">${({corn:'<div class="br-corn-photo-strip"><img src="assets/corn-portrait-01.jpg" alt=""><img src="assets/corn-portrait-02.jpg" alt=""><img src="assets/corn-portrait-03.jpg" alt=""></div><span>Corn<b>hub</b></span><i>▶</i>',desk:'<span>FROM <b>RM39</b></span>',stock:'<span>Framekind<br><b>STOCK IMAGES</b></span>',game:'<span>SIGNAL<br>GARDEN</span><i>▦</i>',security:'<span>!</span>',player:'<span>▶</span>',software:'<span>ZIP</span>',prize:'<span>REWARD<br><b>RM800</b></span>',coupon:'<span>RM<b>100</b><small>SHOPPING VOUCHER</small></span>',parcel:'<span>NorthPost<br><b>DELIVERY UPDATE</b></span>'})[site]}</div>`;
   const campaign=boothAds?null:window.BROWSE_AD_CONTEXT?.({...C,seed,scene,ads,adDescription});
   const adOffer=(site,ordinal)=>boothAds?.offer(site,ordinal)||campaign?.adOffer(site,ordinal)||{brand:ads[site][0],title:ads[site][1],cta:ads[site][2],eyebrow:ads[site][3],description:adDescription(site)};
-  const adVisual=(site,ordinal)=>boothAds?(ordinal===1?'':`<div class="br-ad-visual br-campus-ad-visual" aria-hidden="true">XMUM · ${esc(adOffer(site,ordinal).eyebrow)}</div>`):defaultAdVisual(site);
+  const adVisual=(site,ordinal,format)=>boothAds&&format!=='video-teaser'?(ordinal===1?'':`<div class="br-ad-visual br-campus-ad-visual" aria-hidden="true">XMUM · ${esc(adOffer(site,ordinal).eyebrow)}</div>`):defaultAdVisual(site);
   const campaignSite=boothAds?.site(0)||campaign?.campaignSite;
   const adURL = site => url('destination.html', {site, from:scene,...(campaign?.adURLMeta(site)||{})});
   const redirectURL = target => 'redirect-hop.html?'+new URLSearchParams({step:'1',target:['trip','shop','games'].includes(target)?target:'trip',lang,v:'audio1'});

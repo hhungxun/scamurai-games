@@ -6,7 +6,8 @@
     const KEY='br-run-v9:'+seed, MISSING=Symbol('missing'), AUTO_MAX=boothAds?60:30, ID_MAX=boothAds?70:40, REVEAL_MS=10000, UNCLOSED_MAX=10;
     const GAPS=boothAds?[800,1100,950,1250,1000,1150]:[2200,2800,2500,3200,2300,3000];
     const FORMATS=['bounce','robot','dodge','player-error','bonus','captcha','tiny','drawer','panel','newsletter'];
-    const formats=boothAds?['tiny','drawer','dodge','bonus','player-error','panel','bounce','newsletter']:FORMATS;
+    const videoTeaser='video-teaser';
+    const formats=boothAds?['tiny','drawer','dodge','bonus','player-error',videoTeaser,'bounce','panel','newsletter']:FORMATS;
     const firstAt=boothAds?1000:3000, rampAt=4000;
     const prompts=window.BROWSE_REDIRECT_PROMPTS;
     const isPrompt=format=>prompts?.formats.includes(format)===true;
@@ -32,7 +33,7 @@
       const activeMs=Number.isFinite(obj.activeMs)?Math.max(0,Math.min(14400000,obj.activeMs)):0;
       const pending=[],ids=new Set();let hasModal=false;
       for(const p of Array.isArray(obj.pending)?obj.pending:[]){
-        if(!p||!Number.isInteger(p.id)||p.id<1||p.id>ID_MAX||ids.has(p.id)||!validSites.includes(p.site)||!FORMATS.includes(p.format))continue;
+        if(!p||!Number.isInteger(p.id)||p.id<1||p.id>ID_MAX||ids.has(p.id)||!validSites.includes(p.site)||!(FORMATS.includes(p.format)||(boothAds&&p.format===videoTeaser&&p.site==='corn')))continue;
         if(modal(p)&&hasModal)continue;
         const closeStyle=['visible','dual','ghost'].includes(p.closeStyle)?p.closeStyle:'visible';
         const decoy=p.decoy===true,closeCorner=decoy?'top-left':['top-right','top-left','bottom-right'].includes(p.closeCorner)?p.closeCorner:'top-right';
@@ -89,6 +90,7 @@
     const staticOrigin=p=>{
       if(boothAds&&p.format==='bonus')return [.06,.1];
       if(boothAds&&p.format==='player-error')return [.98,.92];
+      if(p.format===videoTeaser)return [.32,.38];
       return boothAds&&p.id===1?[.98,.97]:staticSlots[(p.id-1)%4];
     };
     const positionEntry=entry=>{
@@ -214,7 +216,7 @@
       rememberFocus();
       const a=ads[p.site],isModal=modal(p),moving=p.format==='bounce'||p.format==='dodge',prompt=isPrompt(p.format);
       const hopURL=prompt?redirectURL(p.hopTarget):null;
-      const offer=typeof adOffer==='function'?adOffer(p.site,p.id):{brand:a[0],title:a[1],cta:a[2],eyebrow:a[3],description:adDescription(p.site)};
+      const offer=p.format!==videoTeaser&&typeof adOffer==='function'?adOffer(p.site,p.id):{brand:a[0],title:a[1],cta:a[2],eyebrow:a[3],description:adDescription(p.site)};
       const lower=p.closeCorner==='bottom-right';
       const genuine=`<button class="br-real-close${lower?' br-corner-close':''}" type="button" data-br-close ${p.closeStyle==='ghost'?'hidden':''} aria-label="${t('Dismiss advertisement','关闭广告')}">×</button>`;
       const stage=document.createElement('div');stage.className='br-interrupt '+(isModal?'br-ad-backdrop br-stack-modal-stage':'br-motion-stage br-stack-stage');
@@ -223,7 +225,7 @@
         ${p.closeStyle!=='visible'?`<button class="br-ghost-close" type="button" data-br-close aria-label="${t('Dismiss advertisement','关闭广告')}">×</button>`:''}${lower?genuine:''}<div class="br-ad-scroll">
         <div class="br-ad-top"><span>${t('Sponsored','赞助内容')} · ${esc(offer.brand)}</span>${!lower?genuine:''}${p.decoy?`<a class="br-false-close br-decoy-close" data-br-ad="${p.site}" data-br-decoy aria-label="${t('Open sponsor offer','打开赞助推广')}">×</a>`:p.format==='panel'&&p.closeStyle!=='ghost'?`<a class="br-false-close" data-br-ad="${p.site}" aria-label="${t('Open sponsor offer','打开赞助推广')}">×</a>`:''}</div>
         ${moving?`<div class="br-motion-label">${p.format==='bounce'?t('↗ ONE MORE OFFER','↗ 再来一条优惠'):t('✦ CATCH ME FIRST','✦ 先追上我再说')}</div>`:''}
-        ${adVisual(p.site,p.id)}<div class="br-ad-body"><span class="br-ad-eyebrow">${esc(offer.eyebrow)}</span><h2>${esc(offer.title)}</h2><p>${esc(offer.description)}</p>
+        ${adVisual(p.site,p.id,p.format)}<div class="br-ad-body"><span class="br-ad-eyebrow">${esc(offer.eyebrow)}</span><h2>${esc(offer.title)}</h2><p>${esc(offer.description)}</p>
         ${moving?`<p class="br-motion-taunt">${moving&&p.format==='dodge'?t('Looking for the ×?','在找那个 × 吗？'):t('Just passing through. Again.','只是路过，又路过。')}</p>`:''}
         <a class="br-ad-cta" data-br-ad="${p.site}">${esc(offer.cta)} →</a>${p.format==='newsletter'&&p.closeStyle!=='ghost'?`<button class="br-ad-decline" data-br-close>${t('Maybe another time','下次再说')}</button>`:''}</div>
         <div class="br-ad-bottom">${p.format==='tiny'&&p.closeStyle!=='ghost'?`<button data-br-close class="br-small-dismiss">${t('close ad','关闭广告')}</button>`:t('Advertisement','广告')}<span class="br-stack-hint">${t('Esc clears all offers','Esc 关闭全部广告')}</span></div>
@@ -313,12 +315,12 @@
         if(!boothAds&&state.autoShown===0&&isPrompt(previewFormat))format=previewFormat;
         if(modal({format})&&state.pending.some(modal))format=state.autoShown%2?'dodge':'bounce';
         state.shown++;state.autoShown++;
-        const showCornerClose=openingCard||(boothAds&&isPrompt(format));
+        const showCornerClose=openingCard||(boothAds&&isPrompt(format))||format===videoTeaser;
         const closeStyle=showCornerClose?'visible':closeStyles[(state.shown-1)%closeStyles.length];
-        const layout=showCornerClose?'top-right':boothAds&&state.autoShown===3?'decoy':closeLayouts[(state.shown-1)%closeLayouts.length];
+        const layout=format===videoTeaser?'bottom-right':showCornerClose?'top-right':boothAds&&state.autoShown===3?'decoy':closeLayouts[(state.shown-1)%closeLayouts.length];
         const recurring=validSites.includes(campaignSite)&&(state.autoShown-1)%6===0;
         const normalIndex=state.autoShown-1-(validSites.includes(campaignSite)?Math.ceil((state.autoShown-1)/6):0);
-        const site=boothAds?.site(state.shown)||chosen||(recurring?campaignSite:deck[normalIndex%deck.length]);
+        const site=format===videoTeaser?'corn':boothAds?.site(state.shown)||chosen||(recurring?campaignSite:deck[normalIndex%deck.length]);
         const p={id:state.shown,site,format,closeStyle,closeCorner:layout==='decoy'?'top-left':layout,decoy:layout==='decoy',...(closeStyle==='ghost'?{closeElapsedMs:0}:{}),...(format==='dodge'?{dodgeLimit:dodgeLimit(state.shown),dodgeCount:0}:{})};
         if(isPrompt(format)){p.hopTarget=state.autoShown===1&&TARGETS.includes(previewTarget)?previewTarget:hopTarget(p.id);p.decoy=false;}
         state.pending.push(p);
