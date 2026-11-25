@@ -17,6 +17,11 @@
   const task = findTask(taskId);
   let starting = false;
   const t = (en, zh) => li === 0 ? en : zh;
+  if (task?.scene === 'shoppee') {
+    document.documentElement.lang = lang === 'en' ? 'en' : 'zh-Hans';
+    const skip = document.querySelector('.booth-skip');
+    if (skip) skip.textContent = t('Skip to content', '跳至主要内容');
+  }
   const txt = pair => Array.isArray(pair) ? String(pair[li] ?? pair[0] ?? '') : String(pair ?? '');
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   const taskText = (value, item) => window.BROWSE_BOOTH_TASK_TEXT(txt(value), item, lang);
@@ -48,7 +53,7 @@
     return `<header class="booth-header">
       <a class="booth-brand" href="${esc(chooseURL())}"><span class="booth-brand-mark" aria-hidden="true">↗</span>${t('close the popups', '一分钟')}</a>
       <div class="booth-header-right"><span class="booth-stage">${esc(stage)}</span>
-        <a class="booth-language" href="${esc(url({...values, lang:otherLang, mode:activeMode}))}" lang="${otherLang === 'en' ? 'en' : 'zh-Hans'}">${t('中文', 'English')}</a>
+        <a class="booth-language" href="${esc(url({...values, lang:otherLang, mode:activeMode}))}" lang="${otherLang === 'en' ? 'en' : 'zh-Hans'}">${task?.scene === 'shoppee' ? t('Chinese', '英文') : t('中文', 'English')}</a>
       </div>
     </header>`;
   }
@@ -62,7 +67,7 @@
     {title:['Search & tools','搜索·工具'],ids:['minute3-search-official','minute2-tool-webp','minute2-wall-earthrise']},
     {title:['Content & collections','内容·收藏'],ids:['minute2-nature-woodpeckers']},
     {title:['Plan & compare','规划·比较'],ids:['minute5-taipei-flight','minute2-travel-interchange','minute2-market-lens','minute4-penang-indoor']},
-    {title:['Everyday services','生活服务'],ids:['minute2-recipe-budget','minute2-outing-craft','minute3-courier-redelivery']}
+    {title:['Everyday services','生活服务'],ids:['minute4-shoppee-buy','minute2-recipe-budget','minute2-outing-craft','minute3-courier-redelivery']}
   ];
   const suggestedSeconds = id => ['minute3-search-official','minute3-courier-redelivery'].includes(id) ? 30 : id === 'minute2-tool-webp' ? 45 : 60;
   function taskCard(item) {

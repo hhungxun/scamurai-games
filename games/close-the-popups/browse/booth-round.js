@@ -3,6 +3,7 @@
   'use strict';
   const VERSION = 'ending3', PREFIX = 'br-booth-v1:', INDEX = 'br-booth-index-v1', LIMIT = 12, DURATION = 60000;
   const RULES = {
+    'minute4-shoppee-buy':{scene:'shoppee',file:'shoppee.html',target:'pmax'},
     'minute5-taipei-flight':{scene:'tripuccino',file:'tripuccino.html',target:'od698'},
     'minute4-penang-indoor': {scene:'events',file:'events.html',target:'penang-state-gallery',key:'bp-outings-saved'},
     'minute3-courier-redelivery': {scene:'courier',file:'courier.html',target:'TM24081301',key:'courier-completed'},
@@ -47,7 +48,7 @@
   };
   // Optional, append-only condition facts share the existing boolean checks array.
   // Missing facts in older frozen rounds stay unknown; they are never fabricated.
-  const DETAIL_CHECKS = {'minute5-taipei-flight':2,'minute2-movie-animation':1,'minute2-travel-interchange':4,'minute3-courier-redelivery':2,'minute3-search-official':1};
+  const DETAIL_CHECKS = {'minute5-taipei-flight':2,'minute4-shoppee-buy':2,'minute2-movie-animation':1,'minute2-travel-interchange':4,'minute3-courier-redelivery':2,'minute3-search-official':1};
   const FILES = new Set(Object.values(RULES).map(r => r.file));
   const isObject = v => v !== null && typeof v === 'object' && !Array.isArray(v);
   const finite = v => typeof v === 'number' && Number.isFinite(v);
@@ -184,6 +185,10 @@
     const e=record.evidence,checks=[], add=(en,zh,met,detail='')=>checks.push({label:[en,zh],met:Boolean(met),detail});
     const saved=(en,zh)=>add(en,zh,e.saved,e.saved?'✓':'—');
     switch (record.taskId) {
+      case 'minute4-shoppee-buy':
+        add('iPhone 18 Pro Max opened','已找到 iPhone 18 Pro Max',e.found||e.saved);
+        add('Marketplace checkout opened','已进入商城结算',e.checks?.[0]===true||e.saved);
+        saved('iPhone 18 Pro Max simulated payment completed','iPhone 18 Pro Max 模拟付款完成');break;
       case 'minute5-taipei-flight':
         add('KUL → TPE, 23 January 2027, one adult','KUL → TPE，2027年1月23日，1人',e.checks?.[0]===true);
         add('Cheapest all-in fare, MYR 467, no paid extras','最低含税价 MYR 467，无付费附加服务',e.checks?.[1]===true);
@@ -229,6 +234,7 @@
   // Correct target selection establishes its fixed catalogue facts, not a separate
   // unobservable "read the metadata" action. Unknown historical facts stay neutral.
   const CONDITION_EVIDENCE = {
+    'minute4-shoppee-buy':[[0],[1],[2]],
     'minute5-taipei-flight':[[0],[1],[2]],
     'minute2-wall-earthrise':[[1],'found',[0]],
     'minute2-recipe-budget':['found',[1],[2],[0]],
@@ -329,6 +335,14 @@
       try {return C.read(key,fallback);} catch {return fallback;}
     };
     let details=[];
+    if(record.taskId==='minute4-shoppee-buy'){
+      const storedOrders=read('sp-orders',[]),checkout=read('sp-checkout',null);
+      const prices={'256GB':5999,'512GB':6999,'1TB':7999,'2TB':11999};
+      const sameRound=value=>isObject(value)&&value.roundId===record.id&&time(value.at)&&value.at>=record.startedAt&&value.at<record.deadline&&value.at<=now;
+      const paid=value=>sameRound(value)&&value.productId==='pmax'&&value.storeId==='apple-my-verified'&&value.payment==='paid'&&Object.hasOwn(prices,value.storage)&&['Glacier','Black','Silver','Burgundy'].includes(value.color)&&Number.isInteger(value.qty)&&value.qty>=1&&value.qty<=3&&value.unitPrice===prices[value.storage]&&value.voucher===300&&value.total===value.unitPrice*value.qty-300;
+      e.saved=Array.isArray(storedOrders)&&storedOrders.some(paid);
+      details=[sameRound(checkout)&&checkout.productId==='pmax',false];
+    }
     if(record.taskId==='minute5-taipei-flight'){
       const sameRound=value=>isObject(value)&&value.roundId===record.id&&time(value.at)&&value.at>=record.startedAt&&value.at<record.deadline&&value.at<=now;
       const storedOrders=read('tc-orders',[]),checkout=read('tc-checkout',null);

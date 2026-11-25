@@ -74,7 +74,7 @@
   const review=window.BROWSE_REVIEW_LOG?.({...C,seed,scene});
   const currentTask=round&&(window.BROWSE_BOOTH_TASKS?.some(task=>task.id===round.taskId)||
     window.BROWSE_BOOTH_LEGACY_TASKS?.some(task=>task.retired&&task.id===round.taskId));
-  const boothAds=round?.mode==='ads'&&currentTask?window.BROWSE_BOOTH_ADS?.(scene,lang):null;
+  const boothAds=round?.mode==='ads'&&currentTask?window.BROWSE_BOOTH_ADS?.(scene,lang,C):null;
   if(boothAds)document.documentElement.classList.add('br-booth-campus');
   renderer(C);
   window.BROWSE_SITE_SUPPORT?.(C);

@@ -35,4 +35,4 @@ After entering the task site, open **View task** and pick the label from the top
 
 The 60-second clock starts when the scene is ready and keeps running through the task dialog, navigation, reloads and tab switches. Speed is based on when the player submits or times out. The shared leaderboard uses server round duration as its tie-break, from participant confirmation through the saved finish.
 
-Each scored round draws one of the 10 active tasks. The assignment survives refresh and redraw. Staff can pick a task in Staff Practice. See the [decision record](../../../docs/adr/0003-station2-event-scoring.md) and run `node server/test/popup-score.js` to check the scoring boundaries.
+Each scored round draws one of the 12 active tasks. The assignment survives refresh and redraw. Staff can pick a task in Staff Practice. See the [decision record](../../../docs/adr/0003-station2-event-scoring.md) and run `node server/test/popup-score.js` to check the scoring boundaries.

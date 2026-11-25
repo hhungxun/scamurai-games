@@ -4,6 +4,7 @@
   window.BROWSE_SITE_SUPPORT = C => {
     const {root,t,esc,scene,siteName}=C;
     const help={
+      shoppee:['Find a phone, check its seller, choose a variant and complete the local demo checkout. Delivery details are prefilled.','找到手机、核对卖家、选择规格，再完成本地模拟付款。收件资料已预填。'],
       wallpapers:['Search or filter the collection, open an image and choose an export size. Select up to three works to compare.','搜索或筛选图库，打开图片后选择导出尺寸。可选最多三张图片进行对比。'],
       recipes:['Choose a category or search a recipe. Open it to change servings, tick ingredients and save it. Prices are per serving; the selected-servings total is shown separately.','按分类或关键词找食谱。打开后可调整份量、勾选食材并收藏。单价按每份计，所选人数的总价另列。'],
       tools:['Choose your own image or an example. Set the format, width and quality in the right panel, then download the generated file. Keep your original image.','选择设备图片或示例图，在右侧设置格式、宽度和质量，再下载生成的文件。请保留原图。'],

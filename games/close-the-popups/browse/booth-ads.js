@@ -4,6 +4,18 @@
   'use strict';
 
   const campaigns = {
+    shoppee: {
+      brand:['ShopPee offers desk','ShopPee 优惠服务台'],
+      cards:[
+        ['coupon',['Member offer','会员优惠'],['Your phone price just dropped to RM1,999','你的手机已降到 RM1,999'],['Reserve this price','锁定这个价格'],['A RM50 reservation keeps the warehouse deal for the next two minutes.','支付 RM50 预订费，仓库优惠价为你保留两分钟。']],
+        ['desk',['Phone accessories','手机配件'],['A case for your new phone','给新手机挑个保护壳'],['Browse accessories','看看配件'],['Cases, stands and charging accessories from another shop.','另一家店的保护壳、支架和充电配件。']],
+        ['security',['Payment support','付款支持'],['Your payment needs one more verification','你的付款还需要一次验证'],['Verify and pay','验证并付款'],['Open a separate account check to release your order.','前往独立账号核验入口，释放你的订单。']],
+        ['parcel',['Order notice','订单通知'],['Pay RM2 to release your parcel','付 RM2，释放你的包裹'],['Complete payment','完成付款'],['An extra handling charge is required before dispatch.','发货前还需缴付一笔额外处理费。']],
+        ['prize',['Shopper reward','购物奖励'],['You won a second iPhone','你获得了第二部 iPhone'],['Claim reward','领取奖品'],['Pay the RM50 claim fee to register this prize.','支付 RM50 领取手续费登记奖品。']],
+        ['coupon',['Checkout shortcut','结算快捷入口'],['Finish your iPhone order here','在这里完成 iPhone 订单'],['Continue checkout','继续结算'],['Continue to a separate member offer to unlock your order.','前往独立会员推广页解锁订单。']]
+      ]
+    },
+
     tripuccino: {
       brand:['Travel offers desk','旅行优惠服务台'],
       cards:[
@@ -144,12 +156,17 @@
     }
   };
 
-  window.BROWSE_BOOTH_ADS = (scene, lang) => {
+  window.BROWSE_BOOTH_ADS = (scene, lang, context) => {
     if (typeof scene !== 'string' || !Object.hasOwn(campaigns, scene)) return null;
     const {brand, cards} = campaigns[scene];
     const language = lang === 'zh' ? 1 : 0;
     const immediate = scene === 'courier' || scene === 'search';
     const cardAt = ordinal => {
+      // A payment flag in sessionStorage can belong to a departed document.
+      // The visible payment control remains authoritative after native Back.
+      if(scene==='shoppee'&&context?.root?.querySelector('#buyModal.show #placeOrder')?.getClientRects().length&&ordinal>0){
+        return ordinal%2?cards[2]:cards[3];
+      }
       if (!Number.isInteger(ordinal) || ordinal < 1) return cards[0];
       // Put the task-matched lure first on the two new hosts, then keep the
       // ordinary-ad/scam contrast deck. Existing ten hosts retain their order.

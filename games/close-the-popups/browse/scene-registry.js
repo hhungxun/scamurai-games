@@ -1,5 +1,6 @@
 /* One catalogue shared by native navigation, random assignment and the task library. */
 window.BROWSE_SCENE_INDEX=[
+ {id:'shoppee',file:'shoppee.html',name:['ShopPee','ShopPee'],type:['online shopping website','网上购物网站'],kicker:['ONLINE SHOPPING','网上购物'],brief:['Find a phone and complete a simulated purchase.','找到手机并完成模拟购买。'],art:'market',cover:'shoppee-assets/img/pmax.png'},
  {id:'tripuccino',file:'tripuccino.html',name:['Tripuccino Flights','Tripuccino 机票'],type:['flight booking website','搜索航班和购买机票的网站'],kicker:['FLIGHTS & TRAVEL','机票预订'],brief:['Compare flights and book a semester break in Taiwan.','比较机票，预订寒假去台湾的航班。'],art:'travel',cover:'tripuccino-assets/taipei.jpg'},
  {id:'courier',file:'courier.html',name:["Parcel Tracker","包裹查询"],type:["parcel tracking and delivery website","查物流和改约派送的网站"],kicker:['PARCEL TRACKING','快递查询'],brief:['Track your parcel and reschedule delivery.','查包裹，免费改约派送。'],art:'courier',cover:'assets/courier-route.svg'},
  {id:'search',file:'search.html',name:["Web Search","网页搜索"],type:["search engine","搜索网页和官方资料的网站"],kicker:['WEB SEARCH','网页搜索'],brief:['Find the official source for a download.','搜索并找到官方下载来源。'],art:'search',cover:'assets/search-software.svg'},

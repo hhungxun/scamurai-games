@@ -174,6 +174,80 @@ window.BROWSE_BOOTH_LEGACY_TASKS = [
 window.BROWSE_BOOTH_TASKS = [
 {"id": "minute5-taipei-flight", "scene": "tripuccino", "file": "tripuccino.html", "site": "Tripuccino", "title": ["Semester break in Taiwan", "Sembreak 去台湾玩"], "brief": ["You are an XMUM student planning a semester-break trip to Taiwan. Fly from Kuala Lumpur International Airport (KUL) to Taipei Taoyuan (TPE) on 23 January 2027. Find the cheapest one-way ticket for one adult and complete its simulated purchase. Keep optional extras at zero.", "你是 XMUM 学生，sem break 想去台湾玩！你要在 2027 年 1 月 23 日，从吉隆坡国际机场 KUL 飞到台北桃园 TPE。找到 1 位成人最便宜的单程机票，并完成模拟购买，保留零元附加服务。"], "hint": ["Check the airport codes and date, then compare the all-in fares.", "核对机场代码与日期，再比较含税总价。"], "goals": [["Search KUL → TPE for 23 January 2027, one adult.", "搜索 2027 年 1 月 23 日 KUL → TPE，1 位成人。"], ["Choose the lowest all-in fare.", "选择最低含税票价。"], ["Complete the simulated payment.", "完成模拟付款。"]], "route": [["Search KUL → TPE, 23 January 2027, one adult, then choose Cheapest.", "搜索 KUL → TPE，2027 年 1 月 23 日，1 人，再按最低价排序。"], ["Select Batik Air OD698 for MYR 467. Confirm the passenger details and keep the free baggage and seat options.", "选择 Batik Air OD698，MYR 467。确认乘客资料，保留免费行李与座位选项。"], ["Continue to payment, accept the fare rules and complete the game payment.", "进入付款页，同意票价规则，完成游戏付款。"]], "answer": ["OD698, KUL → TPE, 2027-01-23, one adult, MYR 467 total including taxes, no paid extras. A paid tc-orders record must belong to this round and be created before its deadline. A search or payment-page visit alone does not complete the purchase.", "OD698，KUL → TPE，2027-01-23，1 人，含税总价 MYR 467，无付费附加服务。tc-orders 已付款订单须属于本轮并在截止时间前生成。仅搜索或进入付款页无法完成购买。"], "cover": "tripuccino-assets/taipei.jpg", "advanced": false, "badge": ["KUL → TPE · 23 Jan", "KUL → TPE · 1月23日"], "steps": [["Set KUL → TPE, 23 Jan 2027, one adult", "选择 KUL → TPE，2027年1月23日，1人"], ["Select the cheapest all-in fare with no paid extras", "选择最低含税票价，保留零元附加服务"], ["Complete simulated payment", "完成模拟付款"]], "hint2": ["Cheapest sorts the total fare from low to high. Basic includes taxes and 7 kg cabin baggage.", "最低价按含税价由低到高排列。基础票价包含税费和 7 kg 手提行李。"]},
   {
+    "id": "minute4-shoppee-buy",
+    "scene": "shoppee",
+    "file": "shoppee.html",
+    "site": "ShopPee",
+    "title": [
+      "Buy an iPhone 18 Pro Max",
+      "买到 iPhone 18 Pro Max"
+    ],
+    "brief": [
+      "Buy an iPhone 18 Pro Max on ShopPee, from choosing a listing through to the payment-success receipt. Any storage capacity and colour are fine. Delivery details are prefilled for this simulation.",
+      "在 ShopPee 买到 iPhone 18 Pro Max，从挑选商品一直完成到模拟付款成功。容量和颜色任选，模拟收货资料已预填。"
+    ],
+    "hint": [
+      "Browse Mobile Phones or search the exact model name. Open Seller details if you are unsure about a listing.",
+      "可以进入手机区，也可以搜索完整型号。拿不准某个商品时，打开「查看卖家」核对资料。"
+    ],
+    "goals": [
+      [
+        "Find an iPhone 18 Pro Max on ShopPee. Check the model, price and seller before choosing a listing.",
+        "在 ShopPee 找到 iPhone 18 Pro Max，选购前核对手机型号、价格和卖家资料。"
+      ],
+      [
+        "Choose any storage capacity and colour. Use Buy Now, or add the phone to your cart and proceed to checkout.",
+        "容量和颜色任选。可以点击「立即购买」，也可以先加入购物车，再进入结算。"
+      ],
+      [
+        "Confirm the prefilled delivery details, choose a payment method and complete the simulated payment in the marketplace.",
+        "确认已预填的模拟收货资料，选择付款方式，并在商城内完成模拟付款。"
+      ],
+      [
+        "Once the payment-success receipt appears, close it and click Submit in the game bar to finish your round.",
+        "看到模拟付款成功的收据后，将它关闭，再点击游戏顶部的「交卷」完成本轮。"
+      ]
+    ],
+    "route": [
+      [
+        "Open Mobile Phones, then the verified store’s iPhone 18 Pro Max.",
+        "打开手机区，找到认证店的 iPhone 18 Pro Max。"
+      ],
+      [
+        "Choose a variant, buy now or use the cart, then confirm the demo payment.",
+        "选择规格，立即购买或加入购物车，最后确认模拟付款。"
+      ]
+    ],
+    "answer": [
+      "pmax from apple-my-verified. Confirm checkout and a paid local order for this round. Outlet deposits and the Storee seller cannot complete this purchase.",
+      "认证店 apple-my-verified 的 pmax。本轮须有结算记录及正确的模拟已付款订单。清仓定金和 Storee 店的付款不算完成购买。"
+    ],
+    "cover": "shoppee-assets/img/pmax.png",
+    "advanced": false,
+    "badge": [
+      "iPhone 18 Pro Max",
+      "iPhone 18 Pro Max"
+    ],
+    "steps": [
+      [
+        "Find iPhone 18 Pro Max",
+        "找到 iPhone 18 Pro Max"
+      ],
+      [
+        "Proceed to checkout",
+        "进入结算"
+      ],
+      [
+        "Complete simulated payment",
+        "完成模拟付款"
+      ]
+    ],
+    "hint2": [
+      "A shop can draw a MALL label itself. Open its platform verification details.",
+      "店铺可以自行画上 MALL 字样，点开平台认证详情核对。"
+    ]
+  },
+  {
     id: "minute2-wall-earthrise",
     scene: "wallpapers",
     file: "wallpaper.html",

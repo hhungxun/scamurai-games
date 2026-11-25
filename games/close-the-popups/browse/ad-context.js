@@ -5,6 +5,7 @@
     const {root,params,scene,t,esc,read,write,url,ads,adDescription}=C;
     const KEY='ad-campaign-v1';
     const profiles={
+      shoppee:['coupon','Your order qualifies for an extra voucher.','你的订单可领取额外优惠券。','Phone shopping','手机购物'],
       courier:['parcel','Delivery failed: pay RM3 to reschedule.','派送失败：支付 RM3 改约。','Parcel redelivery','包裹改约'],
       search:['software','Photo Tools high-speed download.','Photo Tools 高速下载。','Software downloads','软件下载'],
       wallpapers:['stock','Find the bigger picture.','发现更大的画面。','Desktop backgrounds','桌面背景'],
@@ -59,6 +60,7 @@
     const adURLMeta=site=>({campaign:load().site,phase:String(phase()),interest:scene,topic:topic()});
     const destination=site=>url('destination.html',{site,from:scene,...adURLMeta(site)});
     const placements={
+      shoppee:{grid:'.p-grid.list',detail:'.buy-row',fallback:'.sp-site'},
       courier:{detail:'.tm-reschedule',fallback:'.tm-main'},
       search:{fallback:'.fl-results'},
       wallpapers:{grid:'.swb-browse .swb-grid',detail:'.swb-detail-info',inside:true,fallback:'.swb-browse,.swb-story'},

@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   const PREFIX='br-review-v2:',INDEX='br-review-index-v2',LEGACY_PREFIX='br-review-v1:',LEGACY_INDEX='br-review-index-v1',MISSING=Symbol('missing'),MAX_EVENTS=200,MAX_REPORTS=12;
-  const SCENES=['wallpapers','recipes','tools','movies','events','books','museum','nature','travel','market','courier','search'];
+  const SCENES=['shoppee','wallpapers','recipes','tools','movies','events','books','museum','nature','travel','market','courier','search'];
   const SITES=['corn','desk','stock','game','security','player','software','prize','coupon','parcel','cleaner'];
   const FORMATS=['bounce','tiny','dodge','drawer','panel','newsletter','robot','player-error','bonus','captcha','inline','ambient','context','event','layout','fallback','document'];
   const TYPES=['visit','ad-open','ad-show','dodge','ad-close','close-reveal','event','layout','consent','quiet','complete','burst'];
