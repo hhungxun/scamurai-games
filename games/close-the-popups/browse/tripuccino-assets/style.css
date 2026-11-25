@@ -829,3 +829,9 @@ body[data-scene="tripuccino"] #site-root {max-width:none;padding:0;margin:0}
   .tc-extra-choice, .tc-payment-review {background:rgba(245,249,255,.68);border-color:rgba(203,218,238,.8);border-radius:10px}
   .tc-footer {background:rgba(255,255,255,.68);border-top-color:rgba(255,255,255,.9)}
 }
+
+.tc-travel-photo {margin:0 0 22px}
+.tc-travel-photo img {width:100%;height:260px;object-fit:cover;border-radius:14px}
+.tc-travel-photo figcaption {font-size:13px;line-height:1.6;margin-top:9px;color:#334b6c}
+.tc-travel-photo figcaption small {display:block;font-size:11px;color:#64748b}
+.tc-travel-photo a {text-decoration:underline}

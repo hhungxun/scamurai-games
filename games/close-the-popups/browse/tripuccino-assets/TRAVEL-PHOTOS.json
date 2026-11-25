@@ -1,0 +1,23 @@
+{
+  "hotel": {
+    "file": "hotel.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Grand_Hotel_Taipei_in_rainy_day.jpg",
+    "author": "Jiazheng0609",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0"
+  },
+  "rail": {
+    "file": "rail.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Taoyuan_Airport_MRT_Train_at_Guishan,_Taoyuan_20171220.jpg",
+    "author": "玄史生",
+    "license": "CC0",
+    "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en"
+  },
+  "cars": {
+    "file": "cars.jpg",
+    "source": "https://commons.wikimedia.org/wiki/File:Hyundai_Starex_of_IWS_Rent-a-car_rented_by_Gala_TV_3803-UU_20100607.jpg",
+    "author": "Solomon203",
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0"
+  }
+}
