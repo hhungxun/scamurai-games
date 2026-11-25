@@ -50,13 +50,14 @@ def run():
                     page.wait_for_function('(pid)=>JSON.parse(sessionStorage.getItem("close-popups:station2:v1"))?.participant.id===pid', arg=pid)
                     frame().wait_for_selector('#booth-random')
 
-                def start(movie=False, search=False):
-                    if movie or search:
-                        index = frame().evaluate('(id)=>BROWSE_BOOTH_TASKS.findIndex(t=>t.id===id)', 'minute2-movie-animation' if movie else 'minute3-search-official')
+                def start(task_id=None):
+                    if task_id:
+                        index = frame().evaluate('(id)=>BROWSE_BOOTH_TASKS.findIndex(t=>t.id===id)', task_id)
+                        assert index >= 0, task_id
                         page.evaluate('(index)=>{window.originalRandom=crypto.getRandomValues.bind(crypto); crypto.getRandomValues=(a)=>{a[0]=index;return a}}', index)
                     frame().click('#booth-random')
                     frame().wait_for_selector('#booth-start')
-                    if movie or search: page.evaluate('()=>{crypto.getRandomValues=window.originalRandom;}')
+                    if task_id: page.evaluate('()=>{crypto.getRandomValues=window.originalRandom;}')
                     task = frame().evaluate('new URLSearchParams(location.search).get("task")')
                     assert state()['taskId'] == task
                     assert frame().locator('.booth-task-card:visible').count() == 0
@@ -71,7 +72,7 @@ def run():
                 round_id = state()['roundId']
                 page.reload(); page.wait_for_function("document.getElementById('participant-name').textContent.includes('POP001')")
                 assert state()['roundId'] == round_id
-                start(search=True)
+                start('minute3-search-official')
                 before = frame().evaluate('BROWSE_BOOTH.list()[0]')
                 page.reload(); frame().wait_for_selector('[data-booth-submit]')
                 after = frame().evaluate('BROWSE_BOOTH.list()[0]')
@@ -111,6 +112,18 @@ def run():
                 assert state() is None
                 print('PASS: cancellation records no score; cancelled next-picker leaves nobody selected')
 
+                # Every shipped task has a reachable scene and local runtime dependencies.
+                probe = context.new_page(); probe.on('response', lambda r: missing.append(r.url) if r.status == 404 else None); probe.goto(BASE + '/games/close-the-popups/browse/booth.html?lang=en')
+                tasks = probe.evaluate('BROWSE_BOOTH_TASKS.map(t=>t.id)')
+                assert len(tasks) == 10
+                for task in tasks:
+                    url = probe.evaluate('(id)=>BROWSE_BOOTH.entryURL(BROWSE_BOOTH.create(id,"clean","en"))', task)
+                    probe.goto(url); probe.wait_for_selector('[data-booth-submit]')
+                    probe.goto(BASE + '/games/close-the-popups/browse/booth.html?lang=en')
+                print('PASS: all 10 task scenes load with no missing assets or JavaScript errors')
+                assert not missing, missing
+                assert not errors, errors
+
                 # The real timeout path, including ending animation and durable save.
                 select('POP003'); start()
                 page.wait_for_function("JSON.parse(sessionStorage.getItem('close-popups:station2:v1')).status==='saved'", timeout=75000)
@@ -126,9 +139,15 @@ def run():
                 assert frame().locator('dialog[aria-label="Round ending"]').count() == 0
                 print('PASS: real 60-second timeout saves score, ending skips and never replays after reload')
 
-                select('POP004'); start(movie=True)
-                frame().locator('[data-m-save="sintel"]').first.click(force=True)
-                frame().locator('[data-m-save="elephants-dream"]').first.click(force=True)
+                select('POP004'); start('minute2-travel-interchange')
+                frame().locator('select[name=from]').select_option('klcc')
+                frame().locator('select[name=to]').select_option('bukit-kg')
+                frame().locator('input[name=time]').fill('17:20')
+                frame().locator('select[name=pref]').select_option('walking')
+                frame().get_by_role('button', name='Find a route').click(force=True)
+                frame().locator('.jt-route-selected a').first.click(force=True)
+                frame().locator('[data-save-trip]').click(force=True)
+                assert frame().locator('[data-save-trip]').get_attribute('aria-pressed') == 'true'
                 frame().locator('.br-interrupt:not([inert]) [data-br-close]:visible').first.click(timeout=8000)
                 frame().locator('[data-booth-submit]').click(force=True)
                 page.wait_for_function("JSON.parse(sessionStorage.getItem('close-popups:station2:v1')).status==='saved'")
@@ -145,17 +164,6 @@ def run():
                 assert any(row['total'] == 452 for row in leaderboard['rows'])
                 print('PASS: Station 2 contributes exactly 92 to the five-station leaderboard total')
 
-                # Every shipped task has a reachable scene and local runtime dependencies.
-                probe = context.new_page(); probe.on('response', lambda r: missing.append(r.url) if r.status == 404 else None); probe.goto(BASE + '/games/close-the-popups/browse/booth.html?lang=en')
-                tasks = probe.evaluate('BROWSE_BOOTH_TASKS.map(t=>t.id)')
-                assert len(tasks) == 13
-                for task in tasks:
-                    url = probe.evaluate('(id)=>BROWSE_BOOTH.entryURL(BROWSE_BOOTH.create(id,"clean","en"))', task)
-                    probe.goto(url); probe.wait_for_selector('[data-booth-submit]')
-                    probe.goto(BASE + '/games/close-the-popups/browse/booth.html?lang=en')
-                print('PASS: all 13 task scenes load with no missing assets or JavaScript errors')
-                assert not missing, missing
-                assert not errors, errors
                 browser.close()
         finally:
             server.terminate(); server.wait(timeout=5)

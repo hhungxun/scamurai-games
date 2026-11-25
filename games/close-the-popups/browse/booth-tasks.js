@@ -221,23 +221,6 @@ window.BROWSE_BOOTH_TASKS = [
     hint2: ["Find the photo below the upload box and click Open example.", "在上传区下方找到那张照片，点「打开示例」。"]
   },
   {
-    id: "minute2-movie-animation",
-    scene: "movies",
-    file: "movie.html",
-    title: ["Make a watchlist with exactly two animated films","建一张只含两部动画的片单"],
-    brief: ["Save Sintel and Elephants Dream to your watchlist. Leave only those two in the list.", "把《辛特尔》和《大象之梦》加进想看片单，最后只留这两部。"],
-    hint: ["Search for each film by title. You can save it from the results.", "直接搜片名，在搜索结果里就能加入想看。"],
-    goals: [["Search for Sintel and Elephants Dream and add both to your Watchlist.","分别搜 Sintel 和 Elephants Dream，把两部都加入「想看」。"],["Open your Watchlist and remove any other films so only those two remain.","打开「想看片单」，移除其他影片，确认只剩这两部。"]],
-    route: [["Narrow to Fantasy and check the language and running time.","先筛选奇幻，核对语言和片长。"],["Search Sintel and Elephants Dream by name.","分别搜索 Sintel 和 Elephants Dream。"],["Add Sintel and Elephants Dream to the watchlist.","将《辛特尔》和《大象之梦》加入想看片单。"]],
-    answer: ["sintel (15 min) and elephants-dream (11 min). The catalogue runtimes describe the works, not the embedded preview lengths.","sintel（15 分钟）和 elephants-dream（11 分钟）。用目录的正片片长核对，无需播放影片。"],
-    cover: "assets/open-film-elephants-dream.jpg",
-    coverNote: ["Elephants Dream · official film still · (CC) Blender Foundation | studio.blender.org","大象之梦 · 官方剧照 · (CC) Blender Foundation | studio.blender.org"],
-    advanced: false,
-    badge: ["Sintel·2 films","辛特尔·大象之梦·仅两部"],
-    steps: [["Add Sintel to Watchlist", "把《辛特尔》加入想看"], ["Add Elephants Dream to Watchlist", "把《大象之梦》加入想看"], ["Leave only those two films", "片单只留这两部"]],
-    hint2: ["Open Watchlist in the top bar to check what’s saved.", "点顶部的「想看片单」，看看里面是不是只有这两部。"]
-  },
-  {
     id: "minute2-outing-craft",
     scene: "events",
     file: "events.html",
@@ -252,38 +235,6 @@ window.BROWSE_BOOTH_TASKS = [
     badge: ["RM20·indoor","中央艺术坊·室内·RM20"],
     steps: [["Find the RM20 indoor craft outing", "找到 RM20 的室内手作路线"], ["Add it to your weekend plan", "加入周末计划"], ["Tick the return journey and weather", "勾上返程和天气"]],
     hint2: ["Search Central Market and open “Batik, baskets & a sheltered craft browse”.", "搜「中央艺术坊」，打开「蜡染、编篮与室内手作慢逛」。"]
-  },
-  {
-    id: "minute2-book-verne",
-    scene: "books",
-    file: "book.html",
-    title: ["Save the English and French editions of Around the World in Eighty Days","收藏《八十天环游地球》的英法两版"],
-    brief: ["Save the English and French editions of Around the World in Eighty Days. Download the opening of the French edition as a TXT file.", "收藏《八十天环游地球》的英文版和法文版，再把法文开篇下载成 TXT。"],
-    hint: ["Check the language on each book page. The excerpt is under Read.", "打开书目确认语言。点「阅读」就能看到开篇。"],
-    goals: [["Find Around the World in Eighty Days and save both the English and French editions.","找到《八十天环游地球》，分别收藏英文版和法文版。"],["Open Read on the French edition and download the opening excerpt as a TXT file.","打开法文版的「阅读」，把开篇片段下载为 TXT。"]],
-    route: [["Browse Adventure or search for Jules Verne once identified from an edition.","浏览「冒险」类别，认出作者后也可以搜 Jules Verne。"],["Check the language on both 1873 editions and save both.","核对两个 1873 年版本的语言，并分别收藏。"],["Download the opening excerpt from the French edition.","从法文版下载开篇片段。"]],
-    answer: ["around-world (English) and around-world-fr (French). Correct excerpt: folio-around-world-fr-excerpt.txt.","around-world（英文）与 around-world-fr（法文）。正确片段是 folio-around-world-fr-excerpt.txt。"],
-    cover: "assets/culture-book-around-world-thumb.webp",
-    advanced: false,
-    badge: ["English·French","八十天·英法·法文TXT"],
-    steps: [["Save the English edition", "收藏英文版"], ["Save the French edition", "收藏法文版"], ["Download the French excerpt as TXT", "下载法文开篇 TXT"]],
-    hint2: ["Search “Verne” or the book title to find both editions.", "可以搜书名，也可以直接搜 Verne。"]
-  },
-  {
-    id: "minute2-museum-manet",
-    scene: "museum",
-    file: "museum.html",
-    title: ["Pick the Manet painting under 100 cm wide","从两幅马奈画作中选一幅宽不到 100 cm 的"],
-    brief: ["Compare Manet’s Boating and The Monet Family in Their Garden at Argenteuil. Add the one under 100 cm wide to My Exhibition.", "对比马奈的《划船》和《莫奈一家在阿让特伊的花园里》，把宽度不到 100 cm 的那幅加进「我的展览」。"],
-    hint: ["Search for Manet, then open Compare to see both sets of dimensions.", "搜「马奈」，把两幅都加进对比，就能并排看尺寸。"],
-    goals: [["Add Boating and The Monet Family in Their Garden at Argenteuil to Compare.","把《划船》和《莫奈一家在阿让特伊的花园里》加入「对比」。"],["Check their widths and add the painting under 100 cm wide to My Exhibition.","核对宽度，把宽度不到 100 cm 的那幅加入「我的展览」。"]],
-    route: [["Search Manet and check the date and subject.","搜索 Manet 或马奈，核对年份与题材。"],["Add Boating and The Monet Family in Their Garden at Argenteuil to Compare.","把《划船》和《莫奈一家在阿让特伊的花园里》加入对比。"],["Compare the second measurement in the dimensions and save the narrower work.","对比尺寸的第二个数值，收藏较窄的作品。"]],
-    answer: ["436947 Boating: 130.2 cm wide. 436965 The Monet Family in Their Garden at Argenteuil: 99.7 cm wide. Save 436965.","436947《划船》宽 130.2 cm，436965《莫奈一家在阿让特伊的花园里》宽 99.7 cm。收藏 436965。"],
-    cover: "assets/culture-art-436947-thumb.webp",
-    advanced: false,
-    badge: ["Manet·<100cm","Manet·对比·<100cm"],
-    steps: [["Compare Boating and The Monet Family in Their Garden at Argenteuil", "对比《划船》和《莫奈一家在阿让特伊的花园里》"], ["Check which one is under 100 cm wide", "看哪幅宽不到 100 cm"], ["Add the narrower painting to My Exhibition", "把较窄的那幅加进「我的展览」"]],
-    hint2: ["Dimensions are listed height first, then width.", "尺寸先写高度，后写宽度。"]
   },
   {
     id: "minute2-nature-woodpeckers",
@@ -383,3 +334,59 @@ window.BROWSE_BOOTH_TASKS = [
     hint2: ["Choose Attractions as well as Indoors, then check the time and budget on the guide.", "「景点」和「室内」都选上，再看指南里的用时和预算。"]
   }
 ];
+
+// Previously started rounds and results still resolve these tasks.
+window.BROWSE_BOOTH_LEGACY_TASKS.push(
+  {
+    id: "minute2-movie-animation",
+    retired: true,
+    scene: "movies",
+    file: "movie.html",
+    title: ["Make a watchlist with exactly two animated films","建一张只含两部动画的片单"],
+    brief: ["Save Sintel and Elephants Dream to your watchlist. Leave only those two in the list.", "把《辛特尔》和《大象之梦》加进想看片单，最后只留这两部。"],
+    hint: ["Search for each film by title. You can save it from the results.", "直接搜片名，在搜索结果里就能加入想看。"],
+    goals: [["Search for Sintel and Elephants Dream and add both to your Watchlist.","分别搜 Sintel 和 Elephants Dream，把两部都加入「想看」。"],["Open your Watchlist and remove any other films so only those two remain.","打开「想看片单」，移除其他影片，确认只剩这两部。"]],
+    route: [["Narrow to Fantasy and check the language and running time.","先筛选奇幻，核对语言和片长。"],["Search Sintel and Elephants Dream by name.","分别搜索 Sintel 和 Elephants Dream。"],["Add Sintel and Elephants Dream to the watchlist.","将《辛特尔》和《大象之梦》加入想看片单。"]],
+    answer: ["sintel (15 min) and elephants-dream (11 min). The catalogue runtimes describe the works, not the embedded preview lengths.","sintel（15 分钟）和 elephants-dream（11 分钟）。用目录的正片片长核对，无需播放影片。"],
+    cover: "assets/open-film-elephants-dream.jpg",
+    coverNote: ["Elephants Dream · official film still · (CC) Blender Foundation | studio.blender.org","大象之梦 · 官方剧照 · (CC) Blender Foundation | studio.blender.org"],
+    advanced: false,
+    badge: ["Sintel·2 films","辛特尔·大象之梦·仅两部"],
+    steps: [["Add Sintel to Watchlist", "把《辛特尔》加入想看"], ["Add Elephants Dream to Watchlist", "把《大象之梦》加入想看"], ["Leave only those two films", "片单只留这两部"]],
+    hint2: ["Open Watchlist in the top bar to check what’s saved.", "点顶部的「想看片单」，看看里面是不是只有这两部。"]
+  },
+  {
+    id: "minute2-book-verne",
+    retired: true,
+    scene: "books",
+    file: "book.html",
+    title: ["Save the English and French editions of Around the World in Eighty Days","收藏《八十天环游地球》的英法两版"],
+    brief: ["Save the English and French editions of Around the World in Eighty Days. Download the opening of the French edition as a TXT file.", "收藏《八十天环游地球》的英文版和法文版，再把法文开篇下载成 TXT。"],
+    hint: ["Check the language on each book page. The excerpt is under Read.", "打开书目确认语言。点「阅读」就能看到开篇。"],
+    goals: [["Find Around the World in Eighty Days and save both the English and French editions.","找到《八十天环游地球》，分别收藏英文版和法文版。"],["Open Read on the French edition and download the opening excerpt as a TXT file.","打开法文版的「阅读」，把开篇片段下载为 TXT。"]],
+    route: [["Browse Adventure or search for Jules Verne once identified from an edition.","浏览「冒险」类别，认出作者后也可以搜 Jules Verne。"],["Check the language on both 1873 editions and save both.","核对两个 1873 年版本的语言，并分别收藏。"],["Download the opening excerpt from the French edition.","从法文版下载开篇片段。"]],
+    answer: ["around-world (English) and around-world-fr (French). Correct excerpt: folio-around-world-fr-excerpt.txt.","around-world（英文）与 around-world-fr（法文）。正确片段是 folio-around-world-fr-excerpt.txt。"],
+    cover: "assets/culture-book-around-world-thumb.webp",
+    advanced: false,
+    badge: ["English·French","八十天·英法·法文TXT"],
+    steps: [["Save the English edition", "收藏英文版"], ["Save the French edition", "收藏法文版"], ["Download the French excerpt as TXT", "下载法文开篇 TXT"]],
+    hint2: ["Search “Verne” or the book title to find both editions.", "可以搜书名，也可以直接搜 Verne。"]
+  },
+  {
+    id: "minute2-museum-manet",
+    retired: true,
+    scene: "museum",
+    file: "museum.html",
+    title: ["Pick the Manet painting under 100 cm wide","从两幅马奈画作中选一幅宽不到 100 cm 的"],
+    brief: ["Compare Manet’s Boating and The Monet Family in Their Garden at Argenteuil. Add the one under 100 cm wide to My Exhibition.", "对比马奈的《划船》和《莫奈一家在阿让特伊的花园里》，把宽度不到 100 cm 的那幅加进「我的展览」。"],
+    hint: ["Search for Manet, then open Compare to see both sets of dimensions.", "搜「马奈」，把两幅都加进对比，就能并排看尺寸。"],
+    goals: [["Add Boating and The Monet Family in Their Garden at Argenteuil to Compare.","把《划船》和《莫奈一家在阿让特伊的花园里》加入「对比」。"],["Check their widths and add the painting under 100 cm wide to My Exhibition.","核对宽度，把宽度不到 100 cm 的那幅加入「我的展览」。"]],
+    route: [["Search Manet and check the date and subject.","搜索 Manet 或马奈，核对年份与题材。"],["Add Boating and The Monet Family in Their Garden at Argenteuil to Compare.","把《划船》和《莫奈一家在阿让特伊的花园里》加入对比。"],["Compare the second measurement in the dimensions and save the narrower work.","对比尺寸的第二个数值，收藏较窄的作品。"]],
+    answer: ["436947 Boating: 130.2 cm wide. 436965 The Monet Family in Their Garden at Argenteuil: 99.7 cm wide. Save 436965.","436947《划船》宽 130.2 cm，436965《莫奈一家在阿让特伊的花园里》宽 99.7 cm。收藏 436965。"],
+    cover: "assets/culture-art-436947-thumb.webp",
+    advanced: false,
+    badge: ["Manet·<100cm","Manet·对比·<100cm"],
+    steps: [["Compare Boating and The Monet Family in Their Garden at Argenteuil", "对比《划船》和《莫奈一家在阿让特伊的花园里》"], ["Check which one is under 100 cm wide", "看哪幅宽不到 100 cm"], ["Add the narrower painting to My Exhibition", "把较窄的那幅加进「我的展览」"]],
+    hint2: ["Dimensions are listed height first, then width.", "尺寸先写高度，后写宽度。"]
+  }
+);

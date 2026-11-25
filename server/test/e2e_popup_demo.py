@@ -20,7 +20,18 @@ def run():
     page.on('pageerror',lambda e:errors.append(str(e)))
     page.goto(BASE+'/games/close-the-popups/?demo=1&lang=en')
     def game():return page.locator('#game').element_handle().content_frame()
-    def start(task='minute2-movie-animation'):
+    cards = game().locator('.booth-task-card')
+    retired = ('minute2-movie-animation', 'minute2-book-verne', 'minute2-museum-manet')
+    cards.first.wait_for()
+    assert cards.count() == 10
+    for task in retired:
+     assert game().locator(f'.booth-task-card[data-booth-task="{task}"]').count() == 0
+     game().goto(BASE+f'/games/close-the-popups/browse/booth.html?view=brief&task={task}&lang=en')
+     assert game().locator('#booth-title').inner_text() == 'This task is no longer available.'
+     assert game().evaluate('(id)=>BROWSE_BOOTH.create(id,"ads","en")',task) is None
+     game().get_by_role('link',name='Return to task selection').click()
+    print('PASS: 10 selectable tasks; the retired briefs cannot start a new round')
+    def start(task='minute2-tool-webp'):
      f=game();f.locator(f'[data-booth-task="{task}"]').click();f.click('#booth-start')
      try:f.wait_for_selector('[data-booth-submit]',timeout=2000)
      except PlaywrightTimeout:raise AssertionError('Start did not launch task: '+f.locator('#booth-start-note').inner_text())

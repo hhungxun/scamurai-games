@@ -149,7 +149,8 @@
   };
   const makeToken = prefix => { const n = new Uint8Array(12); crypto.getRandomValues(n); return prefix + Array.from(n,v => v.toString(16).padStart(2,'0')).join(''); };
   const create = (taskId, mode, lang) => {
-    if (!Object.hasOwn(RULES,taskId) || !taskData(taskId) || !['clean','ads'].includes(mode) || !['en','zh'].includes(lang)) return null;
+    const task = taskData(taskId);
+    if (!Object.hasOwn(RULES,taskId) || !task || task.retired || !['clean','ads'].includes(mode) || !['en','zh'].includes(lang)) return null;
     let id,seed; try { id=makeToken('r_');seed=makeToken('m_'); } catch { return null; }
     const now = Date.now(), record = {version:1,id,taskId,seed,mode,lang,status:'armed',createdAt:now,updatedAt:now,startedAt:0,deadline:0,endedAt:0,reason:null,judgement:'unreviewed',evidence:emptyEvidence(taskId)};
     if (!store(record)) return null;

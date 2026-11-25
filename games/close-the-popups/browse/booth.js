@@ -60,11 +60,11 @@
   const siteName = item => txt(taskSites.get(item.scene).name);
   const taskGroups = [
     {title:['Search & tools','搜索·工具'],ids:['minute3-search-official','minute2-tool-webp','minute2-wall-earthrise']},
-    {title:['Content & collections','内容·收藏'],ids:['minute2-movie-animation','minute2-book-verne','minute2-museum-manet','minute2-nature-woodpeckers']},
+    {title:['Content & collections','内容·收藏'],ids:['minute2-nature-woodpeckers']},
     {title:['Plan & compare','规划·比较'],ids:['minute2-travel-interchange','minute2-market-lens','minute4-penang-indoor']},
     {title:['Everyday services','生活服务'],ids:['minute2-recipe-budget','minute2-outing-craft','minute3-courier-redelivery']}
   ];
-  const suggestedSeconds = id => ['minute3-search-official','minute3-courier-redelivery'].includes(id) ? 30 : ['minute2-tool-webp','minute2-movie-animation','minute2-book-verne'].includes(id) ? 45 : 60;
+  const suggestedSeconds = id => ['minute3-search-official','minute3-courier-redelivery'].includes(id) ? 30 : id === 'minute2-tool-webp' ? 45 : 60;
   function taskCard(item) {
     return `<li><a class="booth-task-card" data-booth-task="${esc(item.id)}" href="${esc(url({view:'brief', task:item.id}))}">
       <span class="booth-task-thumb"><img src="${esc(item.cover)}" alt="" loading="lazy" width="76" height="58"${item.coverNote?` title="${esc(txt(item.coverNote))}"`:""}></span>
@@ -407,8 +407,9 @@
   }
   function renderError(kind) {
     const unavailable = kind === 'runtime';
+    const retired = kind === 'retired';
     document.title = t('Round unavailable · close the popups', '轮次不可用 · 60秒任务挑战');
-    app.innerHTML = `${header(t('LET’S RESET THE ENTRY', '重新找到入口'))}<main id="booth-main" data-booth-view="error" class="booth-main booth-recovery"><p class="booth-eyebrow">${t('NOT A RESULT', '这不是本轮结果')}</p><h1 id="booth-title">${unavailable ? t('The activity could not load.', '活动未能加载。') : t('We can’t find that round.', '找不到这轮记录。')}</h1><p>${unavailable ? t('The activity runtime is unavailable. Reload the page before starting. No challenge has started here.', '活动组件暂时不可用。请重新加载后再开始，这里尚未启动挑战。') : t('The link is missing, invalid or no longer stored in this tab. We will not guess a previous participant’s result or add more time to an old round.', '链接缺失、无效，或记录已不在此标签页中。这里不会猜测上一位的结果，也不会为旧轮次重开计时。')}</p><a class="booth-button booth-button-primary" href="${esc(chooseURL())}">${t('Return to task selection', '返回选题')}<span aria-hidden="true">↗</span></a>${unavailable ? `<button class="booth-text-link" type="button" id="booth-reload">${t('Reload page', '重新加载')}</button>` : ''}</main>`;
+    app.innerHTML = `${header(t('LET’S RESET THE ENTRY', '重新找到入口'))}<main id="booth-main" data-booth-view="error" class="booth-main booth-recovery"><p class="booth-eyebrow">${t('NOT A RESULT', '这不是本轮结果')}</p><h1 id="booth-title">${unavailable ? t('The activity could not load.', '活动未能加载。') : retired ? t('This task is no longer available.', '这道题已停用。') : t('We can’t find that round.', '找不到这轮记录。')}</h1><p>${unavailable ? t('The activity runtime is unavailable. Reload the page before starting. No challenge has started here.', '活动组件暂时不可用。请重新加载后再开始，这里尚未启动挑战。') : retired ? t('Return to the task selection to start a new round.', '请返回选题页开始新一轮。') : t('The link is missing, invalid or no longer stored in this tab. We will not guess a previous participant’s result or add more time to an old round.', '链接缺失、无效，或记录已不在此标签页中。这里不会猜测上一位的结果，也不会为旧轮次重开计时。')}</p><a class="booth-button booth-button-primary" href="${esc(chooseURL())}">${t('Return to task selection', '返回选题')}<span aria-hidden="true">↗</span></a>${unavailable ? `<button class="booth-text-link" type="button" id="booth-reload">${t('Reload page', '重新加载')}</button>` : ''}</main>`;
     mountFullscreen();
     document.getElementById('booth-reload')?.addEventListener('click', () => location.reload());
   }
@@ -440,6 +441,8 @@
     });
     refreshResult();
   } else if (view === 'brief') {
-    if (task) renderBrief(task); else renderError('task');
+    if (task?.retired) renderError('retired');
+    else if (task) renderBrief(task);
+    else renderError('task');
   } else renderChoose();
 })();

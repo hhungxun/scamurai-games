@@ -294,10 +294,11 @@
     async draw(win, ids) {
       verifyChild(win);
       const pool = [...new Set(ids)].filter(id => typeof id === 'string' && /^minute[234]-[a-z-]+$/.test(id));
-      if (pool.length !== 13) throw new Error('The complete task pool is unavailable.');
+      if (pool.length !== 10) throw new Error('The complete task pool is unavailable.');
       if (!state) await prepare(win, 'ads');
       if (state?.status !== 'open' || state.localId || !state.readyToStart) throw new Error('Finish or cancel the current round first.');
-      if (!state.taskId) {
+      const retired = win.BROWSE_BOOTH_LEGACY_TASKS?.some(task => task.retired && task.id === state.taskId);
+      if (!state.taskId || retired) {
         // Rejection sampling avoids modulo bias; assignment persists before navigation.
         const values = new Uint32Array(1), limit = Math.floor(4294967296 / pool.length) * pool.length;
         do { crypto.getRandomValues(values); } while (values[0] >= limit);

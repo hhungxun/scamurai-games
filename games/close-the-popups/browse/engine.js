@@ -72,7 +72,8 @@
   const renderer = window.BROWSE_SCENES?.[scene];
   if (!renderer) { root.innerHTML = `<main class="br-guide"><h1>${t('This page could not be loaded.','此页面未能加载。')}</h1><a href="${url('launch.html')}">${t('Choose a website','选择网站')}</a></main>`; return; }
   const review=window.BROWSE_REVIEW_LOG?.({...C,seed,scene});
-  const currentTask=round&&window.BROWSE_BOOTH_TASKS?.some(task=>task.id===round.taskId);
+  const currentTask=round&&(window.BROWSE_BOOTH_TASKS?.some(task=>task.id===round.taskId)||
+    window.BROWSE_BOOTH_LEGACY_TASKS?.some(task=>task.retired&&task.id===round.taskId));
   const boothAds=round?.mode==='ads'&&currentTask?window.BROWSE_BOOTH_ADS?.(scene,lang):null;
   if(boothAds)document.documentElement.classList.add('br-booth-campus');
   renderer(C);
