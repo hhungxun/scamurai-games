@@ -56,6 +56,8 @@
     window.parent.CLOSE_POPUPS_HOST?.mountFullscreen?.(window, app.querySelector('.booth-header-right'), lang);
   }
   const modeName = value => value === 'ads' ? t('Ad challenge', '广告挑战') : t('Difficulty test · no ads', '难度测试 · 无广告');
+  const taskSites = new Map(window.BROWSE_SCENE_INDEX.map(site => [site.id, site]));
+  const siteName = item => txt(taskSites.get(item.scene).name);
   const taskGroups = [
     {title:['Search & tools','搜索·工具'],ids:['minute3-search-official','minute2-tool-webp','minute2-wall-earthrise']},
     {title:['Content & collections','内容·收藏'],ids:['minute2-movie-animation','minute2-book-verne','minute2-museum-manet','minute2-nature-woodpeckers']},
@@ -66,7 +68,7 @@
   function taskCard(item) {
     return `<li><a class="booth-task-card" data-booth-task="${esc(item.id)}" href="${esc(url({view:'brief', task:item.id}))}">
       <span class="booth-task-thumb"><img src="${esc(item.cover)}" alt="" loading="lazy" width="76" height="58"${item.coverNote?` title="${esc(txt(item.coverNote))}"`:""}></span>
-      <span><strong>${esc(txt(item.title))}</strong><small>${esc(item.site)}${item.advanced ? ` · ${t('Advanced', '进阶')}` : ''}</small><small class="booth-suggested">${t("Suggested", "建议")} ${suggestedSeconds(item.id)} ${t("sec", "秒")}</small></span>
+      <span><strong>${esc(txt(item.title))}</strong><small>${esc(siteName(item))}${item.advanced ? ` · ${t('Advanced', '进阶')}` : ''}</small><small class="booth-suggested">${t("Suggested", "建议")} ${suggestedSeconds(item.id)} ${t("sec", "秒")}</small></span>
       <span class="booth-arrow" aria-hidden="true">→</span>
     </a></li>`;
   }
@@ -160,13 +162,18 @@
         <a class="booth-back" href="${esc(chooseURL())}">← ${mode === 'clean' || demo ? t('Back to tasks', '返回选题') : t('Back to the task draw', '返回抽题')}</a>
         <section class="booth-brief-layout" aria-labelledby="booth-title">
           <div class="booth-brief-copy">
-            <p class="booth-eyebrow">${esc(item.site)}${item.advanced ? ` · ${t('Advanced', '进阶')}` : ''}${mode === 'clean' ? ` · ${esc(modeName(mode))}` : ''}</p>
+            <p class="booth-eyebrow">${esc(siteName(item))} · ${esc(txt(taskSites.get(item.scene).type))}</p>
             <h1 id="booth-title">${esc(txt(item.title))}</h1>
-            ${item.hint ? `<aside class="booth-start-hint"><strong>${t('Hint', '提示')}</strong><p>${taskText(item.hint, item)}</p></aside>` : ''}
             <div class="booth-goals">
               <h2>${t('What to do', '要做的事')}</h2>
               <ol>${item.goals.map(goal => `<li>${taskText(goal, item)}</li>`).join('')}</ol>
             </div>
+            ${item.hint ? `<details class="booth-start-hint"><summary>${t('Hint', '提示')}</summary><p>${taskText(item.hint, item)}</p></details>` : ''}
+            <p class="booth-play-note">
+              <strong>${t('You have 60 seconds once the site is ready.', '网站就绪后，你有 60 秒。')}</strong>
+              ${mode === 'ads' ? t('When an ad pops up, find its real close button, close it, and get back to your task.', '广告弹出时，认准真正的关闭按钮，关掉后接着做任务。') : ''}
+              ${t('Use View task if you need a reminder. Click Submit when you’re done.', '忘了要求，点顶部的「查看任务」。做完后点「交卷」。')}
+            </p>
             <button id="booth-start" type="button" class="booth-button booth-button-primary">${t('Start task', '开始任务')} <span aria-hidden="true">→</span></button>
             <p id="booth-start-note" class="booth-note" role="status" hidden></p>
           </div>
@@ -294,7 +301,7 @@
   function renderPending(round, item) {
     const armed = round.status === 'armed';
     document.title = t('This round is not finished · close the popups', '本轮尚未结束 · 60秒任务挑战');
-    app.innerHTML = `${header(t('ROUND STATUS', '轮次状态'), round)}<main id="booth-main" data-booth-view="${armed ? 'armed' : 'running'}" class="booth-main booth-recovery"><p class="booth-eyebrow">${esc(item.site)} / ${esc(modeName(round.mode))}</p><h1 id="booth-title">${armed ? t('Ready to start', '可以开始了') : t('Your timer is still running', '倒计时还在继续')}</h1><p>${armed ? t('Go to the task site. The timer starts when the page loads.', '打开任务网站。网页就绪后开始计时。') : t('Go back to the task site to finish or submit. Opening this page keeps the timer running.', '回到任务网站继续做题或交卷。打开这个页面时，倒计时还在继续。')}</p><div class="booth-recovery-task"><strong>${esc(txt(item.title))}</strong><span>${esc(txt(item.brief))}</span></div><a class="booth-button booth-button-primary" id="booth-resume" href="${esc(localisedURL(api.entryURL(round)))}">${armed ? t('Continue to the website', '继续前往网站') : t('Return to this round', '返回本轮任务')}<span aria-hidden="true">↗</span></a><a class="booth-text-link" href="${esc(chooseURL())}">${t('Back to task selection', '返回选题')}</a></main>`;
+    app.innerHTML = `${header(t('ROUND STATUS', '轮次状态'), round)}<main id="booth-main" data-booth-view="${armed ? 'armed' : 'running'}" class="booth-main booth-recovery"><p class="booth-eyebrow">${esc(siteName(item))} / ${esc(modeName(round.mode))}</p><h1 id="booth-title">${armed ? t('Ready to start', '可以开始了') : t('Your timer is still running', '倒计时还在继续')}</h1><p>${armed ? t('Go to the task site. The timer starts when the page loads.', '打开任务网站。网页就绪后开始计时。') : t('Go back to the task site to finish or submit. Opening this page keeps the timer running.', '回到任务网站继续做题或交卷。打开这个页面时，倒计时还在继续。')}</p><div class="booth-recovery-task"><strong>${esc(txt(item.title))}</strong><span>${esc(txt(item.brief))}</span></div><a class="booth-button booth-button-primary" id="booth-resume" href="${esc(localisedURL(api.entryURL(round)))}">${armed ? t('Continue to the website', '继续前往网站') : t('Return to this round', '返回本轮任务')}<span aria-hidden="true">↗</span></a><a class="booth-text-link" href="${esc(chooseURL())}">${t('Back to task selection', '返回选题')}</a></main>`;
     mountFullscreen();
   }
   function exportResult(round, item) {
@@ -336,7 +343,7 @@
           <div>
             <p class="booth-eyebrow">${esc(modeName(round.mode))}</p>
             <h1 id="booth-title">${esc(reasonText(round))}</h1>
-            <p>${esc(txt(item.title))} · ${esc(item.site)}</p>${item.badge?`<strong class="booth-memory-badge">${esc(txt(item.badge))}</strong>`:""}${round.usedSecondHint?`<p class="booth-hint-used">${t("Used a second-level hint","使用了二级提示")}</p>`:""}
+            <p>${esc(txt(item.title))} · ${esc(siteName(item))}</p>${item.badge?`<strong class="booth-memory-badge">${esc(txt(item.badge))}</strong>`:""}${round.usedSecondHint?`<p class="booth-hint-used">${t("Used a second-level hint","使用了二级提示")}</p>`:""}
           </div>
           <div class="booth-time-stamp"><span>${t('Time used', '用时')}</span><strong>${esc(elapsedText(round))}</strong></div>
         </section>

@@ -47,10 +47,10 @@
   const hash = s => { let h = 2166136261; for (const c of s) h = Math.imul(h ^ c.charCodeAt(0), 16777619); return h >>> 0; };
   const rng = salt => { let a = hash(seed + salt); return () => { a += 0x6D2B79F5; let n = a; n = Math.imul(n ^ n >>> 15, n | 1); n ^= n + Math.imul(n ^ n >>> 7, n | 61); return ((n ^ n >>> 14) >>> 0) / 4294967296; }; };
   const shuffle = (arr, salt) => { const out = [...arr], r = rng(salt); for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; } return out; };
-  const scenes = (window.BROWSE_SCENE_INDEX||[]).map(s=>[s.id,s.file,s.name,s.brief[lang==='zh'?1:0],s.art,s.kicker[lang==='zh'?1:0],s.cover]);
+  const scenes = (window.BROWSE_SCENE_INDEX||[]).map(s=>[s.id,s.file,t(...s.name),s.brief[lang==='zh'?1:0],s.art,s.kicker[lang==='zh'?1:0],s.cover]);
   document.documentElement.lang = lang === 'zh' ? 'zh-Hans' : 'en';
   const root = document.getElementById('site-root');
-  C = {root, params, lang, t, esc, url, read, write, seed,scene:document.body.dataset.scene,complete(label) { if(write('last-completed', {label: String(label).slice(0,120), at: Date.now()})===false)return; window.dispatchEvent(new CustomEvent('browse:complete',{detail:String(label).slice(0,160)})); }};
+  C = {root, params, lang, t, esc, url, read, write, seed,scene:document.body.dataset.scene,siteName:scenes.find(([id])=>id===document.body.dataset.scene)?.[2],complete(label) { if(write('last-completed', {label: String(label).slice(0,120), at: Date.now()})===false)return; window.dispatchEvent(new CustomEvent('browse:complete',{detail:String(label).slice(0,160)})); }};
   const page = document.body.dataset.page;
   const validSites = ['corn','desk','stock','game','security','player','software','prize','coupon','parcel'];
   if(params.get('task')==='random'&&window.BROWSE_TASKS?.length){const chosenTask=window.BROWSE_TASKS[Math.floor(rng('brief')()*window.BROWSE_TASKS.length)];params.set('task',chosenTask.id);}

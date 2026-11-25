@@ -4,9 +4,9 @@
   window.BROWSE_CONSENT = C => {
     const {root,scene,seed,t,esc,read,write,stack}=C;
     if(!root||!scene)return null;
-    const KEY='consent-v1:'+scene, names={wallpapers:'Stillwall',recipes:'Pantry & Plate',tools:'Pixelpress',movies:'Frame Movies',events:'Out There KL',books:'Folio',museum:'Open Collection',nature:'Field Guide',travel:'Trackside',market:'loop'};
+    const KEY='consent-v1:'+scene;
     const accents={wallpapers:'#718e36',recipes:'#ab482f',tools:'#2764a3',movies:'#bd7b16',events:'#a52b2a',books:'#685137',museum:'#242b32',nature:'#4c6941',travel:'#1e6179',market:'#327053'};
-    const brand=names[scene]||'Browse';
+    const brand=C.siteName||'Browse';
     const hash=value=>{let n=2166136261;for(const char of value)n=Math.imul(n^char.charCodeAt(0),16777619);return n>>>0;};
     const eligible=hash(seed+':'+scene+':consent')%100<70;
     const blank=()=>({version:1,choice:null,preferences:false,measurement:false,advertising:false});

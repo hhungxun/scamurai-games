@@ -5,7 +5,7 @@
   const RULES = {
     'minute4-penang-indoor': {scene:'events',file:'events.html',target:'penang-state-gallery',key:'bp-outings-saved'},
     'minute3-courier-redelivery': {scene:'courier',file:'courier.html',target:'TM24081301',key:'courier-completed'},
-    'minute3-search-official': {scene:'search',file:'search.html',target:'pixelpress',key:'search-official-downloads',checks:[{key:'search-official-visits',items:['pixelpress'],label:['Official Pixelpress page opened','已打开 Pixelpress 官方页']}]},
+    'minute3-search-official': {scene:'search',file:'search.html',target:'pixelpress',key:'search-official-downloads',checks:[{key:'search-official-visits',items:['pixelpress'],label:['Official Photo Tools page opened','已打开图片工具官方页']}]},
     'minute-wall-aurora': {scene:'wallpapers',file:'wallpaper.html',target:'orbital-aurora',key:'wall-saved',exportKind:'wallpaper'},
     'minute-recipe-lunch': {scene:'recipes',file:'recipe.html',target:'chickpea-salad',key:'bp-recipes-saved'},
     'minute-tool-webp': {scene:'tools',file:'tools.html',target:'city',exportKind:'tool'},
@@ -399,14 +399,14 @@
     // The observer also sees this reflected attribute; avoid a self-triggered loop.
     if(actions.inert!==blocked)actions.inert=blocked;
   };
-  const mount = record => {
+  const mount = (record, C) => {
     if (bar) return;
     const task=taskData(record.taskId),text=v=>Array.isArray(v)?v[record.lang==='zh'?1:0]:v;
     const taskText=value=>window.BROWSE_BOOTH_TASK_TEXT(text(value),task,record.lang);
     bar=document.createElement('aside');bar.id='br-booth-bar';bar.setAttribute('aria-label',translate('60-second challenge','60秒挑战'));
     bar.innerHTML=`<div class="br-booth-time"><small>${translate('TIME LEFT','剩余时间')}</small><strong data-booth-clock role="timer" aria-live="off">1:00</strong></div><div class="br-booth-current"><span>${record.mode==='clean'?translate('CLEAN ROUND','无广告挑战'):translate('AD CHALLENGE','广告挑战')}</span><b>${escape(text(task.title))}</b>${task.badge?`<strong class="br-booth-badge">${escape(text(task.badge))}</strong>`:""}</div><div class="br-booth-actions"><button type="button" data-booth-task>${translate('View task','查看任务')}</button><button type="button" data-booth-submit>${translate('Submit','交卷')}</button><button type="button" data-booth-void aria-label="${translate('Staff: void this round','工作人员：作废本轮')}">${translate('Staff','工作人员')}</button></div>`;
     dialog=document.createElement('dialog');dialog.id='br-booth-task-dialog';dialog.setAttribute('aria-labelledby','br-booth-dialog-title');
-    const goals=task.steps || task.goals || [];
+    const goals=task.goals || task.steps || [];
     // Pick the top-bar label to secure the 20-point floor. The round clock keeps running.
     const warmupOwn=text(task.badge||task.title),warmupOthers=(window.BROWSE_BOOTH_TASKS||[]).filter(t=>t.id!==task.id&&t.badge).map(t=>text(t.badge)).filter(x=>x!==warmupOwn);
     const warmupPos=parseInt(record.seed.slice(2,4),16)%3,warmupOffset=parseInt(record.seed.slice(4,6),16)%Math.max(1,warmupOthers.length-1);
@@ -414,7 +414,7 @@
     warmupChoices.splice(Math.min(warmupPos,warmupChoices.length),0,warmupOwn);
     const warmupDone=record.guaranteed===true;
     const warmupMarkup=`<section class="br-booth-warmup" aria-labelledby="br-booth-warmup-title"><div class="br-booth-dialog-kicker">${translate('WARM-UP · 20 POINTS GUARANTEED','热身 · 保底20分')}</div><h2 id="br-booth-warmup-title">${translate('Tap the label shown in the top bar of this page','点击页面顶部栏里显示的任务标签')}</h2><div class="br-booth-warmup-options">${warmupChoices.map(x=>`<button type="button" data-booth-warmup="${escape(x)}"${warmupDone?' disabled':''}>${escape(x)}</button>`).join('')}</div><p class="br-booth-warmup-status" role="status" aria-live="polite">${warmupDone?translate('Warm-up done ✓ 20 points secured.','热身完成 ✓ 已保底20分。'):''}</p></section>`;
-    dialog.innerHTML=`<div class="br-booth-dialog-inner"><div class="br-booth-dialog-kicker">${translate('YOUR TASK','本轮任务')}</div><h1 id="br-booth-dialog-title">${escape(text(task.title))}</h1><p>${taskText(task.brief)}</p><ul class="br-booth-conditions">${goals.map(x=>`<li><span aria-hidden="true">□</span> ${taskText(x)}</li>`).join('')}</ul>${task.hint?`<details class="br-booth-start-hint"><summary>${translate('Hint','提示')}</summary><p>${taskText(task.hint)}</p></details>`:''}${task.hint2?`<button type="button" data-booth-second-hint aria-expanded="false" aria-controls="br-booth-hint2">${translate('Another hint','再看一个提示')}</button><p id="br-booth-hint2" hidden>${taskText(task.hint2)}</p>`:''}${warmupMarkup}<p class="br-booth-dialog-rule">${translate('The timer keeps running while you read this or switch tabs. A staff member checks the result.','看提示或切换标签页时，倒计时都不会停。结果由工作人员核对。')}</p><button type="button" data-booth-dialog-close>${translate('Back to the task','回到任务')}</button></div>`;
+    dialog.innerHTML=`<div class="br-booth-dialog-inner"><div class="br-booth-dialog-kicker">${translate('YOUR TASK','本轮任务')}</div><h1 id="br-booth-dialog-title">${escape(text(task.title))}</h1><p>${escape(C.siteName)}</p><ul class="br-booth-conditions">${goals.map(x=>`<li><span aria-hidden="true">□</span> ${taskText(x)}</li>`).join('')}</ul>${task.hint?`<details class="br-booth-start-hint"><summary>${translate('Hint','提示')}</summary><p>${taskText(task.hint)}</p></details>`:''}${task.hint2?`<button type="button" data-booth-second-hint aria-expanded="false" aria-controls="br-booth-hint2">${translate('Another hint','再看一个提示')}</button><p id="br-booth-hint2" hidden>${taskText(task.hint2)}</p>`:''}${warmupMarkup}<p class="br-booth-dialog-rule">${translate('The timer keeps running while you read this or switch tabs. A staff member checks the result.','看提示或切换标签页时，倒计时都不会停。结果由工作人员核对。')}</p><button type="button" data-booth-dialog-close>${translate('Back to the task','回到任务')}</button></div>`;
     dialog.querySelector('[data-booth-second-hint]')?.addEventListener('click',()=>{
       if(!canAct())return;
       const fresh=current();if(!fresh)return;
@@ -491,7 +491,7 @@
       const now=Date.now();record={...record,status:'running',startedAt:now,deadline:now+DURATION,updatedAt:now};
       if(!store(record)){leave(null);return null;}
     }
-    suspended=false;restoring=false;mount(record);capture(C);tick();
+    suspended=false;restoring=false;mount(record,C);capture(C);tick();
     ticker=setInterval(tick,100);
     return get(record.id);
   };
