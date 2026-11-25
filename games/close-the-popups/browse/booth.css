@@ -41,7 +41,7 @@ h1, h2, h3 { font-family: var(--display); line-height: 1.08; font-weight: 900; l
 .booth-language { color: var(--ink); background: var(--yellow); padding: 6px 12px; font-size: .8rem; font-weight: 800; text-decoration: none; }
 .booth-language:hover { background: #fff; }
 #booth-app #station-fullscreen {
-  display: grid; place-items: center; flex: none; width: 36px; min-height: 36px;
+  display: grid; place-items: center; flex: none; width: 44px; min-height: 44px;
   padding: 0; color: var(--ink); background: var(--paper); border: 1px solid var(--line);
   border-radius: 2px; box-shadow: none;
 }

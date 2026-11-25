@@ -71,7 +71,8 @@
   .scm input:focus,.scm textarea:focus{outline:none;border-color:${C.yellow}}
   .scm button{font:400 20px Anton,Impact,sans-serif;letter-spacing:1px;text-transform:uppercase;border:0;border-radius:10px;padding:12px 18px;cursor:pointer}
   .scm .go{background:${C.red};color:#fff;width:100%;margin-top:16px}
-  .scm .go:disabled{background:${C.dim};cursor:not-allowed}
+  .scm .go.leave-go{background:${C.yellow};color:#171616;font-size:22px;padding:14px 20px;box-shadow:0 0 0 2px rgba(237,207,97,.35)}
+  .scm .go:disabled,.scm .go.leave-go:disabled{background:${C.dim};color:#fff;box-shadow:none;cursor:not-allowed}
   .scm .ghost{background:transparent;color:${C.grey};border:2px solid ${C.dim};font-size:15px;padding:8px 12px}
   .scm .row{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:14px}
   .scm .err{color:#ff6b6b;min-height:1.4em;margin-top:8px}
@@ -210,7 +211,7 @@
     if (dashCb) { const closeX = h('<button type="button" class="scm-close" aria-label="Cancel">✕</button>'); el.appendChild(closeX); closeX.onclick = cancel; }
     const find = el.querySelector('.find'), box = el.querySelector('.list'), go = el.querySelector('.go'), err = el.querySelector('.err');
     const leave = el.querySelector('.leave');
-    if (mode === 'leave') { leave.textContent = 'Back to play'; go.style.background = C.dim; }
+    if (mode === 'leave') { leave.textContent = 'Back to play'; go.classList.add('leave-go'); }
     function render() {
       if (starting) return;   // a Round request is in flight: the list must not move under it
       const t = find.value.trim().toUpperCase();
@@ -230,7 +231,7 @@
     box.onclick = e => { if (starting) return; const it = e.target.closest('.it[data-id]'); if (!it) return; sel = list.find(p => p.id === it.dataset.id); render(); };
     find.oninput = () => { if (starting) return; sel = null; const t = find.value.trim().toUpperCase(); const exact = list.find(p => p.id === t); if (exact) sel = exact; render(); };
     find.onkeydown = e => { if (e.key === 'Enter' && sel) go.click(); };
-    leave.onclick = () => { mode = mode === 'play' ? 'leave' : 'play'; leave.textContent = mode === 'leave' ? 'Back to play' : 'Leaving'; go.style.background = mode === 'leave' ? C.dim : ''; render(); };
+    leave.onclick = () => { mode = mode === 'play' ? 'leave' : 'play'; leave.textContent = mode === 'leave' ? 'Back to play' : 'Leaving'; go.classList.toggle('leave-go', mode === 'leave'); render(); };
     go.onclick = async () => {
       if (!sel || starting) return;
       // The Round is for the person chosen at the tap. Slow replies, the 8s refresh or a changed search must never
@@ -315,7 +316,7 @@
     };
     let last = null;
     const el = screen(`<h2 style="font:26px Anton,sans-serif;margin:4px 0">Exit survey · ${esc(p.name)}</h2>
-      <p class="muted">${stationsDone.length} of 5 stations done. Hand the laptop to the participant. One minute, then you're free!</p>
+      <p class="muted">${stationsDone.length} of 5 stations done. Hand the laptop to the participant. One minute, then you're free!${stationsDone.length === 5 ? ' After finishing, show your participant page on your phone at the registration desk for free drinks &amp; snacks.' : ''}</p>
       ${qs.map(q => { const head = q.station && q.station !== last ? `<hr><p class="tag">${esc(q.station.name)}</p>` : (!q.station && last ? '<hr>' : ''); last = q.station || null; return `${head}<div class="q"><b>${esc(q.text)}</b>${field(q)}</div>`; }).join('')}
       <p class="err"></p><button class="go">Submit &amp; check out</button>
       <div class="row"><span></span><button class="ghost back">${fromFinish ? 'Play more first' : 'Cancel'}</button></div>`);
@@ -331,7 +332,9 @@
       ev.target.disabled = true;
       try {
         if (!TEST) await api('/api/checkout', { method: 'POST', body: { participantId: p.id, answers: ans } });
-        screen(`<div class="big">Thank you!</div><p style="text-align:center">${esc(p.name)} is checked out.${stationsDone.length === 5 ? ' Watch the leaderboard for the prize!' : ''}</p>`);
+        screen(`<div class="big">Thank you!</div><p style="text-align:center">${esc(p.name)} is checked out.${stationsDone.length === 5 ? ' Watch the leaderboard for the prize!' : ''}</p>
+          ${stationsDone.length === 5 ? `<div style="background:#16261a;border:2px solid #7CFC8A;border-radius:4px;padding:14px;margin:14px 0;text-align:center"><div style="font:600 11px/1.4 Lexend,sans-serif;letter-spacing:2px;text-transform:uppercase;color:#7CFC8A;margin-bottom:4px">FREE DRINKS &amp; SNACKS</div><div style="font:400 22px/1.15 Anton,Impact,sans-serif;text-transform:uppercase;color:${C.yellow};margin-bottom:6px">All 5 Games &amp; Exit Survey Complete</div><div style="font-weight:600;margin-bottom:4px">${esc(p.name)} · ${esc(p.id)}</div><div style="font-size:13px;color:#d6f5dc">Show your participant page on your phone to the registration desk to claim your free drinks &amp; snacks!</div></div>` : ''}
+          <p style="text-align:center;margin-top:16px"><a class="ghost" href="${API}/leaderboard.html" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:${C.yellow};border-color:${C.yellow}">View leaderboard ↗</a></p>`);
         setTimeout(nextPlayer, dashCb ? 2500 : 6000);
       } catch (e) { el.querySelector('.err').textContent = e.message; ev.target.disabled = false; }
     };

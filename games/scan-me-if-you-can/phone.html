@@ -68,7 +68,7 @@ async function render() {
       app.innerHTML = H + `<section class="box score-summary"><h2>My Game 5 score</h2><div class="big" id="my-score">${score}</div>
         <p>points out of ${r.cards.length * 100}</p><p class="muted">${Object.keys(r.done).length} of ${r.cards.length} sites judged</p>
         ${over === 'cancelled' ? '<p>This round was cancelled and does not count.</p>' : over && n ? '<p>This round has ended at the laptop.</p>' : !n ? '<p>All done! Your Game 5 results are below.</p>' : ''}</section>
-        ${n && !over ? `<a class="btn" href="${resume}">${active ? `Resume QR #${active}` : 'Continue playing'}</a>${active && (r.started || {})[active] ? '<p class="muted">Your current site timer keeps running while you view scores.</p>' : ''}` : ''}
+        ${n && !over ? `<a class="btn" href="${resume}">${active ? `Resume QR #${active}` : 'Continue playing'}</a>${active && (r.started || {})[active] ? '<p class="muted">Your current site timer keeps running while you view scores.</p>' : ''}` : !n ? '<a class="btn" href="/leaderboard.html">View leaderboard ↗</a>' : ''}
         <section class="box"><table class="score-list"><caption>Results by QR</caption><thead><tr><th scope="col">QR</th><th scope="col">Result</th><th scope="col">Points</th></tr></thead><tbody>${rows}</tbody></table>
         <p class="muted">Wrong calls deduct 100 points. Your total cannot go below zero.</p></section>`;
     } else if (over && n) {
@@ -82,7 +82,8 @@ async function render() {
       scanner = S5Scanner.mount(document.getElementById('scanner'));
     } else {
       app.innerHTML = H + `<div class="box" style="text-align:center"><div class="big">${score}</div><p>points out of ${r.cards.length * 100}</p>
-        <p class="muted">All ${r.cards.length} sites done. Head back to the Station 5 laptop for your result.</p></div><div class="chips">${chips}</div>`;
+        <p class="muted">All ${r.cards.length} sites done. Head back to the Station 5 laptop for your result.</p></div><div class="chips">${chips}</div>
+        <a class="btn" href="/leaderboard.html">View leaderboard ↗</a>`;
     }
     app.insertAdjacentHTML('afterbegin', '<a class="scores-link" href="/participant.html?from=station5">My scores</a>');
     app.insertAdjacentHTML('beforeend', '<p id="unsent" class="muted" style="text-align:center"></p>');

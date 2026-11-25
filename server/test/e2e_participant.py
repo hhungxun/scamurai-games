@@ -145,6 +145,8 @@ def run():
                 assert page.locator('#participant-id').count() == 0
                 print('PASS: guest IDs work and switching/invalid passes never show the previous identity')
 
+                # Checked-out participants can be re-opened by the front desk if they checked out early.
+                ok('POST', '/api/participants/PORTAL001/reopen', {}, pin='1111')
                 # Existing shared SDK games expose the same personal page during play and after finish.
                 game = staff.new_page(); game.on('pageerror', lambda e: errors.append(str(e)))
                 game.goto(BASE + '/games/_template/')

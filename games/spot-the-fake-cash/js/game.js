@@ -11,7 +11,7 @@
   const t = (en, zh) => (lang === 'zh' ? (zh ?? en) : en);
   window.__FAKECASH_IS_ZH__ = () => lang === 'zh';
 
-  const FEEDBACK_MS = 2200;
+  const FEEDBACK_MS = 4000;
 
   let stage = null;
   let vr = null;

@@ -264,7 +264,7 @@
   async function next() {
     if (!ready || busy || picking || damaged || !(state && ['saved','cancelled'].includes(state.status) || practice && practice.status !== 'open' || !state && !practice)) return false;
     // Clear state first, close panel, then immediately open ID picker
-    state = null; practice = null; persist(); sessionStorage.removeItem(KEY+':practice'); $('personal-link').hidden = true; clearNotice(); closePanel();
+    state = null; practice = null; persist(); sessionStorage.removeItem(KEY+':practice'); $('personal-link').hidden = true; $('personal-link').innerHTML = ''; clearNotice(); closePanel();
     frame.inert = true; picking = true; showState();
     if (DEMO) { picking = false; frame.inert = false; frame.hidden = false; frame.src = chooser(); showState(); return true; }
     await selectNext(); return true;
@@ -325,12 +325,12 @@
   $('personal').onclick = async () => {
     if (!state) return;
     const p = {...state.participant};
+    const host = $('personal-link');
+    host.hidden = false;
     try {
-      const href = await Scamurai.participantURL(p);
-      if (state?.participant.id !== p.id) return;
-      const a = document.createElement('a'); a.href = href; a.target = '_blank'; a.rel = 'noopener';
-      a.textContent = lang==='zh'?'打开我的成绩页':'Open my participant page'; $('personal-link').replaceChildren(a); $('personal-link').hidden = false;
-    } catch { say('Could not open the participant page. Try again.', '成绩页暂不可用，请重试。'); }
+      await Scamurai.personalQR(host, p);
+      if (state?.participant.id !== p.id) { host.hidden = true; host.innerHTML = ''; }
+    } catch { say('Could not open the participant QR. Try again.', '成绩二维码暂不可用，请重试。'); }
   };
   frame.addEventListener('load', () => {
     syncRoundBrand();

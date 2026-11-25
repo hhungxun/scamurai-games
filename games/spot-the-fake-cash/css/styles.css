@@ -283,6 +283,8 @@ html, body {
   color: #ddd8cf;
   line-height: 1.45;
 }
+/* Next button inside the feedback card: keep a thumb-sized tap target on phones. */
+.feedback-card .btn { min-height: 44px; flex-shrink: 0; }
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }

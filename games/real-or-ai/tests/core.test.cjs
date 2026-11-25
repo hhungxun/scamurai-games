@@ -30,11 +30,15 @@ const perfect = new Round(bank, { now, random }); perfect.start(); while (perfec
 assert.equal(perfect.status, 'finished'); assert.equal(perfect.endReason, 'complete'); assert.equal(perfect.score, 100);
 
 // Deal flow: server-dealt questions and server-judged answers recorded via recordAnswer.
-const dealt = bank.slice(0, 5);
-const dr = new Round(bank, { questions: dealt, now, random });
+const dealt = bank.slice(0, 5).map(({ answer, ...rest }) => rest);
+const dr = new Round(dealt, { questions: dealt, now, random });
 dr.start();
 for (const correct of [true, true, false, true, true]) dr.recordAnswer('real', correct);
 assert.equal(dr.status, 'finished'); assert.equal(dr.correct, 4); assert.equal(dr.wrong, 1);
 assert.equal(dr.score, scoreOf(4, 1, 5));
+// Reloading an event round (where bank ships without answer keys) must preserve server-judged verdicts and score.
+const drRestored = Round.restore(dealt, JSON.parse(JSON.stringify(dr.snapshot())), { now });
+assert.equal(drRestored.correct, 4); assert.equal(drRestored.wrong, 1);
+assert.equal(drRestored.score, scoreOf(4, 1, 5));
 
 console.log('real-or-ai core tests passed');

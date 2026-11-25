@@ -103,6 +103,7 @@ const q = {
   insE: db.prepare('INSERT INTO events (round_id,at,data) VALUES (?,?,?)'),
   evs: db.prepare('SELECT id,at,data FROM events WHERE round_id=? AND id>? ORDER BY id'),
   checkout: db.prepare('UPDATE participants SET checked_out_at=?, checkout_station=?, survey=? WHERE id=?'),
+  reopen: db.prepare('UPDATE participants SET checked_out_at=NULL, checkout_station=NULL, survey=NULL WHERE id=?'),
   passOf: db.prepare('SELECT token FROM participant_passes WHERE participant_id=?'),
   insertPass: db.prepare('INSERT OR IGNORE INTO participant_passes (participant_id,token) VALUES (?,?)'),
   participantByPass: db.prepare('SELECT p.* FROM participants p JOIN participant_passes a ON a.participant_id=p.id WHERE a.token=?'),
@@ -477,7 +478,7 @@ function validateSurvey(answers, stationsDone) {
   return clean;
 }
 
-// Check-out + Exit Survey
+// Check-out + Exit Survey (Game Master / Staff)
 route('POST', '/api/checkout', async req => {
   const who = auth(req, ['station', 'staff']);
   const b = await readJson(req);
@@ -489,6 +490,30 @@ route('POST', '/api/checkout', async req => {
   const clean = validateSurvey(b.answers, s.stationsDone);
   q.checkout.run(Date.now(), who.station || null, JSON.stringify({ stationsDone: s.stationsDone, answers: clean, at: Date.now() }), id);
   return { ok: true, stationsDone: s.stationsDone };
+});
+
+// Re-check-in (Secretary / Admin): recover a participant who accidentally checked out early
+route('POST', '/api/participants/:id/reopen', async (req, { id }) => {
+  auth(req, ['staff']);
+  const p = q.getP.get(cleanId(id));
+  need(p, 404, 'Not registered');
+  q.reopen.run(p.id);
+  return { ok: true, id: p.id, name: p.name };
+});
+
+// Self-serve Exit Survey + Check-out on the Participant's own phone
+route('POST', '/api/participant/checkout', async req => {
+  const token = req.headers['x-participant-token'];
+  need(typeof token === 'string' && /^[a-f0-9]{64}$/.test(token), 401, 'Scan your personal QR from registration to open your page.');
+  const p = q.participantByPass.get(token);
+  need(p, 401, 'This personal QR is no longer valid. Ask the registration desk for yours.');
+  const s = summaryOf(p.id);
+  need(!p.checked_out_at && !s.surveyDone, 409, 'Exit survey already submitted');
+  need(s.stationsDone.length > 0, 400, 'Complete at least one station before submitting the exit survey');
+  const b = await readJson(req);
+  const clean = validateSurvey(b.answers, s.stationsDone);
+  q.checkout.run(Date.now(), null, JSON.stringify({ stationsDone: s.stationsDone, answers: clean, at: Date.now() }), p.id);
+  return { ok: true, stationsDone: s.stationsDone, eligible: s.stationsDone.length === STATION_COUNT };
 });
 
 // Leaderboard (public, masked)

@@ -164,6 +164,6 @@
       if (!state.existing && state.status !== 'cancelled') frame.src = gameURL();
       status(state.status === 'saved' ? (demo ? 'Demo complete. No event score was saved.' : `Score saved: ${state.result.pct} / 100`) : state.existing ? 'Resume this Round on its original laptop, or cancel it here.' : 'Round restored. Its original deadline still applies.', false, !!state.existing);
       personal(); controls(); if (state.status === 'pending') flush();
-    } else { status(demo ? (script.dataset.demoStatus || 'Try every email in an unscored demo.') : 'Choose your registered name to begin on this laptop.'); controls(); pick(); }
+    } else { status(demo ? (script.dataset.demoStatus || 'Demo mode · No event score is saved.') : 'Choose your registered name to begin on this laptop.'); controls(); pick(); }
   });
 })();

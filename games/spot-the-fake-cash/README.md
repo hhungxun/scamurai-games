@@ -4,11 +4,12 @@ Open `/games/spot-the-fake-cash/` on a booth laptop. The shared booth handles th
 
 ## Playing
 
-Each round draws ten banknotes at random from eighteen note sets — six Malaysian ringgit denominations (RM1, RM5, RM10, RM20, RM50, RM100), each as a genuine note, a mismatched-sides note, and a UV-defect note (six genuine, twelve fake). You have 120 seconds.
+Each round draws ten banknotes at random from 29 note sets across five Malaysian ringgit denominations (RM5, RM10, RM20, RM50, RM100), mixing genuine notes with fakes (daylight logo, motif or serial forgeries, UV defects, and flat holograms that fail the tilt test). `BANKNOTE_SETS` in `js/game-core.js` is the full list. You have 120 seconds.
 
 Inspect a note like a cashier with a UV lamp:
 
 - **UV torch** — hover or drag the purple torch across the note to reveal the glowing security pattern through the beam. Toggle UV with **Space**.
+- **Tilt** — press **T** or **Tilt** to check that the hologram strip shifts colour.
 - **Flip** — press **F** or **Flip note** to turn the note over and compare both sides.
 - **Zoom** — scroll, pinch, or use **+ / − / 0** to zoom in, out, and reset; drag a zoomed note to pan.
 
@@ -20,6 +21,6 @@ Toggle **中文** in the header to switch the whole interface between English an
 
 ## Banknote images
 
-All twelve images are present in `assets/notes/` as PNGs, downloaded from the Bank Negara Malaysia website (`bnm.gov.my`). `js/game-core.js` names them per denomination and side, such as `RM1-f.png`, `RM1-b.png` and `RM10-bk.png`. Keep the designs and colours unaltered (BNM reproduction rules). If an image fails to load, the game draws a labelled placeholder and keeps the round playable.
+The images live in `assets/notes/` as JPEGs, based on the Bank Negara Malaysia website (`bnm.gov.my`). `js/game-core.js` names them per denomination, side and variant, such as `rm10-front-real.jpg`, `rm10-back-uv-real.jpg` and `rm100-back-fake.jpg`. Keep the designs and colours unaltered (BNM reproduction rules). If an image fails to load, the game draws a labelled placeholder and keeps the round playable.
 
 See [credits](assets/CREDITS.md) for image sources. Run the round tests from the repo root with `node --test games/spot-the-fake-cash/tests/core.test.cjs`.

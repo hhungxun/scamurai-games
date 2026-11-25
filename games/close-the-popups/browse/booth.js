@@ -347,6 +347,7 @@
           <p class="booth-note">${round.status === 'void'
             ? t('Staff set this round aside.', '工作人员已将本轮作废。')
             : t('Staff will verify these records and any downloaded files.', '工作人员会核对记录和实际下载的文件。')}</p>
+          <p class="booth-note booth-takeaway"><strong>${t('Takeaway:', '要点：')}</strong> ${t('The real close button is usually a small, plain X in a corner. Big flashing "Download", "Close" or "Skip" buttons inside an ad are often traps.', '真正的关闭按钮通常是角落里一个不起眼的 X。广告里醒目闪烁的“下载”“关闭”“跳过”按钮往往是陷阱。')}</p>
         </section>
         <div class="booth-result-actions">
           <span class="booth-final-verdict"><small>${t('Final staff verdict','工作人员最终判定')}</small><strong id="booth-verdict">${esc(verdictText(round.judgement))}</strong></span>

@@ -4,7 +4,7 @@ An investigation game: inspect an email and choose Legitimate or Phishing to sub
 
 ## Event rules
 
-Every Round deals ten messages, five Phishing and five Legitimate. Both classes have 2 Easy, 2 Medium and 1 Hard case. There is one absolute **60-second** deadline. The bank contains **32 cases**, including paired messages with the same sender, subject or destination but different requested actions or permissions.
+Every Round deals ten messages, five Phishing and five Legitimate. Both classes have 2 Easy, 2 Medium and 1 Hard case. There is one absolute **90-second** deadline. The bank contains **32 cases**, including paired messages with the same sender, subject or destination but different requested actions or permissions.
 
 For each classification:
 
@@ -57,6 +57,6 @@ python3 server/test/e2e_popup_draw.py
 
 Pure checks cover 1,000 balanced deals, all scored classification combinations, no guaranteed repeated easy legitimate pair, content/indicator/evidence keys, grading, verification, legacy snapshots and deadlines. The desktop test uses temporary data and independent browser contexts for multi-laptop ownership, classification scoring, reload recovery, score retries, cancellation, survey and no-write demos.
 
-With a Node Playwright installation, run `node games/phishing-fishing/tests/browser.test.cjs`. `PLAYWRIGHT_PATH` and `BROWSER_PATH` can point at existing installations. It covers balanced 10-question rounds, hidden verification, immediate classification, absence of evidence controls, partial-timeout scoring, keyboard/touch inspection and five desktop/mobile layouts. The accepted 60-second budget and case difficulty should still be tried with Participants on the event hardware.
+With a Node Playwright installation, run `node games/phishing-fishing/tests/browser.test.cjs`. `PLAYWRIGHT_PATH` and `BROWSER_PATH` can point at existing installations. It covers balanced 10-question rounds, hidden verification, immediate classification, absence of evidence controls, partial-timeout scoring, keyboard/touch inspection and five desktop/mobile layouts. The accepted 90-second budget and case difficulty should still be tried with Participants on the event hardware.
 
 The browser suite also checks neutral reel animations, catch-to-explanation focus, badges, reduced motion and reset. An intercepted local host double verifies the embedded 10-email Round, displayed/submitted score agreement, deadline recovery and retired-case handling without event API writes. Set `ARTIFACT_DIR` to save preview screenshots outside the repository. The full server integration checks above remain separate.

@@ -12,7 +12,7 @@ let items=(window.REAL_OR_AI_QUESTIONS||[]).map(q=>({...q}));
 if (demo && window.REAL_OR_AI_DEMO_ANSWERS) {
   for (const q of items) { const a = window.REAL_OR_AI_DEMO_ANSWERS[q.id]; if (a) q.answer = a; }
 }
-let round=null,ticker=null,awaitingNext=false,submitting=false,finishReported=false,lastResult=null,page='home';
+let round=null,ticker=null,awaitingNext=false,submitting=false,finishReported=false,lastResult=null,page='home',reveals={}; // reveals: per-question verdict from the server (event mode ships no answers)
 const player=$('player');
 let clearMediaWatch=()=>{};
 function makeClock(){const wallOrigin=Date.now(),monoOrigin=performance.now();return()=>wallOrigin+Math.max(performance.now()-monoOrigin,Date.now()-wallOrigin);}
@@ -54,7 +54,7 @@ let starting=false;
 async function start(){
  if(starting)return;
  if(!pool().length){toast('Add a question with a media file first.');return;}
- starting=true;$('startBtn').disabled=true;
+ starting=true;$('startBtn').disabled=true;const prevLabel=$('startBtn').textContent;$('startBtn').textContent='Loading questions…';
  try{
   clearInterval(ticker);stopAudio();
   let r;
@@ -66,13 +66,15 @@ async function start(){
     if(questions.length!==deal.ids.length)throw new Error('This round draws questions missing from this build. Ask the Game Master to cancel the Round.');
     r=new Core.Round(items,{questions,seconds:deal.seconds,now:makeClock()});
   }
-  // Load every stimulus before the clock starts.
-  const oks=await Promise.all(r.questions.map(q=>preloadOne(q,15000)));
-  if(oks.some(ok=>!ok)){toast('Some questions did not load. Check the connection and try again.');return;}
-  round=r;finishReported=false;round.start();
+  // Warm stimuli within a 6s soft budget so slow booth Wi-Fi never blocks or burns the server clock.
+  // Any item still loading is handled gracefully by watchMedia() in renderQuestion().
+  await Promise.all(r.questions.map(q=>preloadOne(q,6000)));
+  round=r;finishReported=false;reveals={};round.start();
   try{save();}catch(e){return;}
   show('game');renderQuestion();ticker=setInterval(tick,100);tick();
- }finally{starting=false;$('startBtn').disabled=!pool().length;}
+ }catch(e){
+  toast('Could not start the round: '+(e.message||'connection error')+' — try again.');
+ }finally{starting=false;$('startBtn').textContent=prevLabel;$('startBtn').disabled=!pool().length;}
 }
 function playVoice(){
  const q=round&&round.questions[round.index];
@@ -138,11 +140,12 @@ async function answer(choice){
   const res=round.recordAnswer(choice,verdict.correct);
   if(!res){try{save();}catch(e){return;}showResults();return;}
  }
+ reveals[q.id]=verdict;
  try{save();}catch(e){return;}
  if(round.status==='finished'&&host){try{host.finish(window,round.snapshot(),round.score);finishReported=true;}catch(e){storageFailure(e);return;}}
  awaitingNext=true;setAnswerButtons(true);clearMediaWatch();player.pause();
  const f=$('feedback');f.classList.remove('hidden','right','wrong');f.classList.add(verdict.correct?'right':'wrong');
- const head=(verdict.correct?'Correct. ':'Not quite. ')+'It was '+(verdict.answer==='ai'?'AI':'REAL')+'.';
+ const head=(verdict.correct?'Correct. ':'Not quite. ')+(verdict.answer?'It was '+(verdict.answer==='ai'?'AI':'REAL')+'.':'');
  setText('feedbackHead',head);setText('feedbackClue',verdict.clue||verdict.explanation||'');
  setText('scoreText',round.correct);$('progressFill').style.width=(round.index/round.questions.length*100)+'%';
  const last=round.status==='finished';$('nextBtn').textContent=last?'See results':'Next question';
@@ -169,8 +172,9 @@ function renderReview(){const div=$('reviewList');div.replaceChildren();for(let 
  const result=round.answers[i],q=round.questions[i];const row=document.createElement('div');row.className='review-row';
  const num=document.createElement('span');num.className='num';num.textContent='#'+String(i+1).padStart(2,'0');
  const content=document.createElement('div');content.className='actual';const heading=document.createElement('strong');heading.textContent=(q.type==='photo'?'Photo: ':'Voice: ')+(q.title||q.id);content.append(heading,document.createElement('br'));
- content.append(document.createTextNode('Your answer: '+result.choice.toUpperCase()+'. Correct: '+q.answer.toUpperCase()));
- const exp=document.createElement('div');exp.className='clue';exp.textContent=q.clue||q.explanation||'';content.append(exp);
+ const rv=reveals[q.id]||{},truth=q.answer||rv.answer;
+ content.append(document.createTextNode('Your answer: '+(result.choice==='ai'?'AI':'REAL')+(truth?'. Correct: '+(truth==='ai'?'AI':'REAL'):'')));
+ const exp=document.createElement('div');exp.className='clue';exp.textContent=q.clue||q.explanation||rv.clue||rv.explanation||'';content.append(exp);
  const badge=document.createElement('span');badge.className=(result.correct?'correct':'wrong')+' tag';badge.textContent=result.correct?'CORRECT':'WRONG';row.append(num,content,badge);div.append(row);
 }}
 function again(){if(host){host.next(window);return;}start();}

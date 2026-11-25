@@ -42,7 +42,7 @@ def run():
      f=frame(p);qid=f.locator('[data-question]').first.get_attribute('data-question')
      actual=CLASSIFICATION[qid]
      choice=kind or (actual if correct else 'phishing' if actual=='legitimate' else 'legitimate')
-     f.locator(f'[data-answer="{choice}"]').click()
+     f.locator(f'[data-answer="{choice}"]').first.click()
      f.wait_for_function('(old)=>document.querySelector("[data-question]")?.dataset.question!==old',arg=qid)
     a=laptop('phishing-fishing',3);b=laptop('phishing-fishing',3)
     select(a,'MAIL001');frame(a).wait_for_selector('#start-game');frame(a).click('#start-game')

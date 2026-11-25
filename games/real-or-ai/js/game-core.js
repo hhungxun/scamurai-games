@@ -96,7 +96,10 @@
       const r = new Round(bank, { ...options, questions, seconds: data.seconds });
       r.answers = data.answers.map((a, i) => {
         if (!a || !['real', 'ai'].includes(a.choice)) throw new Error('Invalid saved answers.');
-        return { id: questions[i].id, choice: a.choice, correct: a.choice === questions[i].answer };
+        const correct = questions[i].answer !== undefined
+          ? a.choice === questions[i].answer
+          : Boolean(a.correct);
+        return { id: questions[i].id, choice: a.choice, correct };
       });
       r.status = data.status; r.startedAt = data.startedAt; r.endedAt = data.endedAt; r.endReason = data.endReason;
       if (r.status !== 'ready' && !Number.isFinite(r.startedAt)) throw new Error('Invalid saved clock.');

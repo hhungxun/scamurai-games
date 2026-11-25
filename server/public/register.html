@@ -103,16 +103,34 @@ $('sid').oninput = () => {
   $('err').textContent = hit ? `${id} is already registered as ${hit.name}.` : '';
 };
 $('form').onsubmit = async e => {
-  e.preventDefault(); $('err').textContent = ''; $('ok').textContent = '';
+  e.preventDefault(); $('err').innerHTML = ''; $('ok').textContent = '';
   const guest = val('kind') === 'guest';
-  const body = { guest, id: $('sid').value, name: $('name').value, ageGroup: val('age'),
+  const rawId = $('sid').value.trim().toUpperCase();
+  const body = { guest, id: rawId, name: $('name').value.trim(), ageGroup: val('age'),
     pbbAccount: val('pbb') == null ? null : val('pbb') === 'yes', scamExposure: val('exp'), consent: $('consent').checked };
-  if (!guest && !body.id.trim()) return $('err').textContent = 'Enter the student ID (or choose Guest).';
+  const errors = [];
+  if (!guest) {
+    if (!rawId) errors.push('Enter the student ID (or choose Guest).');
+    else if (!/^[A-Z0-9]{4,20}$/.test(rawId) || /^G\d+$/.test(rawId)) errors.push('Student ID should be 4–20 letters/digits.');
+  }
+  if (body.name.length < 2) errors.push('Name is required (at least 2 characters).');
+  if (!body.ageGroup) errors.push('Pick an age group.');
+  if (body.pbbAccount === null) errors.push('Answer the Public Bank question.');
+  if (!body.scamExposure) errors.push('Answer the scam question.');
+  if (!body.consent) errors.push('Consent is required to take part.');
+  if (errors.length) {
+    $('err').innerHTML = errors.length === 1
+      ? esc(errors[0])
+      : `<ul style="margin:6px 0 0;padding-left:20px">${errors.map(m => `<li>${esc(m)}</li>`).join('')}</ul>`;
+    $('err').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return;
+  }
   $('go').disabled = true;
   try {
     const r = await api('/api/participants', { method: 'POST', body });
     $('ok').innerHTML = `✓ Registered <b>${esc(r.name)}</b> as <b style="color:var(--yellow);font-size:22px">${esc(r.id)}</b>. ${guest ? 'Write this Guest ID on their hand stamp/card. ' : ''}Off to any station!`;
-    $('form').reset(); $('idRow').hidden = false; refresh(); showPass(r);
+    $('form').reset(); $('sid').value = ''; $('name').value = ''; $('consent').checked = false; $('idRow').hidden = false; $('err').innerHTML = '';
+    refresh(); showPass(r);
   } catch (e) { $('err').textContent = e.message; }
   $('go').disabled = false;
 };
@@ -120,7 +138,7 @@ function render() {
   const t = $('search').value.trim().toUpperCase();
   const rows = list.filter(p => !t || p.id.includes(t) || p.name.toUpperCase().includes(t)).reverse();
   $('count').textContent = `(${list.length})`;
-  $('rows').innerHTML = rows.slice(0, 50).map(p => `<tr><td>${esc(p.id)}</td><td>${esc(p.name)}</td><td>${p.stationsDone.length}/5</td><td>${esc(p.status)}${p.surveyDone ? ' ✓' : ''}</td><td><button class="ghost" data-pass="${esc(p.id)}">Personal QR</button></td></tr>`).join('');
+  $('rows').innerHTML = rows.slice(0, 50).map(p => `<tr><td>${esc(p.id)}</td><td>${esc(p.name)}</td><td>${p.stationsDone.length}/5</td><td>${esc(p.status)}${p.surveyDone ? ' ✓' : ''}</td><td><button class="ghost" data-pass="${esc(p.id)}">Personal QR</button>${p.status === 'left' ? ` <button class="ghost" data-reopen="${esc(p.id)}" data-name="${esc(p.name)}">Re-open</button>` : ''}</td></tr>`).join('');
 }
 function showPass(p) {
   const url = `${location.origin}/participant.html#${p.participantToken}`;
@@ -128,16 +146,30 @@ function showPass(p) {
   $('passQR').innerHTML = qr.createSvgTag({ cellSize: 5, margin: 4, scalable: true });
   $('passIdentity').textContent = `${p.name} · ${p.id}`;
   $('passLink').href = url;
-  $('passCard').hidden = false; $('passCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  $('passCard').hidden = false;
+  $('passCard').setAttribute('tabindex', '-1');
+  requestAnimationFrame(() => {
+    $('passCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $('passCard').focus({ preventScroll: true });
+  });
 }
 $('rows').onclick = async e => {
+  const reopenBtn = e.target.closest('[data-reopen]');
+  if (reopenBtn) {
+    const pid = reopenBtn.dataset.reopen, pname = reopenBtn.dataset.name || pid;
+    if (!confirm(`Re-check in ${pname} (${pid})? This clears their early check-out so they can keep playing and re-submit the exit survey later.`)) return;
+    reopenBtn.disabled = true;
+    try { await api(`/api/participants/${encodeURIComponent(pid)}/reopen`, { method: 'POST' }); $('ok').textContent = `✓ Re-checked in ${pname} (${pid}). They can play again.`; refresh(); }
+    catch (err) { $('err').textContent = err.message; reopenBtn.disabled = false; }
+    return;
+  }
   const button = e.target.closest('[data-pass]'); if (!button) return;
   button.disabled = true;
   try { showPass(await api(`/api/participants/${encodeURIComponent(button.dataset.pass)}/pass`)); }
   catch (err) { $('err').textContent = err.message; }
   finally { button.disabled = false; }
 };
-$('nextParticipant').onclick = () => { $('passCard').hidden = true; $('sid').focus(); };
+$('nextParticipant').onclick = () => { $('passCard').hidden = true; $('ok').textContent = ''; $('err').innerHTML = ''; $('form').scrollIntoView({ behavior: 'smooth', block: 'start' }); $('sid').focus(); };
 $('search').oninput = render;
 async function refresh() { try { list = await api('/api/participants'); render(); $('deskConnection').textContent = 'Registration desk connected'; } catch (e) { $('deskConnection').textContent = 'Cannot refresh the list. Trying again shortly.'; if (e.status === 401) { setPin(''); location.reload(); } } }
 if (pin()) unlock(); else $('pinCard').hidden = false;

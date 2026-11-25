@@ -166,7 +166,7 @@ def run():
                 page.wait_for_url('**/c.html?n=2')
                 page.wait_for_function("document.querySelector('.vbar .real') && !document.querySelector('.vbar .real').disabled")
                 start = page.evaluate('S5.get().started[2]')
-                assert start <= page.evaluate('performance.timeOrigin')
+                assert start >= page.evaluate('performance.timeOrigin')
                 assert page.get_by_role('button', name='Start timer', exact=True).count() == 0
                 page.wait_for_timeout(1500)
                 page.reload()
@@ -174,7 +174,7 @@ def run():
                 assert page.evaluate('S5.get().started[2]') == start
                 assert int(page.inner_text('.vbar .t b')) <= 11
                 assert page.get_by_role('button', name='Start timer', exact=True).count() == 0
-                print('PASS: later QR starts at detection; reload preserves the deadline without a Start button')
+                print('PASS: later QR auto-starts once loaded; reload preserves the deadline without a Start button')
 
                 page.get_by_role('link', name='My scores', exact=True).click()
                 page.wait_for_selector('#participant-name')
@@ -186,27 +186,31 @@ def run():
                 assert page.evaluate('S5.get().started[2]') == start
                 print('PASS: My scores is available during a timed site; resuming keeps its original deadline')
 
-                # Keep the third card's metadata requests pending, including the background warm-up.
+                # Under slow Wi-Fi, an unloaded later card must NOT start or expire its clock before the site loads.
                 pending = []
                 ctx.route('**/cards/' + slugs[2] + '.js*', lambda rt: pending.append(rt))
                 page.click('.vbar .fake')
                 page.wait_for_selector('.res .scanner video')
                 scan(GAME + 'c.html?n=3')
                 page.wait_for_url('**/c.html?n=3', wait_until='domcontentloaded')
-                page.wait_for_selector('.vbar')
+                page.wait_for_timeout(1200)
+                assert page.evaluate('(S5.get().started || {})[3]') is None
+                assert page.locator('.vbar').count() == 0
+                ctx.unroute('**/cards/' + slugs[2] + '.js*')
+                for rt in pending:
+                    try:
+                        rt.continue_()
+                    except Exception:
+                        pass
+                page.wait_for_function("document.querySelector('.vbar .real') && !document.querySelector('.vbar .real').disabled", timeout=15000)
+                assert page.evaluate('(S5.get().started || {})[3]') is not None
                 page.clock.install()
                 page.clock.fast_forward(12500)
                 page.wait_for_function('S5.get().done[3]?.v === "timeout"')
                 assert page.evaluate('S5.get().done[3].ms') == 12000
                 assert page.evaluate('S5.get().done[3].pts') == 0
                 assert page.locator('.res .scanner').count() == 1
-                print('PASS: loading time counts; an unloaded later site times out at 12 seconds and opens the next scanner')
-                for rt in pending:
-                    try:
-                        rt.continue_()
-                    except Exception:
-                        pass  # requests belonging to the prior page were cancelled by navigation
-                ctx.unroute('**/cards/' + slugs[2] + '.js*')
+                print('PASS: slow Wi-Fi does not burn the clock before load; once loaded, timeout at 12s scores 0 and opens the next scanner')
                 for n in range(4, 9):
                     page.goto(GAME + f'c.html?n={n}')
                     page.wait_for_function("document.querySelector('.vbar .real') && !document.querySelector('.vbar .real').disabled")

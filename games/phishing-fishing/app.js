@@ -86,7 +86,44 @@
   }
   function label(kind) { return kind === "phishing" ? "Phishing" : kind === "legitimate" ? "Legitimate" : "Unanswered"; }
   const formatClock = seconds => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
-  let round, ticker = null, transition = null, locked = false, page = "welcome", lastAnnouncement = null, emailObserver = null, showingResults = false;
+  let round, ticker = null, transition = null, locked = false, page = "welcome", lastAnnouncement = null, emailObserver = null, showingResults = false, reviewLoaded = true;
+  const pendingAnswers = new Map();
+  const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+  async function flushPendingAnswers(attempts = 1) {
+    if (!host || demo || !pendingAnswers.size) return true;
+    for (let tryNum = 0; tryNum < attempts && pendingAnswers.size; tryNum++) {
+      if (tryNum > 0) await wait(400 * tryNum);
+      for (const [qid, cls] of [...pendingAnswers.entries()]) {
+        try {
+          await host.answer(window, qid, cls);
+          pendingAnswers.delete(qid);
+        } catch (error) {
+          if (error?.status === 400 || error?.status === 409) pendingAnswers.delete(qid);
+        }
+      }
+    }
+    return pendingAnswers.size === 0;
+  }
+  async function loadReview(attempts = 3) {
+    if (!host || demo) return true;
+    for (let tryNum = 0; tryNum < attempts; tryNum++) {
+      if (tryNum > 0) await wait(500 * tryNum);
+      try {
+        const res = await host.review(window);
+        const list = (res && Array.isArray(res.review)) ? res.review : [];
+        let matched = 0;
+        for (const r of list) {
+          const email = round.questions.find(q => q.id === r.id);
+          if (email && (r.classification === "phishing" || r.classification === "legitimate")) {
+            email.classification = r.classification;
+            matched++;
+          }
+        }
+        if (matched > 0) return true;
+      } catch (e) {}
+    }
+    return false;
+  }
 
   // Monotonic time during normal use, with a wall-clock fallback for laptop sleep.
   function makeClock() {
@@ -113,6 +150,8 @@
     if (!initial && host) { host.next(window); return; }
     clearWork();
     showingResults = false;
+    reviewLoaded = true;
+    pendingAnswers.clear();
     let saved = initial && host ? host.snapshot(window) : null;
     const currentFormat = [3, 4].includes(saved?.version);
     if (demo && saved && !currentFormat) {
@@ -139,6 +178,10 @@
       throw error;
     }
     if (round.status !== 'ready') {
+      if (saved && host && !demo && round.status === 'playing') {
+        round.answers.forEach((a, i) => { if (a) pendingAnswers.set(round.questions[i].id, a.classification); });
+        flushPendingAnswers(1);
+      }
       page = 'playing'; document.body.dataset.screen = page;
       if (round.status === 'finished' || round.expire()) { showResults(); return; }
       renderEmail(); ticker = setInterval(tick, 100); tick(); return;
@@ -513,8 +556,9 @@
       return;
     }
     if (host && !demo) {
-      try { await host.answer(window, questionId, classification); }
-      catch (error) { announce("Could not reach the server. Your answer will be re-sent if possible."); }
+      pendingAnswers.set(questionId, classification);
+      const sent = await flushPendingAnswers(2);
+      if (!sent) announce("Could not reach the server. Your answer will be re-sent before the round finishes.");
     }
     try { save(); } catch (error) { storageFailure(error); return; }
     main.querySelectorAll("[data-answer]").forEach(button => {
@@ -566,8 +610,21 @@
   }
   function reviewCard(review, i) {
     const { email, answer, correct } = review;
-    return `<details class="review-card" ${!correct ? 'open' : ''}><summary><span class="review-status ${correct ? 'correct' : answer ? 'incorrect' : 'unanswered'}">${icon(correct ? 'check' : answer ? 'cross' : 'clock')}</span><span class="review-summary"><span class="review-overline">EMAIL ${String(i + 1).padStart(2, '0')} · ${esc(email.difficulty)}</span><strong>${esc(email.subject)}</strong><span class="review-answer-line">Your answer: <b>${label(answer)}</b> · Correct: <b class="classification-${email.classification}">${label(email.classification)}</b></span></span><span class="result-badge ${correct ? 'correct' : answer ? 'incorrect' : 'unanswered'}">${correct ? 'Correct' : answer ? 'Incorrect' : 'Unanswered'}</span>${icon('chevron', 'review-chevron')}</summary>
-    <div class="review-content"><div class="review-explanation"><span class="explanation-label">${email.classification === 'phishing' ? 'Why this request is phishing' : 'Why this request is legitimate in this case'}</span><p>${esc(email.explanation)}</p>${caseContext(email)}<dl class="decision-reasoning"><dt>Decisive clues</dt><dd>${esc(email.reasoning.evidence)}</dd><dt>Why not ${email.classification === 'phishing' ? 'Legitimate' : 'Phishing'}?</dt><dd>${esc(email.reasoning.contrast)}</dd><dt>Safe next step</dt><dd>${esc(email.reasoning.nextStep)}</dd></dl><ul class="clue-list">${email.indicators.map(ind => `<li><strong>${esc(ind.text)}</strong><p>${esc(ind.explanation)}</p></li>`).join('')}</ul></div><article class="review-email ${email.classification === 'phishing' ? 'review-risk' : 'review-trust'}" aria-label="Email ${i + 1} with highlighted clues">${emailContent(email, true)}</article></div></details>`;
+    const hasVerdict = email.classification === 'phishing' || email.classification === 'legitimate';
+    const statusCls = !hasVerdict ? 'unanswered' : correct ? 'correct' : answer ? 'incorrect' : 'unanswered';
+    const statusIcon = !hasVerdict ? 'info' : correct ? 'check' : answer ? 'cross' : 'clock';
+    const badgeText = !hasVerdict ? 'Verdict unavailable' : correct ? 'Correct' : answer ? 'Incorrect' : 'Unanswered';
+    const correctHtml = hasVerdict
+      ? `<b class="classification-${email.classification}">${label(email.classification)}</b>`
+      : `<b>Unavailable</b>`;
+    const explainHead = !hasVerdict
+      ? 'Review details'
+      : email.classification === 'phishing' ? 'Why this request is phishing' : 'Why this request is legitimate in this case';
+    const contrastHead = !hasVerdict
+      ? 'Counterpoint'
+      : `Why not ${email.classification === 'phishing' ? 'Legitimate' : 'Phishing'}?`;
+    return `<details class="review-card" ${hasVerdict && !correct ? 'open' : ''}><summary><span class="review-status ${statusCls}">${icon(statusIcon)}</span><span class="review-summary"><span class="review-overline">EMAIL ${String(i + 1).padStart(2, '0')} · ${esc(email.difficulty)}</span><strong>${esc(email.subject)}</strong><span class="review-answer-line">Your answer: <b>${label(answer)}</b> · Correct: ${correctHtml}</span></span><span class="result-badge ${statusCls}">${badgeText}</span>${icon('chevron', 'review-chevron')}</summary>
+    <div class="review-content"><div class="review-explanation"><span class="explanation-label">${explainHead}</span><p>${esc(email.explanation)}</p>${caseContext(email)}<dl class="decision-reasoning"><dt>Decisive clues</dt><dd>${esc(email.reasoning.evidence)}</dd><dt>${contrastHead}</dt><dd>${esc(email.reasoning.contrast)}</dd><dt>Safe next step</dt><dd>${esc(email.reasoning.nextStep)}</dd></dl><ul class="clue-list">${email.indicators.map(ind => `<li><strong>${esc(ind.text)}</strong><p>${esc(ind.explanation)}</p></li>`).join('')}</ul></div><article class="review-email ${hasVerdict ? (email.classification === 'phishing' ? 'review-risk' : 'review-trust') : ''}" aria-label="Email ${i + 1} with highlighted clues">${emailContent(email, hasVerdict)}</article></div></details>`;
   }
   function storageFailure(error) {
     clearWork(); page = 'error';
@@ -582,40 +639,40 @@
       <div class="field-badges" aria-label="Earned field badges"><h3>Field badges</h3>${report.badges.length ? `<ul>${report.badges.map(badge => `<li>${icon('shield')}<div><strong>${badge.title}</strong><p>${badge.detail} <span>${badge.count} caught.</span></p></div></li>`).join('')}</ul>` : '<p>No badges this round. Catch a scam to earn a badge for the trick you spotted.</p>'}<p class="badge-note">Badges celebrate what you spotted. Your score is shown above.</p></div>
     </section>`;
   }
-  async function showResults() {
-    if (showingResults || page !== "playing" || round.status !== "finished") return;
-    showingResults = true;
-    clearWork();
-    // Finish first so the server closes and scores the round, then fetch the review.
-    if (host) { try { await host.finish(window, round.snapshot(), 0); } catch (e) {} }
-    if (host && !demo) {
-      try {
-        const res = await host.review(window);
-        for (const r of (res && res.review) || []) {
-          const email = round.questions.find(q => q.id === r.id);
-          if (email) email.classification = r.classification;
-        }
-      } catch (e) { /* keep going; review cards fall back to unanswered */ }
-    }
+  function renderResults() {
     page = "results";
     document.body.dataset.screen = page;
     const results = round.results();
-    const [title, message] = performanceMessage(results);
+    const [title, message] = reviewLoaded
+      ? performanceMessage(results)
+      : ["Round complete.", "Your answers were submitted, but the server review could not be loaded yet. Retry below to see your score breakdown and verdicts."];
     const earned = `${results.correct} correct × ${results.pointsPerEmail}`;
     const finalScore = `<strong>${results.score} / ${results.maximum}</strong>`;
-    const scoreBreakdown = results.wrongAnswerPenalty
-      ? `Previous scoring rules: ${earned} − ${results.incorrect} wrong × ${results.wrongAnswerPenalty} = ${results.rawScore}. Final score: ${finalScore} (minimum 0).`
-      : `${earned} = ${finalScore}. Wrong and unanswered emails earn 0 points.`;
+    const scoreBreakdown = !reviewLoaded
+      ? "Verdicts and score breakdown are waiting on the server review."
+      : results.wrongAnswerPenalty
+        ? `Previous scoring rules: ${earned} − ${results.incorrect} wrong × ${results.wrongAnswerPenalty} = ${results.rawScore}. Final score: ${finalScore} (minimum 0).`
+        : `${earned} = ${finalScore}. Wrong and unanswered emails earn 0 points.`;
     main.className = "results-screen";
     main.innerHTML = `
       <div class="results-topline"><span class="eyebrow">THE INBOX CHALLENGE / ROUND COMPLETE</span><button class="button primary new-player" type="button">${icon("refresh")} New Player</button></div>
-      <section class="results-hero"><div class="score-circle" style="--score-angle:${results.score / results.maximum * 360}deg"><div><strong>${results.score}<span>/ ${results.maximum}</span></strong><small>YOUR SCORE</small></div></div><div class="results-copy"><span class="completion-label">${icon(results.correct === results.reviews.length ? "trophy" : "shield")} ${results.endReason === "timeout" ? "Time's up. Let's find the clues." : "Inbox checked. A little more awareness."}</span><h1 tabindex="-1">${title}</h1><p>${message}</p><div class="result-stats"><div><strong>${results.answered}</strong><small>Emails answered / ${questionCount}</small></div><div><strong>${(results.accuracy * 100).toFixed(1)}<span>%</span></strong><small>Label accuracy (${results.correct} right, ${results.incorrect} wrong)</small></div><div><strong>${results.timeUsed.toFixed(1)}<span>s</span></strong><small>Time used of ${esc(settings.roundSeconds)}s</small></div></div><p class="score-breakdown">${scoreBreakdown} ${demo ? 'Practice score only.' : 'The displayed score counts toward your event result.'}</p></div></section>
+      <section class="results-hero"><div class="score-circle" style="--score-angle:${reviewLoaded ? results.score / results.maximum * 360 : 0}deg"><div><strong>${reviewLoaded ? results.score : "—"}<span>/ ${results.maximum}</span></strong><small>YOUR SCORE</small></div></div><div class="results-copy"><span class="completion-label">${icon(reviewLoaded && results.correct === results.reviews.length ? "trophy" : "shield")} ${results.endReason === "timeout" ? "Time's up. Let's find the clues." : "Inbox checked. A little more awareness."}</span><h1 tabindex="-1">${title}</h1><p>${message}</p><div class="result-stats"><div><strong>${results.answered}</strong><small>Emails answered / ${questionCount}</small></div><div><strong>${reviewLoaded ? (results.accuracy * 100).toFixed(1) : "—"}<span>%</span></strong><small>${reviewLoaded ? `Label accuracy (${results.correct} right, ${results.incorrect} wrong)` : "Label accuracy (pending review)"}</small></div><div><strong>${results.timeUsed.toFixed(1)}<span>s</span></strong><small>Time used of ${esc(settings.roundSeconds)}s</small></div></div><p class="score-breakdown">${scoreBreakdown} ${demo ? 'Practice score only.' : 'The displayed score counts toward your event result.'}</p></div></section>
+      ${!reviewLoaded ? `<div class="timeout-note" role="alert">${icon("info")} Could not load the verdicts from the server. <button class="button primary" id="retry-review" type="button" style="margin-left:auto">Retry loading review</button></div>` : ""}
       ${results.unanswered ? `<div class="timeout-note">${icon("clock")} ${results.unanswered} email${results.unanswered === 1 ? " was" : "s were"} unanswered.</div>` : ""}
-      ${catchReport(results)}
+      ${reviewLoaded ? catchReport(results) : ""}
       <section class="answer-review" aria-labelledby="review-title"><div class="review-heading"><div><span class="eyebrow">THE DETAILS MAKE THE DIFFERENCE</span><h2 id="review-title">Review Answers</h2></div><span>Open an email to see the clues ${icon("chevron")}</span></div>${results.reviews.map(reviewCard).join("")}</section>
       <div class="takeaway"><span class="takeaway-icon">${icon("shield")}</span><div><strong>A familiar look is a clue. It isn't a guarantee.</strong><p>Sender addresses can be spoofed and genuine accounts compromised. Urgency, payment amounts and attachments do not automatically mean phishing. Inspect actual destinations, check permission requests, and verify through a known app, bookmark or contact. Never share passwords, PINs or one-time codes. Match every actual destination against the institution's real domain: a lookalike such as maybank2u-verify.com is not maybank2u.com.my.</p></div></div>
       <div class="results-bottom"><p>One smarter click can make a difference.</p><button class="button primary new-player" type="button">${icon("refresh")} New Player ${icon("arrow")}</button></div>`;
     main.querySelectorAll(".new-player").forEach(button => button.addEventListener("click", () => resetGame()));
+    const retryBtn = main.querySelector("#retry-review");
+    if (retryBtn) {
+      retryBtn.addEventListener("click", async () => {
+        retryBtn.disabled = true;
+        retryBtn.textContent = "Loading…";
+        reviewLoaded = await loadReview(2);
+        renderResults();
+      });
+    }
     main.querySelectorAll('.review-card').forEach((card, index) => { card.id = `review-${index}`; });
     main.querySelectorAll('[data-review-index]').forEach(button => button.addEventListener('click', () => {
       const card = document.getElementById(`review-${button.dataset.reviewIndex}`);
@@ -625,7 +682,22 @@
     }));
     window.scrollTo(0, 0);
     focusHeading();
-    announce(`Round complete. Score ${results.score} out of ${results.maximum}. ${results.answered} answered, ${results.correct} correct, ${results.incorrect} incorrect, ${results.unanswered} unanswered. Accuracy ${(results.accuracy * 100).toFixed(1)} percent. Review answers below.`);
+    announce(reviewLoaded
+      ? `Round complete. Score ${results.score} out of ${results.maximum}. ${results.answered} answered, ${results.correct} correct, ${results.incorrect} incorrect, ${results.unanswered} unanswered. Accuracy ${(results.accuracy * 100).toFixed(1)} percent. Review answers below.`
+      : "Round complete. Could not load the review from the server. Use Retry loading review.");
+  }
+  async function showResults() {
+    if (showingResults || page !== "playing" || round.status !== "finished") return;
+    showingResults = true;
+    clearWork();
+    // Retry any unsent answers before finishing so the server scores every submitted classification.
+    await flushPendingAnswers(3);
+    // Finish first so the server closes and scores the round, then fetch the review.
+    if (host) { try { await host.finish(window, round.snapshot(), 0); } catch (e) {} }
+    if (host && !demo) {
+      reviewLoaded = await loadReview(3);
+    }
+    renderResults();
   }
 
   document.addEventListener("keydown", event => {

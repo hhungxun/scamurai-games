@@ -137,9 +137,10 @@ def judge(phone, k, pick=None):
         n = next((c for c in r['cards'] if str(c) not in r['done']), None)
         if n is None: break
         phone.goto(f'{GAME}c.html?n={n}')
-        if not phone.evaluate(f'(S5.get().started || {{}})[{n}]'):
+        if not phone.evaluate(f'(S5.get().started || {{}})[{n}]') and (not r.get('firstCard') or r.get('firstCard') == n):
             phone.click('#go', timeout=15000)
         phone.wait_for_selector('.vbar', timeout=15000)
+        phone.wait_for_function("document.querySelector('.vbar .real') && !document.querySelector('.vbar .real').disabled", timeout=15000)
         v = pick or random.choice(['real', 'fake'])
         phone.click(f'.vbar .{v}')
         phone.wait_for_function("document.getElementById('sent') && /Saved/.test(document.getElementById('sent').textContent)", timeout=15000)
@@ -180,11 +181,11 @@ def run(pw):
     rid[IDS[1]], j2 = start_player(D, IDS[1])
     ph2 = mk_phone(IDS[1]); phone_join(ph2, j2); close_modal(D)
 
-    print('S3 picker refuses a player who is already playing')
+    print('S3 picker shows playing now and API refuses a second open round')
     D.click('#new'); D.wait_for_selector('.scm .find')
     D.fill('.scm .find', IDS[0])
     D.wait_for_selector('.scm .it.sel')
-    check(3, D.evaluate("document.querySelector('.scm .go').disabled"), 'Start is disabled for a player already playing')
+    check(3, 'resume or restart' in D.inner_text('.scm .go').lower(), 'dashboard picker offers resume/restart for an active round')
     check(3, 'playing now' in D.inner_text('.scm .list'), 'picker shows the "playing now" pill')
     st, j = api('POST', '/api/rounds', STATION, {'participantId': IDS[0]})
     check(3, st == 409, f'API refuses a second open round (got {st})')

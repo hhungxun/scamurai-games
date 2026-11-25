@@ -6,12 +6,34 @@
 <style>
   .identity h2{font:600 25px Lexend,system-ui,sans-serif;text-transform:none;overflow-wrap:anywhere;margin:4px 0 12px}
   .identity p{margin:4px 0}.identity strong{color:var(--yellow);overflow-wrap:anywhere}
-  .total{text-align:center}.total .number{font:80px/1 Anton,Impact,sans-serif;color:var(--yellow);margin:14px 0}
+  .scores-jump{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:8px 14px;border-radius:3px;background:var(--yellow);color:#171616;font:700 13px/1 Lexend,system-ui,sans-serif;text-decoration:none;letter-spacing:.4px;text-transform:uppercase}
+  .scores-jump:hover{background:#f7df82;color:#171616}
+  .total{text-align:center}.total .eyebrow{color:var(--red);margin:0 0 6px}.total .number{font:80px/1 Anton,Impact,sans-serif;color:var(--yellow);margin:14px 0}
   .total progress{width:100%;height:12px;accent-color:var(--red)}
+  .station-panel{border-top:4px solid var(--yellow)}
+  .station-panel .eyebrow{color:var(--yellow);margin:0 0 8px}
   .station{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 0;border-bottom:1px solid var(--surf)}
-  .station:last-child{border-bottom:0}.station p{margin:4px 0 0}.station strong{display:block}.station .score{white-space:nowrap;font:28px Anton,Impact,sans-serif;color:var(--yellow)}
+  .station:last-child{border-bottom:0}.station p{margin:4px 0 0}.station strong{display:block}
+  .station .score{white-space:nowrap;font:28px Anton,Impact,sans-serif;color:var(--yellow);background:#171616;border:1px solid var(--line);padding:6px 12px;border-radius:3px}
+  .station .score.has-score{border-color:var(--yellow);background:#2a2518}
   .playing{color:var(--yellow)}.completed{color:#7CFC8A}.actions{display:flex;flex-direction:column;gap:10px}.actions .btn{text-align:center}
   .meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}.meta p{margin:0}
+  #survey-panel{border-top:5px solid var(--yellow);scroll-margin-top:20px}
+  #survey-panel hr{border:0;border-top:1px solid var(--line);margin:20px 0}
+  #survey-panel .q{margin-top:16px}
+  #survey-panel .q>b{display:block;margin-bottom:8px;font-weight:600}
+  #survey-panel .scale{display:flex;gap:6px}
+  #survey-panel .scale button{flex:1;background:var(--surf);color:var(--paper);border:1px solid var(--dim);font-size:20px;padding:10px 0;min-height:48px}
+  #survey-panel .scale button.on{background:var(--yellow);color:#171616;border-color:var(--yellow)}
+  #survey-panel .opts button{display:block;width:100%;text-align:left;background:var(--surf);color:var(--paper);border:1px solid var(--dim);font:15px Lexend,system-ui,sans-serif;text-transform:none;letter-spacing:0;margin-top:6px;min-height:48px;justify-content:flex-start}
+  #survey-panel .opts button.on{background:var(--yellow);color:#171616;border-color:var(--yellow)}
+  .reward-hint{font-size:13px;line-height:1.5;color:var(--paper);background:#2a2518;border:1px solid rgba(237,207,97,.4);border-left:3px solid var(--yellow);border-radius:3px;padding:10px 12px;margin:12px 0 0}
+  .reward-hint strong{color:var(--yellow)}
+  .reward-pass{background:#16261a;border:2px solid #7CFC8A;border-radius:4px;padding:16px 14px;margin:14px 0 4px;text-align:center}
+  .reward-pass .eyebrow{color:#7CFC8A;margin:0 0 6px}
+  .reward-pass .pass-title{font:400 23px/1.15 Anton,Impact,sans-serif;letter-spacing:.4px;text-transform:uppercase;color:var(--yellow);margin:0 0 8px}
+  .reward-pass .pass-who{font-weight:600;color:var(--paper);margin:0 0 6px}
+  .reward-pass .pass-note{font-size:13px;color:#d6f5dc;margin:0}
 </style>
 <script src="participant.js"></script>
 <script src="/vendor/jsQR.js"></script><script src="/qr-scanner.js"></script><script src="/games/scan-me-if-you-can/s5.js"></script>
@@ -21,18 +43,21 @@
 <p class="muted" id="connection" role="status">Opening your page…</p>
 <div id="profile"></div>
 <section id="scan-panel" hidden><div id="portal-scanner"></div><button class="ghost wide" id="back-participant">Back to my participant page</button></section>
+<section id="survey-panel" class="card" hidden></section>
 <div class="meta"><button class="ghost" id="refresh">Refresh scores</button><a href="leaderboard.html" style="color:var(--yellow)">Leaderboard</a></div>
 </main><script>
 const P = ScamuraiParticipant, root = document.getElementById('profile'), connection = document.getElementById('connection');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const rewardPassHtml = p => `<div class="reward-pass" id="reward-pass"><p class="eyebrow">FREE DRINKS &amp; SNACKS</p><p class="pass-title">All 5 Games &amp; Exit Survey Complete</p><p class="pass-who">${esc(p.name)} · ${esc(p.id)}</p><p class="pass-note">Show this phone screen to the registration desk to claim your free drinks &amp; snacks.</p></div>`;
 // The pass travels in a fragment, is saved on this phone, then removed from the address bar.
 const incoming = location.hash.slice(1);
 if (incoming) { P.remember(incoming); history.replaceState(null, '', location.pathname + location.search); }
-let pending = false, lastToken = '', profile = null, scanner = null;
+let pending = false, lastToken = '', profile = null, scanner = null, surveyConfig = null;
 let wantsScan = new URLSearchParams(location.search).get('scan') === '1';
 let linkRound = !incoming && (new URLSearchParams(location.search).get('from') === 'station5' || !P.token()) ? P.round() : null;
+const surveyPanel = document.getElementById('survey-panel');
 async function refresh() {
-  if (pending) return; pending = true;
+  if (pending || !surveyPanel.hidden) return; pending = true;
   try {
     if (incoming && !/^[a-f0-9]{64}$/.test(incoming)) { root.innerHTML = ''; connection.textContent = 'That personal QR is not valid. Ask the registration desk for yours.'; return; }
     if (linkRound) { if (!await P.rememberRound(linkRound)) throw new Error('Your Game 5 round changed. Open My scores from your current round.'); linkRound = null; history.replaceState(null, '', location.pathname); }
@@ -55,26 +80,124 @@ async function refresh() {
     const resume = active ? `/games/scan-me-if-you-can/c.html?n=${active}`
       : ownRound && r.firstCard && !r.done[r.firstCard] ? `/games/scan-me-if-you-can/c.html?n=${r.firstCard}` : '/games/scan-me-if-you-can/phone.html';
     const roundActions = ownRound ? `<section class="card actions"><h2>Your Game 5 round</h2>${next && p.stations.find(s => s.n === 5)?.openRoundId === r.id ? `<a class="btn" href="${resume}">${active ? `Resume QR #${active}` : 'Continue playing'}</a>${active ? '<p class="muted">Your site timer keeps running while you view this page.</p>' : ''}` : ''}<a class="btn ghost" href="/games/scan-me-if-you-can/phone.html?view=scores">Game 5 QR results</a></section>` : '';
+    const allStationsDone = p.stations.every(s => s.status === 'completed');
+    const canSelfSurvey = !p.checkedOut && !p.surveyDone && p.stationsDone.length > 0;
+    const playCardBody = p.checkedOut || p.surveyDone
+      ? `<p class="eyebrow">ALL DONE</p>${p.eligible ? rewardPassHtml(p) : ''}<a class="btn wide" href="/leaderboard.html">View leaderboard ↗</a><p class="muted">Thanks for playing! Check the <a href="/leaderboard.html">leaderboard</a> for the live rankings.</p>`
+      : allStationsDone
+        ? `<p class="eyebrow">NEXT: EXIT SURVEY</p><button class="btn wide" id="open-survey">Fill in exit survey ↗</button><button class="btn ghost wide" id="start-scamming" style="margin-top:10px">Scan a station QR</button><p class="muted">All five stations done! Fill in the quick exit survey right here on your phone to qualify for the prize ranking.</p><p class="reward-hint"><strong>Free drinks &amp; snacks:</strong> Finish the exit survey now, then show your phone at the registration desk to claim!</p>`
+        : `<p class="eyebrow">YOUR NEXT CHALLENGE</p><button class="btn wide" id="start-scamming">Start Scamming ↗</button><p class="muted">${p.stations.filter(s => s.status === 'completed').length} of ${p.stations.length} stations done. Scan station codes and Game Master Join QRs here. Everything stays in this browser.</p><p class="reward-hint"><strong>Free drinks &amp; snacks:</strong> Finish all 5 games and the exit survey, then show your phone at the registration desk to claim!</p>`;
     root.innerHTML = `<section class="card identity"><p class="muted">Registered name</p><h2 id="participant-name">${esc(p.name)}</h2><p>${esc(p.idKind)}: <strong id="participant-id">${esc(p.id)}</strong></p>
-      <p class="muted">${p.checkedOut ? 'Checked out' : p.stations.some(s => s.status === 'playing') ? 'Playing now' : 'Registered · welcome to Scamurai'}</p></section>
-      <section class="card play-card"><p class="eyebrow">YOUR NEXT CHALLENGE</p><button class="btn wide" id="start-scamming">Start Scamming ↗</button><p class="muted">Scan station codes and Game Master Join QRs here. Everything stays in this browser.</p></section>
+      <p class="muted">${p.checkedOut ? 'Checked out' : p.stations.some(s => s.status === 'playing') ? 'Playing now' : 'Registered · welcome to Scamurai'}</p>
+      <a class="scores-jump" href="#my-scores">My scores · ${p.total} / ${p.maxTotal} ↓</a></section>
+      <section class="card play-card">${playCardBody}</section>
       ${next ? roundActions : ''}
-      <section class="card total"><h2>Total score</h2><div class="number" id="event-total">${p.total}<span style="font-size:30px;color:var(--grey)"> / ${p.maxTotal}</span></div>
+      <section class="card total" id="my-scores"><p class="eyebrow">MY SCORES</p><h2>Total score</h2><div class="number" id="event-total">${p.total}<span style="font-size:30px;color:var(--grey)"> / ${p.maxTotal}</span></div>
       <p>${p.stationsDone.length} of ${p.stations.length} stations completed</p><progress value="${p.stationsDone.length}" max="${p.stations.length}" aria-label="Stations completed"></progress><p class="muted">Your best finished round at each station counts.</p></section>
-      <section class="card station-panel"><h2>Your stations</h2>${p.stations.map(s => `<div class="station" data-station="${s.n}"><div><strong>${s.n}. ${esc(s.name)}</strong><p class="muted ${s.status}">${s.status === 'playing' ? 'Playing now · score updates when the round finishes' : s.status === 'completed' ? 'Completed' : 'Not played yet'}</p></div><span class="score">${s.score === null ? '—' : s.score + ' / 100'}</span></div>`).join('')}</section>
-      <section class="card visit-panel"><h2>Visit progress</h2><p>Exit survey: <strong>${p.surveyDone ? 'Completed' : 'Not completed yet'}</strong></p><p>${p.eligible ? 'All five stations and the exit survey are complete. You qualify for the prize ranking.' : 'Complete all five stations and the exit survey to qualify for the prize ranking.'}</p>
-      ${!p.surveyDone ? '<p class="muted">When you are ready to leave, ask a Game Master for the exit survey.</p>' : ''}</section>
+      <section class="card station-panel"><p class="eyebrow">MY SCORES BY STATION</p><h2>Your stations</h2>${p.stations.map(s => `<div class="station" data-station="${s.n}"><div><strong>${s.n}. ${esc(s.name)}</strong><p class="muted ${s.status}">${s.status === 'playing' ? 'Playing now · score updates when the round finishes' : s.status === 'completed' ? 'Completed' : 'Not played yet'}</p></div><span class="score${s.score !== null ? ' has-score' : ''}">${s.score === null ? '—' : s.score + ' / 100'}</span></div>`).join('')}</section>
+      <section class="card visit-panel"><h2>Exit survey &amp; check-out</h2><p>Exit survey: <strong>${p.surveyDone ? 'Completed' : 'Not completed yet'}</strong></p><p>${p.eligible ? 'All five stations and the exit survey are complete. You qualify for the prize ranking.' : 'Complete all five stations and the exit survey to qualify for the prize ranking.'}</p>
+      ${p.eligible ? '<p class="muted">Show your phone at the registration desk to claim your free drinks &amp; snacks.</p>' : !p.surveyDone && !p.checkedOut ? '<p class="muted">After finishing all 5 games and the exit survey, show your phone at the registration desk for free drinks &amp; snacks.</p>' : ''}
+      ${canSelfSurvey ? (allStationsDone ? `<button class="btn wide" id="open-survey-visit">Fill in exit survey</button><p class="muted">When you are ready to leave, fill in the exit survey right here on your phone — no need to wait for a Game Master.</p>` : `<button class="btn ghost wide" id="open-survey-visit">Leaving early? Fill in exit survey</button><p class="muted">Only submit now if you are leaving the event early. Checking out ends play — finish all 5 games first for free drinks &amp; snacks and the prize ranking.</p>`) : !p.surveyDone && !p.checkedOut ? '<p class="muted">Play at least one station, then fill in the exit survey right here on your phone before you leave.</p>' : ''}</section>
       ${!next ? roundActions : ''}`;
     connection.textContent = P.persistent() ? 'Up to date · refreshes automatically every 5 seconds' : 'Your browser is blocking site storage. You can view your info here; allow storage for this site to scan and play.';
     if (wantsScan) { wantsScan = false; openScanner(); }
   } catch (e) {
-    if (e.status === 401) { scanner?.stop(); scanner = null; profile = null; root.hidden = false; document.getElementById('scan-panel').hidden = true; }
+    if (e.status === 401) { scanner?.stop(); scanner = null; profile = null; root.hidden = false; document.getElementById('scan-panel').hidden = true; surveyPanel.hidden = true; }
     connection.textContent = e.status === 401 || e.message.includes('Game 5') ? e.message : 'Cannot refresh right now. Showing the last update; trying again shortly.';
   }
   finally { pending = false; if (lastToken && lastToken !== P.token()) queueMicrotask(refresh); }
 }
 document.getElementById('refresh').onclick = refresh;
-root.addEventListener('click', e => { if (e.target.closest('#start-scamming')) openScanner(); });
+root.addEventListener('click', e => {
+  if (e.target.closest('#start-scamming')) openScanner();
+  if (e.target.closest('#open-survey, #open-survey-visit')) openSurvey();
+});
+function closeSurvey() {
+  surveyPanel.hidden = true;
+  surveyPanel.innerHTML = '';
+  root.hidden = false;
+  root.scrollIntoView({ block: 'start' });
+  refresh();
+}
+async function openSurvey() {
+  if (!profile || profile.checkedOut || profile.surveyDone || !profile.stationsDone.length) return;
+  scanner?.stop(); scanner = null;
+  document.getElementById('scan-panel').hidden = true;
+  root.hidden = true;
+  surveyPanel.hidden = false;
+  surveyPanel.innerHTML = '<p class="eyebrow">EXIT SURVEY</p><h2>Loading survey…</h2>';
+  surveyPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  try {
+    if (!surveyConfig) {
+      const r = await fetch('/api/config');
+      if (!r.ok) throw new Error('Could not load survey questions.');
+      surveyConfig = await r.json();
+    }
+  } catch (e) {
+    surveyPanel.innerHTML = `<p class="eyebrow">EXIT SURVEY</p><h2>Could not load survey</h2><p class="err">${esc(e.message)}</p><button class="ghost wide" id="survey-cancel">Back to my participant page</button>`;
+    surveyPanel.querySelector('#survey-cancel').onclick = closeSurvey;
+    return;
+  }
+  const done = profile.stationsDone;
+  const qs = [...surveyConfig.stations.filter(s => done.includes(s.n)).flatMap(s => s.questions.map(q => ({ ...q, station: s }))), ...surveyConfig.general];
+  const ans = {};
+  const field = q => {
+    if (q.type === 'scale') return `<div class="scale" data-q="${esc(q.id)}">${[1, 2, 3, 4, 5].map(v => `<button type="button" data-v="${v}">${v}</button>`).join('')}</div>`;
+    if (q.type === 'choice' || q.type === 'station') {
+      const opts = q.type === 'station' ? surveyConfig.stations.filter(s => done.includes(s.n)).map(s => `${s.n}. ${s.name}`) : q.options;
+      return `<div class="opts" data-q="${esc(q.id)}">${opts.map(o => `<button type="button" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div>`;
+    }
+    return `<textarea rows="2" data-q="${esc(q.id)}" maxlength="500"></textarea>`;
+  };
+  let last = null;
+  const fullSurvey = done.length === surveyConfig.stations.length;
+  surveyPanel.innerHTML = `<p class="eyebrow">EXIT SURVEY · CHECK OUT</p><h2>Exit survey · ${esc(profile.name)}</h2>
+    <p class="muted">${done.length} of ${surveyConfig.stations.length} stations done. One minute, then you're checked out!</p>
+    <p class="reward-hint">${fullSurvey ? '<strong>Free drinks &amp; snacks:</strong> Submit this full 5-game exit survey to get your pass — show your phone to the registration desk to claim!' : `<strong>Want free drinks &amp; snacks?</strong> Finish all ${surveyConfig.stations.length} games and the full exit survey, then show your phone at the registration desk!`}</p>
+    ${qs.map(q => { const head = q.station && q.station !== last ? `<hr><p class="tag">${esc(q.station.name)}</p>` : (!q.station && last ? '<hr>' : ''); last = q.station || null; return `${head}<div class="q"><b>${esc(q.text)}</b>${field(q)}</div>`; }).join('')}
+    <p class="err" id="survey-err" role="alert"></p>
+    <button class="btn wide" id="survey-submit" type="button">Submit &amp; check out</button>
+    <button class="ghost wide" id="survey-cancel" type="button" style="margin-top:10px">Back to my participant page</button>`;
+  surveyPanel.onclick = e => {
+    const b = e.target.closest('[data-v]'); if (!b) return;
+    const g = b.parentElement;
+    g.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    ans[g.dataset.q] = b.dataset.v;
+  };
+  surveyPanel.querySelector('#survey-cancel').onclick = closeSurvey;
+  surveyPanel.querySelector('#survey-submit').onclick = async ev => {
+    surveyPanel.querySelectorAll('textarea').forEach(t => { if (t.value.trim()) ans[t.dataset.q] = t.value.trim(); else delete ans[t.dataset.q]; });
+    const missing = qs.filter(q => q.type !== 'text' && !ans[q.id]);
+    const errEl = surveyPanel.querySelector('#survey-err');
+    if (missing.length) {
+      errEl.textContent = `Please answer all the 1–5 and pick-one questions (${missing.length} left).`;
+      errEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    if (!fullSurvey && !confirm(`You have completed ${done.length} of ${surveyConfig.stations.length} stations. Submitting now checks you out and ends play (you won't be eligible for the 5-game drinks & snacks pass or prize ranking). Submit anyway?`)) return;
+    errEl.textContent = '';
+    ev.target.disabled = true;
+    try {
+      const res = await fetch('/api/participant/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Participant-Token': P.token() },
+        body: JSON.stringify({ answers: ans }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not submit exit survey.');
+      surveyPanel.innerHTML = `<p class="eyebrow">CHECKED OUT</p><h2>Thank you, ${esc(profile.name)}!</h2>
+        <p>Your exit survey is saved and you're checked out.${data.eligible ? ' You qualify for the prize ranking — watch the leaderboard!' : ''}</p>
+        ${data.eligible ? rewardPassHtml(profile) : ''}
+        <a class="btn wide" href="/leaderboard.html">View leaderboard ↗</a>
+        <button class="ghost wide" id="survey-done-back" type="button" style="margin-top:10px">Back to my participant page</button>`;
+      surveyPanel.querySelector('#survey-done-back').onclick = closeSurvey;
+      surveyPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      errEl.textContent = err.message;
+      ev.target.disabled = false;
+    }
+  };
+}
 function openScanner() {
   if (!profile) return;
   if (!P.persistent()) { connection.textContent = 'Allow storage for this site in your browser to scan and play. Your participant info is still available below.'; return; }
@@ -120,7 +243,7 @@ document.getElementById('back-participant').onclick = () => {
 };
 setInterval(() => { if (!document.hidden) refresh(); }, 5000);
 addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
-addEventListener('storage', e => { if (e.key === 'scamurai.participant.token') { scanner?.stop(); scanner = null; profile = null; root.hidden = false; document.getElementById('scan-panel').hidden = true; root.innerHTML = ''; refresh(); } });
+addEventListener('storage', e => { if (e.key === 'scamurai.participant.token') { scanner?.stop(); scanner = null; profile = null; root.hidden = false; document.getElementById('scan-panel').hidden = true; surveyPanel.hidden = true; surveyPanel.innerHTML = ''; root.innerHTML = ''; refresh(); } });
 addEventListener('pageshow', e => { if (e.persisted) refresh(); });
 addEventListener('hashchange', () => location.reload());
 refresh();

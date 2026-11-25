@@ -255,7 +255,7 @@ async function main() {
     await ok(call('POST', `/api/rounds/${r.roundId}/cancel`, { pin: st(2) }));
   });
 
-  await check('survey due after all 5 stations; checkout marks them eligible', async () => {
+  await check('survey due after all 5 stations; checkout marks them eligible; staff reopen lets them play again', async () => {
     const D = ids[45];
     let fin;
     for (const n of [1, 2, 3, 4]) {
@@ -267,6 +267,12 @@ async function main() {
     await ok(call('POST', '/api/checkout', { pin: st(4), body: { participantId: D, answers: { s1q1: '5', s2q1: 'Checking where buttons and links lead', s2q2: '4', s3q1: '4', s4q1: '3', s5q1: 'The web address', s5q2: '4', s5q3: '5', g1: '5', g3: '1. Spot the Fake Cash' } } }));
     const lb = await ok(call('GET', '/api/leaderboard'));
     assert.ok(lb.rows.some(r => r.eligible));
+    assert.equal((await call('POST', '/api/rounds', { pin: st(1), body: { participantId: D } })).status, 409);
+    assert.equal((await call('POST', `/api/participants/${D}/reopen`, { pin: st(1) })).status, 403);
+    await ok(call('POST', `/api/participants/${D}/reopen`, { pin: PINS.staff }));
+    const rAgain = await ok(call('POST', '/api/rounds', { pin: st(1), body: { participantId: D } }));
+    await ok(call('POST', `/api/rounds/${rAgain.roundId}/cancel`, { pin: st(1) }));
+    await ok(call('POST', '/api/checkout', { pin: st(4), body: { participantId: D, answers: { s1q1: '5', s2q1: 'Checking where buttons and links lead', s2q2: '4', s3q1: '4', s4q1: '3', s5q1: 'The web address', s5q2: '4', s5q3: '5', g1: '5', g3: '1. Spot the Fake Cash' } } }));
   });
 
   await check('stale phones polling with an old round token never lock the shared IP out', async () => {

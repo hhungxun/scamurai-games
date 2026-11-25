@@ -6,5 +6,5 @@
 .br-ad-sound:hover{border-color:#245b7b;box-shadow:0 2px 12px #152b3e55}
 .br-ad-sound:focus-visible{outline:3px solid #f2bf38;outline-offset:3px}
 .br-ad-sound:disabled{cursor:default;opacity:.65}
-@media(max-width:640px){.br-ad-sound{left:8px;bottom:103px;padding:7px 9px;font-size:11px;min-height:36px}}
+@media(max-width:640px){.br-ad-sound{left:8px;bottom:103px;padding:7px 9px;font-size:11px;min-height:44px}}
 @media(max-height:300px){.br-ad-sound{bottom:8px;left:8px}}
