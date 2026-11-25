@@ -6,7 +6,7 @@
     const KEY='br-run-v9:'+seed, MISSING=Symbol('missing'), AUTO_MAX=boothAds?60:30, ID_MAX=boothAds?70:40, REVEAL_MS=10000, UNCLOSED_MAX=10;
     const GAPS=boothAds?[800,1100,950,1250,1000,1150]:[2200,2800,2500,3200,2300,3000];
     const FORMATS=['bounce','robot','dodge','player-error','bonus','captcha','tiny','drawer','panel','newsletter'];
-    const formats=boothAds?['tiny','drawer','dodge','bounce','panel','newsletter']:FORMATS;
+    const formats=boothAds?['tiny','drawer','dodge','bonus','player-error','panel','bounce','newsletter']:FORMATS;
     const firstAt=boothAds?1000:3000, rampAt=4000;
     const prompts=window.BROWSE_REDIRECT_PROMPTS;
     const isPrompt=format=>prompts?.formats.includes(format)===true;
@@ -86,7 +86,11 @@
     const closeReserves=p=>({top:boothOffset()+(p.closeStyle!=='visible'&&p.closeCorner!=='bottom-right'?30:0),bottom:p.closeStyle!=='visible'&&p.closeCorner==='bottom-right'?30:0});
     const burstSlots=[[.02,.06],[.72,.08],[.28,.48],[.97,.88],[.05,.94],[.64,.56],[.4,.02],[.98,.32],[.15,.44],[.5,.91]];
     const staticSlots=[[.04,.10],[.96,.16],[.07,.94],[.9,.88]];
-    const staticOrigin=p=>boothAds&&p.id===1?[.98,.97]:staticSlots[(p.id-1)%4];
+    const staticOrigin=p=>{
+      if(boothAds&&p.format==='bonus')return [.06,.1];
+      if(boothAds&&p.format==='player-error')return [.98,.92];
+      return boothAds&&p.id===1?[.98,.97]:staticSlots[(p.id-1)%4];
+    };
     const positionEntry=entry=>{
       const v=viewport(),reserve=closeReserves(entry.p);entry.card.style.setProperty('--br-motion-view-width',v.width+'px');entry.card.style.setProperty('--br-motion-view-height',v.height+'px');
       if(modal(entry.p)){
@@ -309,8 +313,9 @@
         if(!boothAds&&state.autoShown===0&&isPrompt(previewFormat))format=previewFormat;
         if(modal({format})&&state.pending.some(modal))format=state.autoShown%2?'dodge':'bounce';
         state.shown++;state.autoShown++;
-        const closeStyle=openingCard?'visible':closeStyles[(state.shown-1)%closeStyles.length];
-        const layout=openingCard?'top-right':boothAds&&state.autoShown===3?'decoy':closeLayouts[(state.shown-1)%closeLayouts.length];
+        const showCornerClose=openingCard||(boothAds&&isPrompt(format));
+        const closeStyle=showCornerClose?'visible':closeStyles[(state.shown-1)%closeStyles.length];
+        const layout=showCornerClose?'top-right':boothAds&&state.autoShown===3?'decoy':closeLayouts[(state.shown-1)%closeLayouts.length];
         const recurring=validSites.includes(campaignSite)&&(state.autoShown-1)%6===0;
         const normalIndex=state.autoShown-1-(validSites.includes(campaignSite)?Math.ceil((state.autoShown-1)/6):0);
         const site=boothAds?.site(state.shown)||chosen||(recurring?campaignSite:deck[normalIndex%deck.length]);

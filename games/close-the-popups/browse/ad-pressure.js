@@ -40,10 +40,10 @@
       <div class="br-pressure-leader-brand"><b>FORM<br><i>&</i> FIELD</b><span>${tr('THE WORKSPACE EDIT','桌面精选系列')}</span></div>
       <div class="br-pressure-leader-copy">${label()}<strong>${tr('MAKE ROOM. <br>WORK BETTER.','腾出空间。<br>让工作更顺手。')}</strong><p>${tr('Desk accessories from RM39. Find your next everyday essential.','桌面用品 RM39 起，发现日常办公好物。')}</p></div>
       <div class="br-pressure-leader-action"><span>${tr('FROM','低至')} <b>RM39</b></span>${link('desk',tr('Shop the range ↗','立即选购 ↗'),'br-pressure-cta')}</div>${close('leaderboard')}
-    </aside>
+    </aside>`}
     <aside class="br-pressure-rail" data-pressure-surface="rail" data-campaign-site="${featuredSite}" aria-label="${escape(tr('Sponsored recommendation','赞助推荐'))}">
       <header>${label()}${close('rail')}</header><b class="br-pressure-orbit">${escape(featured().brand)}</b><span class="br-pressure-rail-kicker">${escape(featured().eyebrow)}</span><div class="br-pressure-player-icon" aria-hidden="true">${glyph}</div><h2>${escape(featured().title)}</h2><p>${escape(featured().description)}</p>${link(featuredSite,escape(featured().cta)+' ↗','br-pressure-cta')}<small class="br-pressure-rail-foot">${tr('A LITTLE MORE TO EXPLORE','再看一点新内容')}</small>
-    </aside>`}`;
+    </aside>`;
     doc.body.insertBefore(host,doc.body.firstChild);
     let inlineGroup=null;
     const mountInline=()=>{
@@ -64,7 +64,6 @@
       host.querySelector('.br-pressure-ticker-brand').textContent=offer.brand;
       host.querySelector('.br-pressure-ticker-copy').textContent=offer.title;
       const tickerLink=host.querySelector('.br-pressure-ticker-cta');tickerLink.textContent=offer.cta+' ↗';tickerLink.href=adURL(featuredSite);
-      if(campus)return;
       const rail=host.querySelector('.br-pressure-rail');rail.querySelector('.br-pressure-orbit').textContent=offer.brand;rail.querySelector('.br-pressure-rail-kicker').textContent=offer.eyebrow;rail.querySelector('h2').textContent=offer.title;rail.querySelector('p').textContent=offer.description;
       const railLink=rail.querySelector('.br-pressure-cta');railLink.textContent=offer.cta+' ↗';railLink.href=adURL(featuredSite);
       const inline=inlineGroup?.querySelector('.br-pressure-inline-desk .br-pressure-inline-copy');

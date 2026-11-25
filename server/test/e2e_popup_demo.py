@@ -46,6 +46,12 @@ def run():
      f.wait_for_selector('dialog[aria-label="Round ending"]',state='detached')
     start()
     f=game(); deadline=f.evaluate('BROWSE_BOOTH.list()[0].deadline')
+    f.locator('[data-pressure-surface="rail"]').wait_for(timeout=7000)
+    badge=f.locator('.br-ad-bonus .br-prompt-bonus-badge')
+    badge.wait_for(timeout=7000)
+    assert badge.evaluate('(node) => getComputedStyle(node).animationName')=='none'
+    f.locator('.br-ad-player-error').get_by_text('XX13-V',exact=False).wait_for(timeout=7000)
+    print('PASS: official ad mix shows the sidebar, bonus and player error, with reduced motion respected')
     ad=f.locator('.br-stack-modal-stage')
     ad.wait_for(timeout=15000)
     ad_id=ad.get_attribute('data-br-entry')
