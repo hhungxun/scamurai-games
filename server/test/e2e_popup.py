@@ -8,13 +8,14 @@ from playwright.sync_api import sync_playwright
 import e2e_participant as api
 
 ROOT = Path(__file__).resolve().parents[2]
-BASE = api.BASE = 'http://127.0.0.1:3046'
+TEST_PORT = os.environ.get('POPUP_TEST_PORT', '3046')
+BASE = api.BASE = 'http://127.0.0.1:' + TEST_PORT
 KEY = 'close-popups:station2:v1'
 
 
 def run():
     with tempfile.TemporaryDirectory(prefix='scamurai-popup-') as data:
-        env = dict(os.environ, PORT='3046', DATA_DIR=data, STAFF_PIN='1111', ADMIN_PIN='9999',
+        env = dict(os.environ, PORT=TEST_PORT, DATA_DIR=data, STAFF_PIN='1111', ADMIN_PIN='9999',
                    STATION_PINS='1:5001,2:5002,3:5003,4:5004,5:5005')
         server = subprocess.Popen(['node', 'server.js'], cwd=ROOT / 'server', env=env, stdout=subprocess.DEVNULL)
         try:
@@ -115,12 +116,12 @@ def run():
                 # Every shipped task has a reachable scene and local runtime dependencies.
                 probe = context.new_page(); probe.on('response', lambda r: missing.append(r.url) if r.status == 404 else None); probe.goto(BASE + '/games/close-the-popups/browse/booth.html?lang=en')
                 tasks = probe.evaluate('BROWSE_BOOTH_TASKS.map(t=>t.id)')
-                assert len(tasks) == 10
+                assert len(tasks) == 11
                 for task in tasks:
                     url = probe.evaluate('(id)=>BROWSE_BOOTH.entryURL(BROWSE_BOOTH.create(id,"clean","en"))', task)
                     probe.goto(url); probe.wait_for_selector('[data-booth-submit]')
                     probe.goto(BASE + '/games/close-the-popups/browse/booth.html?lang=en')
-                print('PASS: all 10 task scenes load with no missing assets or JavaScript errors')
+                print('PASS: all 11 task scenes load with no missing assets or JavaScript errors')
                 assert not missing, missing
                 assert not errors, errors
 
