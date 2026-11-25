@@ -7,7 +7,7 @@
     const GAPS=boothAds?[800,1100,950,1250,1000,1150]:[2200,2800,2500,3200,2300,3000];
     const FORMATS=['bounce','robot','dodge','player-error','bonus','captcha','tiny','drawer','panel','newsletter'];
     const videoTeaser='video-teaser';
-    const formats=boothAds?['tiny','drawer','dodge','bonus','player-error',videoTeaser,'bounce','panel','newsletter']:FORMATS;
+    const formats=boothAds?['tiny','drawer','dodge','bonus','player-error',videoTeaser,'bounce','captcha','robot','panel','newsletter']:FORMATS;
     const firstAt=boothAds?1000:3000, rampAt=4000;
     const prompts=window.BROWSE_REDIRECT_PROMPTS;
     const isPrompt=format=>prompts?.formats.includes(format)===true;
@@ -308,16 +308,21 @@
         if(before<REVEAL_MS&&p.closeElapsedMs>=REVEAL_MS)justRevealed=true;
       }
       if(justRevealed){for(const entry of entries.values())updateClose(entry);applyModal();save();}
-      const due=!burstActive()&&state.autoShown<AUTO_MAX&&state.shown<ID_MAX&&budget()>0&&state.activeMs>=state.nextAt&&state.activeMs>=state.quietUntil;
+      let format=formats[state.autoShown%formats.length];
+      if(!boothAds&&state.autoShown===0&&isPrompt(previewFormat))format=previewFormat;
+      // Let the next verification prompt wait for the current dialog to close.
+      const waitingForDialog=boothAds&&modalId!==null&&isPrompt(format)&&modal({format});
+      const due=!waitingForDialog&&!burstActive()&&state.autoShown<AUTO_MAX&&state.shown<ID_MAX&&budget()>0&&state.activeMs>=state.nextAt&&state.activeMs>=state.quietUntil;
       if(due&&(state.pending.length<limit()||(boothAds&&state.activeMs>=rampAt&&retireOldest()))){
         const openingCard=boothAds&&state.autoShown===0;
-        let format=formats[state.autoShown%formats.length];
-        if(!boothAds&&state.autoShown===0&&isPrompt(previewFormat))format=previewFormat;
         if(modal({format})&&state.pending.some(modal))format=state.autoShown%2?'dodge':'bounce';
         state.shown++;state.autoShown++;
-        const showCornerClose=openingCard||(boothAds&&isPrompt(format))||format===videoTeaser;
-        const closeStyle=showCornerClose?'visible':closeStyles[(state.shown-1)%closeStyles.length];
-        const layout=format===videoTeaser?'bottom-right':showCornerClose?'top-right':boothAds&&state.autoShown===3?'decoy':closeLayouts[(state.shown-1)%closeLayouts.length];
+        let visibleCorner;
+        if(boothAds&&format==='captcha')visibleCorner='top-left';
+        else if(format===videoTeaser||(boothAds&&format==='robot'))visibleCorner='bottom-right';
+        else if(openingCard||(boothAds&&isPrompt(format)))visibleCorner='top-right';
+        const closeStyle=visibleCorner?'visible':closeStyles[(state.shown-1)%closeStyles.length];
+        const layout=visibleCorner||(boothAds&&state.autoShown===3?'decoy':closeLayouts[(state.shown-1)%closeLayouts.length]);
         const recurring=validSites.includes(campaignSite)&&(state.autoShown-1)%6===0;
         const normalIndex=state.autoShown-1-(validSites.includes(campaignSite)?Math.ceil((state.autoShown-1)/6):0);
         const site=format===videoTeaser?'corn':boothAds?.site(state.shown)||chosen||(recurring?campaignSite:deck[normalIndex%deck.length]);

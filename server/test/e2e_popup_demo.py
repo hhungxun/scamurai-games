@@ -60,14 +60,17 @@ def run():
     assert 'site=corn' in teaser.get_by_role('link',name='Watch now').get_attribute('href')
     assert teaser.locator('.br-corner-close').is_visible()
     print('PASS: official ad mix shows the sidebar, bonus, player error and Cornhub teaser')
-    ad=f.locator('.br-stack-modal-stage')
+    ad=f.locator('.br-stack-modal-stage:has([data-br-prompt="captcha"])')
     ad.wait_for(timeout=15000)
+    assert ad.locator('.br-ad-captcha').get_attribute('data-close-corner')=='top-left'
     ad_id=ad.get_attribute('data-br-entry')
     assert f.locator('#site-root').evaluate('(node) => node.inert')
     last_ad_control=ad.locator('a[href]:visible, button:enabled:visible').last
     last_ad_control.focus()
     page.keyboard.press('Tab')
     assert f.locator('[data-booth-sound]').evaluate('(node) => node === document.activeElement')
+    ad.get_by_role('checkbox').click()
+    ad.locator('[data-br-prompt-state="checked"]').wait_for()
     f.locator('#br-booth-bar [data-booth-task]').click()
     task_dialog=f.locator('#br-booth-task-dialog[open]')
     assert task_dialog.locator('.br-booth-conditions li').count()>0
@@ -75,6 +78,8 @@ def run():
     assert f.evaluate('BROWSE_BOOTH.list()[0].deadline')==deadline
     f.locator('[data-booth-dialog-close]').click()
     assert ad.get_attribute('data-br-entry')==ad_id
+    assert ad.get_by_role('checkbox').get_attribute('aria-checked')=='true'
+    assert f.locator('[data-br-prompt="robot"]').count()==0
     finish()
     score=game().evaluate('BROWSE_BOOTH_SCORE_LAST')
     assert score['guaranteed']=={'done':False,'floor':20,'applied':False}
@@ -89,7 +94,16 @@ def run():
     teaser=game().locator('.br-ad-video-teaser')
     teaser.get_by_role('button',name='Dismiss advertisement').click(timeout=9000)
     teaser.wait_for(state='detached')
-    finish();print('PASS: another task starts after returning through the game header and the Cornhub teaser closes')
+    f=game()
+    f.locator('.br-ad-captcha').get_by_role('button',name='Dismiss advertisement').click(timeout=10000)
+    robot=f.locator('.br-ad-robot')
+    robot.wait_for(timeout=5000)
+    f.locator('#br-booth-bar [data-booth-task]').click()
+    assert f.locator('#br-booth-task-dialog[open]').is_visible()
+    f.locator('[data-booth-dialog-close]').click()
+    robot.locator('.br-corner-close').click()
+    robot.wait_for(state='detached')
+    finish();print('PASS: the robot prompt follows the checkbox prompt and leaves View task accessible')
     page.reload();game().wait_for_selector('.booth-score');game().locator('.booth-brand').click()
     start('minute3-search-official')
     f=game();f.locator('[data-official-result]').click()
