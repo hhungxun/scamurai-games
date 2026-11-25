@@ -61,7 +61,7 @@
   const taskGroups = [
     {title:['Search & tools','搜索·工具'],ids:['minute3-search-official','minute2-tool-webp','minute2-wall-earthrise']},
     {title:['Content & collections','内容·收藏'],ids:['minute2-nature-woodpeckers']},
-    {title:['Plan & compare','规划·比较'],ids:['minute2-travel-interchange','minute2-market-lens','minute4-penang-indoor']},
+    {title:['Plan & compare','规划·比较'],ids:['minute5-taipei-flight','minute2-travel-interchange','minute2-market-lens','minute4-penang-indoor']},
     {title:['Everyday services','生活服务'],ids:['minute2-recipe-budget','minute2-outing-craft','minute3-courier-redelivery']}
   ];
   const suggestedSeconds = id => ['minute3-search-official','minute3-courier-redelivery'].includes(id) ? 30 : id === 'minute2-tool-webp' ? 45 : 60;
