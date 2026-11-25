@@ -38,12 +38,22 @@ def run():
     def frame(p,id='booth-frame'):
      return p.locator('#'+id).element_handle().content_frame()
     def state(p,key=EMAIL_KEY):return p.evaluate('(key)=>JSON.parse(sessionStorage.getItem(key))',key)
-    def answer(p,correct=True,kind=None):
+    def answer(p,correct=True,kind=None,check_pause_ms=0):
      f=frame(p);qid=f.locator('[data-question]').first.get_attribute('data-question')
      actual=CLASSIFICATION[qid]
      choice=kind or (actual if correct else 'phishing' if actual=='legitimate' else 'legitimate')
      f.locator(f'[data-answer="{choice}"]').first.click()
-     f.wait_for_function('(old)=>document.querySelector("[data-question]")?.dataset.question!==old',arg=qid)
+     f.wait_for_selector('#pf-verdict-modal')
+     title=f.locator('#pf-verdict-title').inner_text()
+     assert ('Phishing' in title) if actual=='phishing' else ('Legitimate' in title), title
+     assert len(f.locator('.pf-verdict-reason').inner_text().strip())>10
+     assert f.locator('.pf-verdict-paused').is_visible()
+     if check_pause_ms:
+      before_clock=f.locator('#timer-value').inner_text()
+      p.clock.fast_forward(check_pause_ms)
+      assert f.locator('#timer-value').inner_text()==before_clock,'timer must stay paused while verdict popup is open'
+     f.locator('#pf-verdict-next').click()
+     f.wait_for_function('(old)=>!document.getElementById("pf-verdict-modal") && document.querySelector("[data-question]")?.dataset.question!==old',arg=qid)
     a=laptop('phishing-fishing',3);b=laptop('phishing-fishing',3)
     select(a,'MAIL001');frame(a).wait_for_selector('#start-game');frame(a).click('#start-game')
     b.wait_for_function("document.querySelector('.scm .it[data-id=\"MAIL001\"]')?.textContent.includes('playing now')")
@@ -81,12 +91,13 @@ def run():
     assert state(b)['score']==50 and state(a)['score']==100
     print('PASS: lost finish response retries idempotently, all correct saves 100, using one label for every email saves 50, five-station total and survey handoff agree')
     b.click('#booth-next');select(b,'MAIL003');frame(b).wait_for_selector('#start-game')
-    b.clock.install();frame(b).click('#start-game');answer(b)
+    b.clock.install();frame(b).click('#start-game');answer(b,check_pause_ms=15000)
     b.clock.fast_forward(91000)
     b.wait_for_function("JSON.parse(sessionStorage.getItem('scamurai.booth.3.event.v1')).status==='saved'")
-    timed=state(b);assert timed['score']==10 and timed['snapshot']['endedAt']-timed['snapshot']['startedAt']==90000
+    timed=state(b);assert timed['score']==10 and timed['snapshot']['endedAt']-timed['snapshot']['startedAt']-(timed['snapshot'].get('pausedMs') or 0)==90000
+    assert (timed['snapshot'].get('pausedMs') or 0)>=15000
     b.reload();frame(b).wait_for_selector('.score-circle');assert state(b)['score']==10
-    print('PASS: scored email timeout retains partial credit, exact deadline and saved results through reload')
+    print('PASS: scored email timeout retains partial credit, paused popup time excluded from 90s budget, exact deadline and saved results through reload')
     b.click('#booth-next');select(b,'MAIL004');frame(b).wait_for_selector('#start-game')
     cancelled=[]
     def lose_cancel(route):

@@ -81,6 +81,8 @@
       this.endedAt = null;
       this.endReason = null;
       this.lastElapsed = 0;
+      this.pausedMs = 0;
+      this.pausedAt = null;
       this.legacyScoring = false;
     }
     start() {
@@ -89,15 +91,30 @@
       this.status = "playing";
       return true;
     }
+    isPaused() { return this.pausedAt !== null; }
+    pause() {
+      if (this.status !== "playing" || this.pausedAt !== null) return false;
+      this.pausedAt = this.now();
+      this.elapsedMs();
+      return true;
+    }
+    resume() {
+      if (this.pausedAt === null) return false;
+      const now = this.now();
+      if (now > this.pausedAt) this.pausedMs += now - this.pausedAt;
+      this.pausedAt = null;
+      return true;
+    }
     elapsedMs() {
       if (this.startedAt === null) return 0;
+      const ref = this.endedAt ?? (this.pausedAt !== null ? this.pausedAt : this.now());
       // Retain the highest observed elapsed time, even if a clock moves backwards.
-      this.lastElapsed = Math.min(this.settings.roundSeconds * 1000, Math.max(this.lastElapsed, (this.endedAt ?? this.now()) - this.startedAt, 0));
+      this.lastElapsed = Math.min(this.settings.roundSeconds * 1000, Math.max(this.lastElapsed, ref - this.startedAt - this.pausedMs, 0));
       return Math.min(this.settings.roundSeconds * 1000, this.lastElapsed);
     }
     remainingMs() { return Math.max(0, this.settings.roundSeconds * 1000 - this.elapsedMs()); }
     expire() {
-      if (this.status === "playing" && this.remainingMs() <= 0) this.finish("timeout");
+      if (this.status === "playing" && this.pausedAt === null && this.remainingMs() <= 0) this.finish("timeout");
       return this.status === "finished";
     }
     current(questionId) { return this.status==='playing'&&!this.expire()&&this.questions[this.index]?.id===questionId; }
@@ -113,13 +130,17 @@
     }
     finish(reason) {
       if (this.status !== "playing") return;
-      this.endedAt = reason === "timeout" ? this.startedAt + this.settings.roundSeconds * 1000 : Math.min(this.now(), this.startedAt + this.settings.roundSeconds * 1000);
+      const ref = this.pausedAt !== null ? this.pausedAt : this.now();
+      this.pausedAt = null;
+      const minEnd = this.startedAt + this.pausedMs;
+      const maxEnd = minEnd + this.settings.roundSeconds * 1000;
+      this.endedAt = reason === "timeout" ? maxEnd : Math.max(minEnd, Math.min(ref, maxEnd));
       this.status = "finished";
       this.endReason = reason;
     }
     snapshot() {
       return {version:this.legacyScoring ? 3 : 4, roundSeconds:this.settings.roundSeconds, verified:[...this.verified], questionIds:this.questions.map(q=>q.id), answers:this.answers.map(a=>a&&{...a}), index:this.index,
-        status:this.status, startedAt:this.startedAt, endedAt:this.endedAt, endReason:this.endReason, lastElapsed:this.lastElapsed};
+        status:this.status, startedAt:this.startedAt, endedAt:this.endedAt, endReason:this.endReason, lastElapsed:this.lastElapsed, pausedMs:this.pausedMs, pausedAt:this.pausedAt};
     }
     static restore(bank, settings, data, options={}) {
       validateBank(bank, settings);
@@ -131,9 +152,14 @@
       if (data.index!==count || data.answers.some((a,i)=> i<count ? (!a||!['phishing','legitimate'].includes(a.classification)) : a!==null)) throw new Error("Invalid saved answers.");
       if(!Array.isArray(data.verified)||data.verified.length!==questions.length||data.verified.some(v=>typeof v!=='boolean'))throw new Error('Invalid verification record.');
       const finite=v=>Number.isFinite(v)&&v>=0;
-      if (!finite(data.lastElapsed) || data.lastElapsed>settings.roundSeconds*1000 || (data.status==='ready' ? data.startedAt!==null||data.endedAt!==null||count!==0 : !finite(data.startedAt)) || (data.status==='playing' && (data.endedAt!==null||data.endReason!==null||count===questions.length)) || (data.status==='finished' && (!finite(data.endedAt)||data.endedAt<data.startedAt||data.endedAt>data.startedAt+settings.roundSeconds*1000||!['timeout','completed'].includes(data.endReason)||data.endReason==='completed'&&count!==questions.length||data.endReason==='timeout'&&data.endedAt!==data.startedAt+settings.roundSeconds*1000))) throw new Error("Invalid saved timer.");
+      const pausedMs = data.pausedMs === undefined ? 0 : data.pausedMs;
+      const pausedAt = data.pausedAt === undefined ? null : data.pausedAt;
+      if (!finite(pausedMs) || (pausedAt !== null && (!finite(pausedAt) || data.status !== 'playing' || pausedAt < data.startedAt))) throw new Error("Invalid saved timer.");
+      const minEnd = (data.startedAt ?? 0) + pausedMs;
+      const maxEnd = minEnd + settings.roundSeconds * 1000;
+      if (!finite(data.lastElapsed) || data.lastElapsed>settings.roundSeconds*1000 || (data.status==='ready' ? data.startedAt!==null||data.endedAt!==null||count!==0||pausedMs!==0 : !finite(data.startedAt)) || (data.status==='playing' && (data.endedAt!==null||data.endReason!==null||count===questions.length)) || (data.status==='finished' && (!finite(data.endedAt)||data.endedAt<minEnd||data.endedAt>maxEnd||!['timeout','completed'].includes(data.endReason)||data.endReason==='completed'&&count!==questions.length||data.endReason==='timeout'&&data.endedAt!==maxEnd))) throw new Error("Invalid saved timer.");
       const round=Object.create(Round.prototype);
-      Object.assign(round,{settings,now:options.now||(()=>Date.now()),questions,answers:data.answers.map(a=>a&&{classification:a.classification}),verified:[...data.verified],index:data.index,status:data.status,startedAt:data.startedAt,endedAt:data.endedAt,endReason:data.endReason,lastElapsed:data.lastElapsed});
+      Object.assign(round,{settings,now:options.now||(()=>Date.now()),questions,answers:data.answers.map(a=>a&&{classification:a.classification}),verified:[...data.verified],index:data.index,status:data.status,startedAt:data.startedAt,endedAt:data.endedAt,endReason:data.endReason,lastElapsed:data.lastElapsed,pausedMs,pausedAt});
       // A finished round may already have a saved or pending score on the host.
       round.legacyScoring = data.version === 3 && data.status === 'finished';
       return round;

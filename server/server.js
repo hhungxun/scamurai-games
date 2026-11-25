@@ -75,6 +75,17 @@ CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS kiosk_slots (
+  id TEXT PRIMARY KEY,
+  station INTEGER NOT NULL,
+  label TEXT NOT NULL,
+  status TEXT NOT NULL,
+  participant_id TEXT,
+  round_id INTEGER,
+  round_token TEXT,
+  created_at INTEGER NOT NULL,
+  claimed_at INTEGER
+);
 `);
 // Migration: a cancelled Round is closed without counting towards anything.
 if (!db.prepare('PRAGMA table_info(rounds)').all().some(c => c.name === 'cancelled')) db.exec('ALTER TABLE rounds ADD COLUMN cancelled INTEGER NOT NULL DEFAULT 0');
@@ -114,6 +125,11 @@ const q = {
   participantByPass: db.prepare('SELECT p.* FROM participants p JOIN participant_passes a ON a.participant_id=p.id WHERE a.token=?'),
   getSetting: db.prepare('SELECT value FROM settings WHERE key=?'),
   setSetting: db.prepare('INSERT INTO settings (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value'),
+  insSlot: db.prepare('INSERT INTO kiosk_slots (id,station,label,status,created_at) VALUES (?,?,?,?,?)'),
+  getSlot: db.prepare('SELECT * FROM kiosk_slots WHERE id=?'),
+  claimSlot: db.prepare("UPDATE kiosk_slots SET status='claimed', participant_id=?, round_id=?, round_token=?, claimed_at=? WHERE id=? AND status='waiting'"),
+  expireSlot: db.prepare("UPDATE kiosk_slots SET status='expired' WHERE id=? AND status='waiting'"),
+  pruneSlots: db.prepare("DELETE FROM kiosk_slots WHERE status!='claimed' AND created_at < ?"),
 };
 function selfRegEnabled() {
   const row = q.getSetting.get('self_registration');
@@ -354,6 +370,69 @@ route('GET', '/api/rounds/open', async req => {
   const who = auth(req, ['station']);
   need(who.station, 403, 'Use a Station PIN');
   return q.openAt.all(who.station, Date.now() - IDLE_MS).map(r => ({ roundId: r.id, token: r.token, startedAt: r.started_at, participant: { id: r.participant_id, name: r.name } }));
+});
+
+// ---- Per-tab Kiosk Join Slots (General Join QR per screen, zero cross-triggering across tabs) ----
+const SLOT_TTL_MS = 2 * 60 * 60 * 1000;
+route('POST', '/api/kiosk/slots', async req => {
+  const who = auth(req, ['station']);
+  need(who.station, 403, 'Use a Station PIN');
+  const b = await readJson(req);
+  const label = clip(b.label || 'Screen', 40).trim() || 'Screen';
+  const slotId = crypto.randomBytes(9).toString('base64url');
+  const now = Date.now();
+  q.pruneSlots.run(now - SLOT_TTL_MS);
+  q.insSlot.run(slotId, who.station, label, 'waiting', now);
+  return { slotId, station: who.station, label, status: 'waiting' };
+});
+route('GET', '/api/kiosk/slots/:slotId', async (req, { slotId }) => {
+  const who = auth(req, ['station']);
+  const slot = q.getSlot.get(slotId);
+  need(slot, 404, 'No such slot');
+  need(who.role === 'admin' || slot.station === who.station, 403, 'Not your station\'s slot');
+  const p = slot.participant_id ? q.getP.get(slot.participant_id) : null;
+  return {
+    slotId: slot.id, station: slot.station, label: slot.label, status: slot.status,
+    roundId: slot.round_id || null, token: slot.round_token || null,
+    participant: p ? { id: p.id, name: p.name } : null,
+  };
+});
+route('POST', '/api/kiosk/slots/:slotId/cancel', async (req, { slotId }) => {
+  const who = auth(req, ['station']);
+  const slot = q.getSlot.get(slotId);
+  need(slot, 404, 'No such slot');
+  need(who.role === 'admin' || slot.station === who.station, 403, 'Not your station\'s slot');
+  q.expireSlot.run(slot.id);
+  return { ok: true };
+});
+route('GET', '/api/kiosk/slots/:slotId/info', (req, { slotId }) => {
+  const slot = q.getSlot.get(slotId);
+  need(slot, 404, 'This screen QR is no longer valid. Scan the fresh QR on the station screen.');
+  const st = CONFIG.stations.find(s => s.n === slot.station);
+  return { slotId: slot.id, station: slot.station, stationName: st ? st.name : `Station ${slot.station}`, label: slot.label, status: slot.status };
+});
+route('POST', '/api/kiosk/slots/:slotId/claim', async (req, { slotId }) => {
+  const pToken = req.headers['x-participant-token'];
+  need(typeof pToken === 'string' && /^[a-f0-9]{64}$/.test(pToken), 401, 'Register or open your personal QR on this phone first.');
+  const p = q.participantByPass.get(pToken);
+  need(p, 401, 'Your personal QR is no longer valid. Ask the registration desk for yours.');
+  need(!p.checked_out_at, 409, `${p.name} has already checked out. Ask the front desk to re-check you in.`);
+  let out;
+  db.transaction(() => {
+    const slot = q.getSlot.get(slotId);
+    need(slot, 404, 'This screen QR is no longer valid. Scan the fresh QR on the station screen.');
+    need(slot.status === 'waiting', 409, 'This station screen is already in use. Wait for the next QR or scan the other screen.');
+    const open = q.openOf.get(p.id, slot.station, Date.now() - IDLE_MS);
+    need(!open, 409, `${p.name} is already playing at this station. Finish or ask the Game Master to cancel that round first.`);
+    const used = q.roundsOf.all(p.id).filter(x => x.station === slot.station && x.ended_at != null).length;
+    need(used < MAX_TRIES, 409, `${p.name} has used both tries here (${MAX_TRIES} per game). Your best score counts.`);
+    const roundToken = crypto.randomBytes(9).toString('base64url');
+    const r = q.insR.run(p.id, slot.station, Date.now(), roundToken);
+    const changed = q.claimSlot.run(p.id, r.lastInsertRowid, roundToken, Date.now(), slot.id).changes;
+    need(changed === 1, 409, 'This station screen was just claimed by another player. Wait for the next QR.');
+    out = { ok: true, slotId: slot.id, station: slot.station, label: slot.label, roundId: r.lastInsertRowid, participant: { id: p.id, name: p.name } };
+  })();
+  return out;
 });
 
 route('POST', '/api/rounds/:id/cancel', async (req, { id }) => {

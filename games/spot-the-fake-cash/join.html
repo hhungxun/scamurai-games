@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Scamurai · Join Station 1</title>
+<link rel="stylesheet" href="/style.css">
+<style>
+  .join-card{border-top:5px solid var(--yellow);text-align:center}
+  .join-card.ok{border-top-color:#7CFC8A}
+  .join-card.err-card{border-top-color:var(--red)}
+  .join-who{font:400 clamp(30px,8vw,44px)/1.08 Anton,Impact,sans-serif;color:var(--yellow);text-transform:uppercase;margin:10px 0 6px}
+  .join-pill{display:inline-block;padding:5px 12px;border-radius:3px;border:1px solid rgba(237,207,97,.5);background:rgba(237,207,97,.12);color:var(--yellow);font:700 12px/1.2 Lexend,sans-serif;letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px}
+  .join-card.ok .join-pill{border-color:#4ade80;background:rgba(34,160,85,.18);color:#86efac}
+  .btn-stack{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+  .btn-stack .btn{width:100%}
+</style>
+<script src="/participant.js"></script>
+<script src="/site.js" defer></script>
+<link rel="icon" href="/assets/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/assets/apple-touch-icon.png"></head>
+<body data-site-nav data-page="s1-join"><main class="wrap" id="main-content">
+<div class="top"><img src="/assets/logo.jpg" alt=""><div><h1>STATION <em>01.</em></h1><p class="tag">Spot the Fake Cash · Quick Join</p></div></div>
+<section class="card join-card" id="box">
+  <p class="eyebrow" style="color:var(--yellow)">CONNECTING TO SCREEN</p>
+  <h2>Checking you in…</h2>
+  <p class="muted">Linking your Scamurai profile to the Station 1 screen.</p>
+</section>
+</main>
+<script>
+const box = document.getElementById('box');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const slotId = location.hash.slice(1).trim();
+
+function renderState({ cls = '', eyebrow, pill = '', title, who = '', message, buttons = '' }) {
+  box.className = 'card join-card ' + cls;
+  box.innerHTML = `
+    <p class="eyebrow" style="color:${cls === 'ok' ? '#7CFC8A' : cls === 'err-card' ? '#ffaaa2' : 'var(--yellow)'}">${esc(eyebrow)}</p>
+    ${pill ? `<span class="join-pill">${esc(pill)}</span>` : ''}
+    <h2>${esc(title)}</h2>
+    ${who ? `<div class="join-who">${esc(who)}</div>` : ''}
+    <p>${message}</p>
+    <div class="btn-stack">${buttons}</div>`;
+}
+
+async function run() {
+  if (!slotId || !/^[A-Za-z0-9_-]{6,32}$/.test(slotId)) {
+    renderState({
+      cls: 'err-card',
+      eyebrow: 'INVALID QR',
+      title: 'Scan the QR on the Station 1 screen',
+      message: 'Point your camera (or Start Scamming on your participant page) at the live QR code shown on the Station 1 screen.',
+      buttons: '<a class="btn" href="/participant.html?scan=1">Open Start Scamming scanner</a><a class="btn ghost" href="/participant.html">My participant page</a>'
+    });
+    return;
+  }
+
+  // Check slot status first so unregistered players also know which screen they scanned
+  let info = null;
+  try {
+    const r = await fetch(`/api/kiosk/slots/${encodeURIComponent(slotId)}/info`);
+    info = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      renderState({
+        cls: 'err-card',
+        eyebrow: 'QR EXPIRED',
+        title: 'Scan the new QR on screen',
+        message: esc(info.error || 'This screen QR is no longer active. Scan the fresh QR currently displayed on the Station 1 screen.'),
+        buttons: '<a class="btn" href="/participant.html?scan=1">Scan another QR</a><a class="btn ghost" href="/participant.html">My participant page</a>'
+      });
+      return;
+    }
+    if (info.status !== 'waiting') {
+      renderState({
+        cls: 'err-card',
+        eyebrow: 'SCREEN IN USE',
+        pill: info.label || 'Station 1',
+        title: 'This screen is already playing',
+        message: 'Another player has already started on this screen. Wait for the next QR to appear, or scan the other Station 1 screen.',
+        buttons: '<a class="btn" href="/participant.html?scan=1">Scan another QR</a><a class="btn ghost" href="/participant.html">My participant page</a>'
+      });
+      return;
+    }
+  } catch {
+    renderState({
+      cls: 'err-card',
+      eyebrow: 'CONNECTION ISSUE',
+      title: 'Cannot reach the server',
+      message: 'Check your Wi-Fi connection and tap Retry below.',
+      buttons: '<button class="btn" type="button" onclick="location.reload()">Retry</button>'
+    });
+    return;
+  }
+
+  const token = window.ScamuraiParticipant?.token();
+  if (!token) {
+    const nextUrl = encodeURIComponent(`/games/spot-the-fake-cash/join.html#${slotId}`);
+    renderState({
+      eyebrow: 'REGISTRATION REQUIRED',
+      pill: info.label || 'Station 1',
+      title: 'Register on this phone first',
+      message: 'Scan your personal QR from the front desk — or register right now in 20 seconds and come straight back to start this screen.',
+      buttons: `<a class="btn" href="/self-register.html?next=${nextUrl}">Register now &amp; join Station 1 ↗</a><a class="btn ghost" href="/participant.html">I already registered</a>`
+    });
+    return;
+  }
+
+  // Claim this specific screen slot automatically!
+  try {
+    const res = await fetch(`/api/kiosk/slots/${encodeURIComponent(slotId)}/claim`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Participant-Token': token },
+      body: '{}'
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      renderState({
+        cls: 'err-card',
+        eyebrow: 'COULD NOT START',
+        pill: info.label || 'Station 1',
+        title: res.status === 401 ? 'Personal QR expired' : 'Cannot join right now',
+        message: esc(j.error || 'Could not start your round on this screen.'),
+        buttons: res.status === 401
+          ? `<a class="btn" href="/self-register.html?next=${encodeURIComponent(`/games/spot-the-fake-cash/join.html#${slotId}`)}">Register on this phone ↗</a><a class="btn ghost" href="/participant.html">My participant page</a>`
+          : '<a class="btn" href="/participant.html">Back to my participant page</a>'
+      });
+      return;
+    }
+
+    const isVR = /vr/i.test(j.label || '');
+    renderState({
+      cls: 'ok',
+      eyebrow: 'YOU ARE IN · STATION 01',
+      pill: j.label || 'Station 1',
+      title: isVR ? 'Put on Meta Quest 3!' : 'Game starting on screen!',
+      who: `${j.participant.name} · ${j.participant.id}`,
+      message: isVR
+        ? 'Your name is locked in on the <strong>VR Headset</strong> screen. Click <strong>Enter VR Mode</strong> on the screen to begin your 2-minute inspection!'
+        : 'Look at the <strong>Station 1 screen</strong> — your 2-minute banknote inspection is starting automatically!',
+      buttons: '<a class="btn" href="/participant.html">My participant page ↗</a>'
+    });
+  } catch {
+    renderState({
+      cls: 'err-card',
+      eyebrow: 'CONNECTION ISSUE',
+      title: 'Could not reach Station 1',
+      message: 'Check your Wi-Fi and tap Try Again.',
+      buttons: '<button class="btn" type="button" onclick="location.reload()">Try again</button>'
+    });
+  }
+}
+
+run();
+</script>
+</body></html>

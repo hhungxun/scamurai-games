@@ -4,7 +4,7 @@
 // and the score at /finish is computed here from the stored answers, never from numbers the client sends.
 const STATION_GAME = { 1: 'spot-the-fake-cash', 3: 'phishing-fishing', 4: 'real-or-ai' };
 const GRACE_MS = 10_000;                 // network slack on top of each game's own timer
-const PRELOAD_SLACK_MS = { 'real-or-ai': 15_000 }; // client preloads 15 media files after deal()
+const PRELOAD_SLACK_MS = { 'real-or-ai': 15_000, 'phishing-fishing': 120_000 }; // client preload / paused verdict popup reading slack
 const ROUND_QUESTIONS = { 'real-or-ai': 15, 'spot-the-fake-cash': 10, 'phishing-fishing': 10 };
 const DURATION_MS = { 'real-or-ai': 60_000, 'spot-the-fake-cash': 120_000, 'phishing-fishing': 90_000 };
 const CHOICES = {
@@ -85,8 +85,14 @@ const judges = {
     return { correct: choice === answer, reveal: { answer, reason: s.reason || '' } };
   },
   'phishing-fishing'(keys, qid, choice) {
-    // The verdict is withheld until the Round ends (GET /review): a live "right/wrong" would leak the key.
-    return { correct: choice === keys.emails[qid].classification, reveal: null };
+    const e = keys.emails[qid];
+    return {
+      correct: choice === e.classification,
+      reveal: {
+        classification: e.classification,
+        reason: e.reasoning?.evidence || e.explanation || '',
+      },
+    };
   },
 };
 

@@ -195,7 +195,14 @@ $('form').onsubmit = async e => {
     $('doneKind').textContent = guest ? 'Your Guest ID' : 'Your Student ID';
     $('doneId').textContent = j.id;
     $('guestNote').hidden = !guest;
-    $('openPageBtn').href = `/participant.html#${j.participantToken}`;
+    const rawNext = new URLSearchParams(location.search).get('next') || '';
+    const safeNext = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '';
+    if (safeNext) {
+      $('openPageBtn').href = safeNext;
+      $('openPageBtn').textContent = 'Continue to Station 1 ↗';
+    } else {
+      $('openPageBtn').href = `/participant.html#${j.participantToken}`;
+    }
     $('scanNowBtn').href = `/participant.html?scan=1#${j.participantToken}`;
 
     $('form').hidden = true;

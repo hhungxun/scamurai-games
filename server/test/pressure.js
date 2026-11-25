@@ -20,10 +20,11 @@ const srv = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')], {
 });
 let srvErr = ''; srv.stderr.on('data', d => { srvErr += d; });
 
-async function call(method, url, { pin, token, body, raw } = {}) {
+async function call(method, url, { pin, token, participant, body, raw } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (pin) headers['X-Pin'] = pin;
   if (token) headers['X-Round-Token'] = token;
+  if (participant) headers['X-Participant-Token'] = participant;
   const res = await fetch(BASE + url, { method, headers, body: raw ?? (body === undefined ? undefined : JSON.stringify(body)) });
   let json = null; try { json = await res.json(); } catch {}
   return { status: res.status, json };
@@ -117,6 +118,39 @@ async function main() {
     const undealt = await ok(call('POST', '/api/rounds', { pin: st(1), body: { participantId: s1Ids[0] } }));
     const forged = await ok(call('POST', `/api/rounds/${undealt.roundId}/finish`, { token: undealt.token, body: { score: 100, maxScore: 100 } }));
     assert.equal(forged.pct, 0);
+  });
+
+  await check('Station 1 per-tab kiosk slots: two tabs never cross-trigger; 10 concurrent claims -> 1 wins', async () => {
+    const slotPlayers = await Promise.all(Array.from({ length: 12 }, (_, i) => ok(call('POST', '/api/participants/self', {
+      body: { id: `SLOT${String(i + 1).padStart(2, '0')}`, name: `Slot Player ${i + 1}`, ageGroup: reg.ageGroup, pbbAccount: false, scamExposure: reg.scamExposure, consent: true } }))));
+    const slotVR = await ok(call('POST', '/api/kiosk/slots', { pin: st(1), body: { label: 'VR Headset (Quest 3)' } }));
+    const slotNormal = await ok(call('POST', '/api/kiosk/slots', { pin: st(1), body: { label: 'Normal Screen' } }));
+    assert.notEqual(slotVR.slotId, slotNormal.slotId);
+    assert.equal((await ok(call('GET', `/api/kiosk/slots/${slotVR.slotId}/info`))).status, 'waiting');
+    assert.equal((await ok(call('GET', `/api/kiosk/slots/${slotNormal.slotId}/info`))).status, 'waiting');
+    // Player 1 claims the VR slot -> VR slot transitions to claimed, Normal slot stays waiting!
+    const claimedVR = await ok(call('POST', `/api/kiosk/slots/${slotVR.slotId}/claim`, { participant: slotPlayers[0].participantToken }));
+    assert.equal(claimedVR.participant.id, slotPlayers[0].id);
+    const vrPoll = await ok(call('GET', `/api/kiosk/slots/${slotVR.slotId}`, { pin: st(1) }));
+    const normPoll = await ok(call('GET', `/api/kiosk/slots/${slotNormal.slotId}`, { pin: st(1) }));
+    assert.equal(vrPoll.status, 'claimed');
+    assert.equal(vrPoll.participant.id, slotPlayers[0].id);
+    assert.equal(normPoll.status, 'waiting', 'Normal screen slot must NOT be triggered by VR slot claim');
+    // 10 players race to claim the Normal screen slot simultaneously -> exactly 1 wins (200), 9 get 409
+    const race = await Promise.all(slotPlayers.slice(1, 11).map(p =>
+      call('POST', `/api/kiosk/slots/${slotNormal.slotId}/claim`, { participant: p.participantToken })));
+    assert.equal(race.filter(r => r.status === 200).length, 1);
+    assert.equal(race.filter(r => r.status === 409).length, 9);
+    const winner = race.find(r => r.status === 200).json;
+    const normPollAfter = await ok(call('GET', `/api/kiosk/slots/${slotNormal.slotId}`, { pin: st(1) }));
+    assert.equal(normPollAfter.status, 'claimed');
+    assert.equal(normPollAfter.participant.id, winner.participant.id);
+    // Cancel the two rounds cleanly and test slot cancellation
+    await ok(call('POST', `/api/rounds/${vrPoll.roundId}/cancel`, { pin: st(1) }));
+    await ok(call('POST', `/api/rounds/${normPollAfter.roundId}/cancel`, { pin: st(1) }));
+    const slotCancel = await ok(call('POST', '/api/kiosk/slots', { pin: st(1), body: { label: 'Cancelled Slot' } }));
+    await ok(call('POST', `/api/kiosk/slots/${slotCancel.slotId}/cancel`, { pin: st(1) }));
+    assert.equal((await call('POST', `/api/kiosk/slots/${slotCancel.slotId}/claim`, { participant: slotPlayers[11].participantToken })).status, 409);
   });
 
   // Everyone plays Station 5 at the same time: start, 8 verdict events from the "phone", finish from the "laptop".

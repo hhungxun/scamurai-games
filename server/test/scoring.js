@@ -96,12 +96,15 @@ async function main() {
     assert.equal((await ok(finish(r, { score: 100, maxScore: 5 }))).pct, 70);
   });
 
-  await check('Phishing Fishing: no verdict mid-round; review only after finish', async () => {
+  await check('Phishing Fishing: instant per-answer verdict + reason; full review only after finish', async () => {
     const r = await round(3), d = await deal(r);
     assert.equal((await call('GET', `/api/rounds/${r.roundId}/review`, { pin: st(3) })).status, 409);
     for (const [i, id] of d.ids.entries()) {
       const res = await ok(answer(r, id, answerFor('phishing-fishing', id, i < 6)));
-      assert.deepEqual(Object.keys(res), ['ok'], 'answer response must not leak the verdict');
+      assert.equal(res.ok, true);
+      assert.equal(res.correct, i < 6);
+      assert.equal(res.classification, answerFor('phishing-fishing', id));
+      assert.ok(typeof res.reason === 'string' && res.reason.length > 0, 'verdict must include one-line reason');
     }
     assert.equal((await ok(finish(r))).pct, 60);
     const rev = (await ok(call('GET', `/api/rounds/${r.roundId}/review`, { pin: st(3) }))).review;

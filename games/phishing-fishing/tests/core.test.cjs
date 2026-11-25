@@ -92,3 +92,32 @@ for(const email of bank.filter(e=>e.lesson)){
 }
 const retired=r.snapshot();retired.questionIds[0]='penguin-qr';assert.throws(()=>Round.restore(bank,config,retired),'retired cases must never be silently regraded');
 console.log('PASS: catch outcomes partition the inbox; badges reward caught techniques only; grading is untouched; retired deals fail closed');
+
+// Pause / resume timer must not consume play time while reading verdict popups
+let pNow=10_000;
+const pr=new Round(bank,config,{now:()=>pNow});
+assert.ok(pr.start());
+pNow+=5_000;
+assert.equal(pr.elapsedMs(),5_000);
+assert.equal(pr.remainingMs(),85_000);
+assert.equal(pr.pause(),true);
+assert.equal(pr.isPaused(),true);
+pNow+=200_000; // 200 seconds spent reading verdict popup!
+assert.equal(pr.elapsedMs(),5_000,'paused time must not consume play time');
+assert.equal(pr.remainingMs(),85_000);
+assert.equal(pr.expire(),false,'cannot time out while paused');
+const pausedSnap=pr.snapshot();
+assert.equal(pausedSnap.pausedAt,15_000);
+const restoredPaused=Round.restore(bank,config,pausedSnap,{now:()=>pNow});
+assert.equal(restoredPaused.isPaused(),true);
+assert.equal(restoredPaused.remainingMs(),85_000);
+assert.equal(pr.resume(),true);
+assert.equal(pr.isPaused(),false);
+assert.equal(pr.pausedMs,200_000);
+assert.equal(pr.remainingMs(),85_000);
+pNow+=85_000;
+assert.equal(pr.expire(),true);
+assert.equal(pr.results().timeUsed,90);
+assert.equal(pr.endedAt-pr.startedAt-pr.pausedMs,90_000);
+assert.deepEqual(Round.restore(bank,config,pr.snapshot(),{now:()=>pNow}).results(),pr.results());
+console.log('PASS: Round.pause()/resume() freezes clock without consuming play time and round-trips through snapshot/restore');

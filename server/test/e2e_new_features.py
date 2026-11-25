@@ -167,106 +167,115 @@ def run():
                 print('PASS: Registration desk QR option, self-registration (student & guest), duplicate guard & pause toggle')
 
                 # =====================================================================
-                # 2. GAME 1 QR JOIN SYSTEM (GAME 5 PATTERN)
+                # 2. GAME 1 GENERAL JOIN QR — TWO TABS (VR + NORMAL), ZERO CROSS-TRIGGER
                 # =====================================================================
-                gm_ctx = make_ctx(False, 1440, 960)
-                gm = gm_ctx.new_page()
-                gm.goto(BASE + '/games/spot-the-fake-cash/')
-                gm.fill('.scm input[type=password]', '5001')
-                gm.click('.scm .go')
-                gm.wait_for_selector('#new')
+                # Simulate the exact event-day setup: ONE laptop browser (shared localStorage/PIN)
+                # with TWO tabs: Tab 1 (VR Headset) and Tab 2 (Normal External Monitor).
+                booth_ctx = make_ctx(False, 1440, 960)
+                tab_vr = booth_ctx.new_page()
+                tab_vr.goto(BASE + '/games/spot-the-fake-cash/?mode=vr')
+                tab_vr.fill('.scm input[type=password]', '5001')
+                tab_vr.click('.scm .go')
+                tab_vr.wait_for_selector('#slot-qr svg', timeout=10000)
 
-                # Start a round for Farah Lin (QRSELF001)
-                gm.click('#new')
-                gm.locator('.scm .it[data-id="QRSELF001"]').wait_for()
-                gm.fill('.scm .find', 'QRSELF001')
-                gm.click('.scm .go')
-                gm.wait_for_selector('.modal .qr svg')
-                join_url = gm.evaluate('window.S1_JOIN')
-                assert '/games/spot-the-fake-cash/play.html#' in join_url, join_url
-                gm.screenshot(path=str(EVIDENCE / '05_game1_dashboard_join_qr.png'))
+                tab_norm = booth_ctx.new_page()
+                tab_norm.goto(BASE + '/games/spot-the-fake-cash/?mode=normal')
+                tab_norm.wait_for_selector('#slot-qr svg', timeout=10000)
 
-                # Verify participant.html Start Scamming scanner rejects someone else's Station 1 Join QR
-                foreign_round = api.ok('POST', '/api/rounds', {'participantId': 'G001'}, pin='5001')
-                foreign_join = f"{BASE}/games/spot-the-fake-cash/play.html#{foreign_round['roundId']}.{foreign_round['token']}"
+                vr_slot_id = tab_vr.evaluate('window.S1_SLOT_ID')
+                norm_slot_id = tab_norm.evaluate('window.S1_SLOT_ID')
+                vr_slot_url = tab_vr.evaluate('window.S1_SLOT_URL')
+                norm_slot_url = tab_norm.evaluate('window.S1_SLOT_URL')
+                assert vr_slot_id and norm_slot_id and vr_slot_id != norm_slot_id, (vr_slot_id, norm_slot_id)
+                assert '/games/spot-the-fake-cash/join.html#' in vr_slot_url, vr_slot_url
+                assert '/games/spot-the-fake-cash/join.html#' in norm_slot_url, norm_slot_url
+                tab_norm.screenshot(path=str(EVIDENCE / '05_game1_general_join_qr.png'))
+
+                # Player 1 (Farah Lin, QRSELF001) scans Tab 1 (VR Tab)'s QR via Start Scamming on phone
                 phone.click('#start-scamming')
                 phone.wait_for_function("document.querySelector('video').readyState >= 2")
-                phone.evaluate("im => localStorage.setItem('test.qr', im)", fixtures.qr(foreign_join))
-                phone.wait_for_function("document.querySelector('.scanner-status').textContent.includes('someone else')")
-                api.ok('POST', f'/api/rounds/{foreign_round["roundId"]}/cancel', {}, pin='5001')
+                phone.evaluate("im => localStorage.setItem('test.qr', im)", fixtures.qr(vr_slot_url))
+                phone.wait_for_url('**/games/spot-the-fake-cash/join.html**', timeout=10000)
+                phone.wait_for_selector('#box.ok', timeout=10000)
+                assert 'Farah Lin' in phone.text_content('.join-who')
 
-                # Scan own Station 1 Join QR via Start Scamming -> navigates straight into play.html!
-                phone.evaluate("im => localStorage.setItem('test.qr', im)", fixtures.qr(join_url))
-                phone.wait_for_url('**/games/spot-the-fake-cash/play.html')
-                phone.wait_for_selector('#start-game-btn:not([disabled])', timeout=15000)
+                # Tab 1 (VR) starts Farah Lin's round in VR-ready mode (banner + Enter VR Mode button),
+                # while Tab 2 (Normal) MUST remain idle on its own waiting QR (ZERO cross-triggering)!
+                tab_vr.wait_for_function("document.getElementById('booth-identity').textContent.includes('Farah Lin')", timeout=10000)
+                vr_frame = tab_vr.locator('#booth-frame').element_handle().content_frame()
+                vr_frame.wait_for_selector('#qr-player-banner:visible', timeout=15000)
+                assert 'Farah Lin' in vr_frame.inner_text('#qr-player-banner')
+                assert tab_norm.locator('#booth-idle').is_visible(), 'Normal tab must NOT be triggered by VR tab scan!'
+                assert tab_norm.evaluate('window.S1_SLOT_ID') == norm_slot_id
 
-                # Live QR round MUST NOT have demo answers loaded
-                assert phone.evaluate('window.FAKECASH_DEMO_ANSWERS === undefined')
-                assert 'Farah Lin' in phone.inner_text('#qr-player-banner')
+                # Player 2 (Guest G001) scans Tab 2 (Normal Tab)'s QR on a second phone!
+                p2_reg = api.ok('POST', '/api/participants/self', {
+                    'id': 'QRSELF002', 'name': 'Kenji Tan', 'ageGroup': '19–21',
+                    'pbbAccount': False, 'scamExposure': 'no', 'consent': True
+                })
+                phone2_ctx = make_ctx(True, 390, 844)
+                phone2 = phone2_ctx.new_page()
+                phone2.goto(BASE + '/participant.html#' + p2_reg['participantToken'])
+                phone2.wait_for_selector('#participant-name')
+                phone2.goto(norm_slot_url)
+                phone2.wait_for_selector('#box.ok', timeout=10000)
+                assert 'Kenji Tan' in phone2.text_content('.join-who')
 
-                # GM modal auto-closes when player joins!
-                gm.wait_for_function("document.getElementById('modal').innerHTML === ''", timeout=10000)
+                # Tab 2 (Normal) AUTO-STARTS straight into active gameplay (Note 1 / 10) with Kenji Tan identified!
+                tab_norm.wait_for_function("document.getElementById('booth-identity').textContent.includes('Kenji Tan')", timeout=10000)
+                norm_frame = tab_norm.locator('#booth-frame').element_handle().content_frame()
+                norm_frame.wait_for_selector('#action-bar:visible', timeout=15000)
+                norm_frame.wait_for_selector('#pass-btn:not([disabled])', timeout=15000)
+                assert norm_frame.evaluate('window.FAKECASH_DEMO_ANSWERS === undefined')
+                # Tab 1 (VR) is still strictly Farah Lin!
+                assert 'Farah Lin' in tab_vr.inner_text('#booth-identity')
 
-                # Start inspection on player's phone
-                phone.click('#start-game-btn')
-                phone.wait_for_selector('#action-bar:visible')
-                phone.wait_for_selector('#pass-btn:not([disabled])')
-
-                # Inspect & answer 4 notes (first 3 correct, 4th wrong) -> check live GM dashboard tile!
-                rid, tok = join_url.split('#', 1)[1].split('.', 1)
-                rid = int(rid)
-                st_now = api.ok('GET', f'/api/rounds/{rid}/state', token=tok)
-                deal_ids = st_now['deal']['ids']
-                assert len(deal_ids) == 10
-
-                for i in range(4):
-                    is_real = DEMO_ANSWERS[deal_ids[i]]
-                    choose_real = is_real if i < 3 else (not is_real)
-                    phone.wait_for_selector('#pass-btn:not([disabled])')
-                    phone.click('#pass-btn' if choose_real else '#reject-btn')
-                    phone.wait_for_selector('#feedback:visible')
-                    if i == 0:
-                        phone.screenshot(path=str(EVIDENCE / '06_game1_qr_player_playing.png'))
-                    phone.evaluate("document.getElementById('feedback-next-btn')?.click()")
-                    phone.wait_for_selector('#feedback', state='hidden')
-
-                # GM dashboard shows live 4/10 judged, 30 pts, 3 green + 1 red pips!
-                gm.wait_for_function("document.querySelector('.tile .pts')?.textContent === '30'", timeout=10000)
-                assert gm.locator('.tile .strip .ok').count() == 3
-                assert gm.locator('.tile .strip .no').count() == 1
-                gm.screenshot(path=str(EVIDENCE / '07_game1_dashboard_live_progress.png'))
-
-                # Reload play.html mid-round -> restores exact server deal, 4 answered notes, score 30!
-                phone.reload()
-                phone.wait_for_selector('#action-bar:visible', timeout=15000)
-                assert phone.inner_text('#score-display') == '30 / 100'
-                assert phone.inner_text('#note-display').startswith('Note 5 / 10')
-
-                # Answer remaining 6 notes correctly -> final score 90 / 100
-                for i in range(4, 10):
-                    is_real = DEMO_ANSWERS[deal_ids[i]]
-                    phone.wait_for_selector('#pass-btn:not([disabled])')
-                    phone.click('#pass-btn' if is_real else '#reject-btn')
-                    phone.wait_for_selector('#feedback:visible')
-                    phone.evaluate("document.getElementById('feedback-next-btn')?.click()")
+                # Finish Tab 2 (Kenji Tan)'s 10-note round (9 correct, 1 wrong -> 90 / 100)
+                norm_rid = tab_norm.evaluate("JSON.parse(sessionStorage.getItem('scamurai.booth.1.event.v1')).roundId")
+                norm_deal = api.ok('POST', f'/api/rounds/{norm_rid}/deal', {}, pin='5001')['ids']
+                for i in range(10):
+                    is_real = DEMO_ANSWERS[norm_deal[i]]
+                    choose_real = is_real if i < 9 else (not is_real)
+                    norm_frame.wait_for_selector('#pass-btn:not([disabled])')
+                    norm_frame.click('#pass-btn' if choose_real else '#reject-btn')
+                    norm_frame.wait_for_selector('#feedback:visible')
+                    norm_frame.evaluate("document.getElementById('feedback-next-btn')?.click()")
                     if i < 9:
-                        phone.wait_for_selector('#feedback', state='hidden')
+                        norm_frame.wait_for_selector('#feedback', state='hidden')
+                norm_frame.wait_for_selector('#result-overlay:visible', timeout=10000)
+                assert norm_frame.inner_text('#result-score') == '90 / 100'
+                tab_norm.wait_for_function("JSON.parse(sessionStorage.getItem('scamurai.booth.1.event.v1')).status === 'saved'", timeout=10000)
 
-                phone.wait_for_selector('#result-overlay:visible', timeout=10000)
-                assert phone.inner_text('#result-score') == '90 / 100'
-                phone.wait_for_function("document.getElementById('qr-save-status').textContent.includes('90 / 100')", timeout=10000)
+                # Now play Tab 1 (Farah Lin)'s round independently -> 10/10 = 100 / 100
+                vr_frame.wait_for_selector('#start-game-btn:not([disabled])', timeout=15000)
+                vr_frame.click('#start-game-btn')
+                vr_frame.wait_for_selector('#action-bar:visible')
+                vr_rid = tab_vr.evaluate("JSON.parse(sessionStorage.getItem('scamurai.booth.1.event.v1')).roundId")
+                vr_deal = api.ok('POST', f'/api/rounds/{vr_rid}/deal', {}, pin='5001')['ids']
+                for i in range(10):
+                    is_real = DEMO_ANSWERS[vr_deal[i]]
+                    vr_frame.wait_for_selector('#pass-btn:not([disabled])')
+                    vr_frame.click('#pass-btn' if is_real else '#reject-btn')
+                    vr_frame.wait_for_selector('#feedback:visible')
+                    vr_frame.evaluate("document.getElementById('feedback-next-btn')?.click()")
+                    if i < 9:
+                        vr_frame.wait_for_selector('#feedback', state='hidden')
+                vr_frame.wait_for_selector('#result-overlay:visible', timeout=10000)
+                assert vr_frame.inner_text('#result-score') == '100 / 100'
+                tab_vr.wait_for_function("JSON.parse(sessionStorage.getItem('scamurai.booth.1.event.v1')).status === 'saved'", timeout=10000)
 
-                # Dashboard tile automatically transitions to ended with 90%!
-                gm.wait_for_function("document.querySelector('.tile.over .pts')?.textContent === '90'", timeout=10000)
-
-                # Participant page reflects Station 1 score = 90 / 100!
-                phone.click('#again-btn')
-                phone.wait_for_selector('#participant-name')
-                phone.wait_for_function("document.querySelector('[data-station=\"1\"] .score').textContent === '90 / 100'")
-                print('PASS: Game 1 QR Join dashboard, Start Scamming scan, live progress, reload recovery & server-scored finish')
+                # Confirm each participant received ONLY their own score on the server!
+                kenji_me = api.ok('GET', '/api/participant/me', participant=p2_reg['participantToken'])
+                assert kenji_me['stations'][0]['score'] == 90, kenji_me
+                farah_tok = phone.evaluate("localStorage.getItem('scamurai.participant.token')")
+                farah_me = api.ok('GET', '/api/participant/me', participant=farah_tok)
+                assert farah_me['stations'][0]['score'] == 100, farah_me
+                phone2_ctx.close()
+                booth_ctx.close()
+                print('PASS: Game 1 General Join QR (two simultaneous VR + Normal tabs, zero cross-triggering, auto-start & server-scored)')
 
                 # =====================================================================
-                # 3. META QUEST 3 VR UI VISUAL VERIFICATION & SCREENSHOTS
+                # 3. META QUEST 3 VR UI VISUAL VERIFICATION (NOTE POSITIONED FORWARD)
                 # =====================================================================
                 vr_ctx = make_ctx(False, 1280, 760)
                 vp = vr_ctx.new_page()
@@ -275,17 +284,35 @@ def run():
                 vp.click('#start-game-btn')
                 vp.wait_for_selector('#action-bar:visible')
 
-                # Position camera at Quest 3 standing eye pose looking at the full spatial cockpit (HUD + Guide + Note + Console)
-                vp.evaluate("""() => {
+                # Capture TRUE Quest 3 standing eye-level POV (origin z=0, eye y=1.55, looking straight ahead, 90° vertical FOV)
+                note_pos = vp.evaluate("""() => {
                     document.getElementById('ui-layer').style.display = 'none';
                     const stage = window.__FAKECASH_STAGE__;
                     const vr = window.__FAKECASH_VR__;
-                    stage.camera.fov = 62;
-                    stage.camera.position.set(0.06, 1.46, 0.56);
-                    stage.camera.lookAt(-0.10, 1.24, -0.58);
+                    vr.setPreviewMode(true, { showGuide: false, mode: 'playing' });
+                    stage.camera.fov = 76;
+                    stage.camera.position.set(0.0, 1.55, 0.0);
+                    stage.camera.lookAt(0.0, 1.38, -1.0);
                     stage.camera.updateProjectionMatrix();
-                    stage.rotateNote(0.32, -0.10); // show metallic hologram tilt shimmer too
+                    stage.rotateNote(0.24, -0.06);
+                    stage.updateFrame();
+                    return [stage.banknoteMesh.position.x, stage.banknoteMesh.position.y, stage.banknoteMesh.position.z];
+                }""")
+                # Assert banknote moved higher & further forward in VR (y >= 1.23, z <= -0.67)
+                assert note_pos[1] >= 1.23 and note_pos[2] <= -0.67, f'Expected forward VR note pos, got {note_pos}'
+                vp.wait_for_timeout(350)
+                vp.screenshot(path=str(EVIDENCE / '08_game1_quest3_vr_eyelevel_pov.png'))
+
+                # Also capture wider cockpit view with Note Guide open
+                vp.evaluate("""() => {
+                    const stage = window.__FAKECASH_STAGE__;
+                    const vr = window.__FAKECASH_VR__;
                     vr.setPreviewMode(true, { showGuide: true, mode: 'playing' });
+                    stage.camera.fov = 66;
+                    stage.camera.position.set(0.06, 1.52, 0.24);
+                    stage.camera.lookAt(-0.08, 1.30, -0.72);
+                    stage.camera.updateProjectionMatrix();
+                    stage.updateFrame();
                 }""")
                 vp.wait_for_timeout(350)
                 vp.screenshot(path=str(EVIDENCE / '08_game1_quest3_vr_playing.png'))
@@ -296,8 +323,8 @@ def run():
                 vp.evaluate("""() => {
                     window.__FAKECASH_VR__.setPreviewMode(true, { showGuide: false, mode: 'feedback' });
                     const stage = window.__FAKECASH_STAGE__;
-                    stage.camera.position.set(0.0, 1.45, 0.52);
-                    stage.camera.lookAt(0.0, 1.24, -0.56);
+                    stage.camera.position.set(0.0, 1.50, 0.32);
+                    stage.camera.lookAt(0.0, 1.30, -0.72);
                     stage.camera.updateProjectionMatrix();
                 }""")
                 vp.wait_for_timeout(350)
@@ -318,7 +345,39 @@ def run():
                 }""")
                 vp.wait_for_timeout(350)
                 vp.screenshot(path=str(EVIDENCE / '10_game1_quest3_vr_finished.png'))
-                print('PASS: Meta Quest 3 VR UI rendered cleanly (playing + guide, feedback, finished summary) with zero errors')
+                vr_ctx.close()
+                print('PASS: Meta Quest 3 VR UI rendered cleanly with forward-positioned note (y=1.24, z=-0.68) and zero errors')
+
+                # =====================================================================
+                # 4. PHISHING FISHING INSTANT VERDICT POPUP + PAUSED TIMER (EN & ZH)
+                # =====================================================================
+                pf_ctx = make_ctx(False, 1366, 860)
+                pf = pf_ctx.new_page()
+                pf.goto(BASE + '/games/phishing-fishing/game.html?demo=1&lang=en')
+                pf.wait_for_selector('#start-game')
+                pf.click('#start-game')
+                pf.wait_for_selector('[data-answer="phishing"]')
+                pf.locator('[data-answer="phishing"]').first.click()
+                pf.wait_for_selector('#pf-verdict-modal')
+                t_before = pf.inner_text('#timer-value')
+                pf.wait_for_timeout(1600)
+                t_after = pf.inner_text('#timer-value')
+                assert t_before == t_after, f'Timer moved while verdict popup open: {t_before} -> {t_after}'
+                assert 'Timer paused' in pf.inner_text('.pf-verdict-paused')
+                assert len(pf.inner_text('.pf-verdict-reason').strip()) > 10
+                pf.screenshot(path=str(EVIDENCE / '11_phishing_verdict_popup_en.png'))
+                pf.click('#pf-verdict-next')
+                pf.wait_for_selector('#pf-verdict-modal', state='detached')
+                # Verify Chinese mode verdict popup translates cleanly too
+                pf.goto(BASE + '/games/phishing-fishing/game.html?demo=1&lang=zh')
+                pf.wait_for_selector('#start-game')
+                pf.click('#start-game')
+                pf.locator('[data-answer="legitimate"]').first.click()
+                pf.wait_for_selector('#pf-verdict-modal')
+                assert '计时已暂停' in pf.inner_text('.pf-verdict-paused')
+                pf.screenshot(path=str(EVIDENCE / '12_phishing_verdict_popup_zh.png'))
+                pf_ctx.close()
+                print('PASS: Phishing Fishing instant verdict popup (EN & ZH) pauses timer cleanly with 1-line reasoning')
 
                 assert not errors, f'JS errors detected: {errors}'
                 browser.close()

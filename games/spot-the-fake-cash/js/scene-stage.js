@@ -10,6 +10,7 @@
   const ZOOM_STEP = 0.2;
   const DESKTOP_TORCH_POS = [0.22, 1.15, -0.17];
   const NOTE_BASE_POS = [0, 1.13, -0.48];
+  const VR_NOTE_BASE_POS = [0, 1.24, -0.68];
 
   function createCuttingMatTexture(maxAnisotropy) {
     const canvas = document.createElement('canvas');
@@ -412,6 +413,7 @@
     let currentTiltDeg = 0;
     let noteBackFacing = false;
     let noteHeldByHand = false;
+    let activeNoteBasePos = [...NOTE_BASE_POS];
 
     // Reusable scratch math objects (zero GC churn in 90Hz VR)
     const _worldPos = new THREE.Vector3();
@@ -429,7 +431,25 @@
       _halfX.set(0.225, 0, 0).applyQuaternion(banknoteMesh.quaternion);
       _halfY.set(0, 0.1125, 0).applyQuaternion(banknoteMesh.quaternion);
       const halfDrop = (Math.abs(_halfX.y) + Math.abs(_halfY.y)) * banknoteZoom;
-      banknoteMesh.position.y = Math.max(NOTE_BASE_POS[1], DESK_CLEAR_Y + halfDrop);
+      banknoteMesh.position.x = activeNoteBasePos[0];
+      banknoteMesh.position.y = Math.max(activeNoteBasePos[1], DESK_CLEAR_Y + halfDrop);
+      banknoteMesh.position.z = activeNoteBasePos[2];
+    }
+
+    function setNoteBasePos(x, y, z) {
+      activeNoteBasePos = [x, y, z];
+      if (banknoteMesh && !noteHeldByHand) {
+        banknoteMesh.position.set(x, y, z);
+        keepAboveDesk();
+      }
+    }
+
+    function resetNoteBasePos() {
+      setNoteBasePos(...NOTE_BASE_POS);
+    }
+
+    function getNoteBasePos() {
+      return [...activeNoteBasePos];
     }
 
     function setNoteHeld(held) {
@@ -673,7 +693,7 @@
         scene.add(banknoteMesh);
       }
 
-      banknoteMesh.position.set(...NOTE_BASE_POS);
+      banknoteMesh.position.set(...activeNoteBasePos);
       banknoteMesh.rotation.set(0, 0, 0);
       banknoteZoom = 1;
       banknoteMesh.scale.setScalar(banknoteZoom);
@@ -795,6 +815,7 @@
       torchBeamCone,
       DESKTOP_TORCH_POS,
       NOTE_BASE_POS,
+      VR_NOTE_BASE_POS,
       MIN_ZOOM,
       MAX_ZOOM,
       ZOOM_STEP,
@@ -805,6 +826,9 @@
       get isBackFacing() { return noteBackFacing; },
       get isNoteHeld() { return noteHeldByHand; },
       setNoteHeld,
+      setNoteBasePos,
+      resetNoteBasePos,
+      getNoteBasePos,
       preloadTextures,
       buildBanknote,
       setUV,

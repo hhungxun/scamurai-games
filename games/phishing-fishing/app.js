@@ -130,9 +130,61 @@
   }
   function label(kind) { return kind === "phishing" ? "Phishing" : kind === "legitimate" ? "Legitimate" : "Unanswered"; }
   const formatClock = seconds => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
-  let round, ticker = null, transition = null, locked = false, page = "welcome", lastAnnouncement = null, emailObserver = null, showingResults = false, reviewLoaded = true;
+  let round, ticker = null, transition = null, locked = false, page = "welcome", lastAnnouncement = null, emailObserver = null, showingResults = false, reviewLoaded = true, verdictOpen = false, onVerdictClose = null;
   const pendingAnswers = new Map();
   const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+  function closeVerdictPopup() {
+    document.querySelector("#pf-verdict-modal")?.remove();
+    verdictOpen = false;
+    const cb = onVerdictClose;
+    onVerdictClose = null;
+    if (cb) cb();
+  }
+  function showVerdictPopup({ actual, correct, reason, isLast, remaining }) {
+    document.querySelector("#pf-verdict-modal")?.remove();
+    const el = document.createElement("div");
+    el.id = "pf-verdict-modal";
+    el.className = "pf-verdict-backdrop";
+    el.setAttribute("role", "dialog");
+    el.setAttribute("aria-modal", "true");
+    el.setAttribute("aria-labelledby", "pf-verdict-title");
+    const hasVerdict = actual === "phishing" || actual === "legitimate";
+    const isPhish = actual === "phishing";
+    const statusCls = !hasVerdict ? "pending" : correct ? "correct" : "wrong";
+    const statusText = !hasVerdict
+      ? "Answer recorded"
+      : correct
+        ? "Correct · +10 pts"
+        : "Incorrect · +0 pts";
+    const verdictBadge = !hasVerdict
+      ? "Verdict pending"
+      : isPhish
+        ? "Fake / Phishing"
+        : "Legitimate";
+    const nextLabel = isLast ? "See Results" : "Next Email";
+    el.innerHTML = `
+      <div class="pf-verdict-card ${statusCls}" data-verdict="${hasVerdict ? actual : "pending"}">
+        <div class="pf-verdict-head">
+          <span class="pf-verdict-status ${statusCls}">${icon(!hasVerdict ? "info" : correct ? "check" : "cross")} <span>${statusText}</span></span>
+          <span class="pf-verdict-paused">${icon("clock")} <span>Timer paused</span></span>
+        </div>
+        <div class="pf-verdict-main">
+          <span class="pf-verdict-eyebrow">This email is</span>
+          <h2 id="pf-verdict-title" class="pf-verdict-label ${hasVerdict ? (isPhish ? "is-phish" : "is-legit") : ""}">${verdictBadge}</h2>
+          <p class="pf-verdict-reason">${esc(reason)}</p>
+        </div>
+        <div class="pf-verdict-foot">
+          <span class="pf-verdict-left">${isLast ? "Final email complete" : `${remaining} email${remaining === 1 ? "" : "s"} left`}</span>
+          <button type="button" id="pf-verdict-next" class="pf-verdict-next">${nextLabel} ${icon("arrow")} <kbd>Enter</kbd></button>
+        </div>
+      </div>`;
+    document.body.append(el);
+    verdictOpen = true;
+    const nextBtn = el.querySelector("#pf-verdict-next");
+    nextBtn.addEventListener("click", closeVerdictPopup);
+    nextBtn.focus({ preventScroll: true });
+    announce(`${statusText}. This email is ${verdictBadge}. ${reason}`);
+  }
   async function flushPendingAnswers(attempts = 1) {
     if (!host || demo || !pendingAnswers.size) return true;
     for (let tryNum = 0; tryNum < attempts && pendingAnswers.size; tryNum++) {
@@ -177,6 +229,9 @@
   function clearWork() {
     if (referenceDialog.open) referenceDialog.close();
     window.SitePopups?.close();
+    document.querySelector("#pf-verdict-modal")?.remove();
+    verdictOpen = false;
+    onVerdictClose = null;
     clearInterval(ticker);
     clearTimeout(transition);
     ticker = transition = null;
@@ -212,6 +267,10 @@
     try {
       if (saved) {
         round = GameCore.Round.restore(window.EMAIL_BANK, settings, saved, { now: makeClock() });
+        if (round.isPaused()) {
+          round.resume();
+          try { save(); } catch (_) {}
+        }
       } else if (host && !demo) {
         const deal = await host.deal(window);
         const questions = deal.ids.map(id => window.EMAIL_BANK.find(e => e.id === id)).filter(Boolean);
@@ -498,7 +557,7 @@
         <button class="ol-cmd ol-cmd-phish" type="button" data-answer="phishing" data-question="${esc(email.id)}">${icon("flag")} <span>Report Phishing</span> <kbd>P</kbd></button>
         <span class="ol-sep" aria-hidden="true"></span>
         <button class="ol-cmd ol-cmd-verify" id="verify-independent" type="button" aria-expanded="${verified}">${icon("eye")} <span>${verified ? "Checked ✓" : "Check Yourself"}</span> <kbd>V</kbd></button>
-        <span class="ol-ribbon-hint">Answers revealed at end of round</span>
+        <span class="ol-ribbon-hint">Timer pauses after each call for instant feedback</span>
       </div>
       <div class="ol-workspace">
         <nav class="ol-apprail" aria-hidden="true">
@@ -618,46 +677,82 @@
     if (page !== "playing" || locked) return;
     locked = true;
     window.SitePopups?.close();
+    if (referenceDialog.open) referenceDialog.close();
+    if (round.expire()) {
+      locked = false;
+      showResults();
+      return;
+    }
+    const answeredEmail = round.questions[round.index];
+    round.pause();
     if (!round.answer(questionId, classification)) {
+      round.resume();
       locked = false;
       if (round.status === "finished") showResults();
       return;
     }
-    if (host && !demo) {
-      pendingAnswers.set(questionId, classification);
-      const sent = await flushPendingAnswers(2);
-      if (!sent) announce("Could not reach the server. Your answer will be re-sent before the round finishes.");
-    }
-    try { save(); } catch (error) { storageFailure(error); return; }
+    document.querySelector("#timer")?.classList.add("timer-paused");
     main.querySelectorAll("[data-answer]").forEach(button => {
       button.disabled = true;
-      if (button.dataset.answer === round.answers[round.index - 1]?.classification) button.classList.add("answer-recorded");
+      if (button.dataset.answer === classification) button.classList.add("answer-recorded");
     });
-    announce("Answer recorded.");
+    let actual = null, correct = null, serverReason = "";
+    if (host && !demo && typeof host.answer === "function") {
+      try {
+        const res = await host.answer(window, questionId, classification);
+        if (res && (res.classification === "phishing" || res.classification === "legitimate")) {
+          actual = res.classification;
+          correct = Boolean(res.correct);
+          serverReason = res.reason || "";
+          if (answeredEmail) answeredEmail.classification = actual;
+        }
+      } catch (error) {
+        if (error?.status !== 400 && error?.status !== 409) {
+          pendingAnswers.set(questionId, classification);
+          announce("Could not reach the server. Your answer will be re-sent before the round finishes.");
+        }
+      }
+    } else {
+      actual = answeredEmail?.classification || null;
+      correct = actual ? classification === actual : null;
+    }
+    try { save(); } catch (error) { storageFailure(error); return; }
     const recorded = classification;
     if (recorded === "phishing") sfx.reel(); else sfx.release();
-    actionToast(recorded, round.questions.length - round.index);
     const junk = main.querySelector("#junk-count");
     if (junk && recorded === "phishing") { junk.hidden = false; junk.textContent = round.answers.filter(a => a && a.classification === "phishing").length; junk.classList.remove("bump"); void junk.offsetWidth; junk.classList.add("bump"); }
     main.querySelector('.email-progress li[aria-current="step"]')?.classList.add(recorded === "phishing" ? "flying-junk" : "flying-safe");
-    if (round.status === "finished") {
-      showResults();
-      return;
-    }
-    // Keep the old question locked long enough to absorb double clicks/key repeats.
-    transition = setTimeout(() => {
-      transition = null;
+    const reason = answeredEmail?.reasoning?.evidence || serverReason || answeredEmail?.explanation || "Review the full clues at the end of the round.";
+    const isLast = round.status === "finished";
+    onVerdictClose = () => {
       if (page !== "playing") return;
-      if (round.expire()) { showResults(); return; }
+      round.resume();
+      document.querySelector("#timer")?.classList.remove("timer-paused");
+      try { save(); } catch (error) { storageFailure(error); return; }
+      if (round.status === "finished" || round.expire()) {
+        showResults();
+        return;
+      }
       locked = false;
       renderEmail();
       main.querySelector('.email-progress li[aria-current="step"]')?.classList.add("arrived");
       sfx.mail();
       tick();
-    }, 320);
+    };
+    showVerdictPopup({
+      actual,
+      correct,
+      reason,
+      isLast,
+      remaining: round.questions.length - round.index
+    });
   }
   function tick() {
-    if (page !== "playing") return;
+    if (page !== "playing" || locked || verdictOpen) return;
+    if (round.isPaused()) {
+      document.querySelector("#timer")?.classList.add("timer-paused");
+      return;
+    }
     if (round.expire()) { showResults(); return; }
     const remaining = Math.ceil(round.remainingMs() / 1000);
     const clockStr = formatClock(remaining);
@@ -793,6 +888,14 @@
   }
 
   document.addEventListener("keydown", event => {
+    if (verdictOpen) {
+      if (event.repeat || event.ctrlKey || event.altKey || event.metaKey) return;
+      if (event.key === "Enter" || event.key === " " || event.key === "Escape") {
+        event.preventDefault();
+        closeVerdictPopup();
+      }
+      return;
+    }
     if (page !== "playing" || referenceDialog.open || window.SitePopups?.isOpen() || locked || event.repeat || event.ctrlKey || event.altKey || event.metaKey) return;
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName)) return;
     const key = event.key.toLowerCase();

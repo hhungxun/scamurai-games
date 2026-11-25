@@ -46,7 +46,8 @@
   }
 
   function createVR(stage, callbacks) {
-    const { scene, renderer, uvTorchMesh, DESKTOP_TORCH_POS, NOTE_BASE_POS } = stage;
+    const { scene, renderer, uvTorchMesh, DESKTOP_TORCH_POS, NOTE_BASE_POS, VR_NOTE_BASE_POS } = stage;
+    const VR_NOTE_POS = VR_NOTE_BASE_POS || [0, 1.24, -0.68];
     const isZh = () => !!(root.ScamuraiI18n?.isZh() || root.__FAKECASH_IS_ZH__?.());
     const maxAniso = Math.min(8, renderer.capabilities.getMaxAnisotropy?.() || 4);
 
@@ -98,7 +99,7 @@
       new THREE.MeshBasicMaterial({ map: vrHUDTexture, transparent: true, side: THREE.DoubleSide })
     );
     vrHUDPanel.name = 'VR HUD Panel';
-    vrHUDPanel.position.set(0, 1.54, -0.95);
+    vrHUDPanel.position.set(0, 1.60, -1.00);
     vrHUDPanel.rotation.x = 0.14;
     vrHUDPanel.renderOrder = 5;
     vrUIRoot.add(vrHUDPanel);
@@ -118,7 +119,7 @@
       new THREE.MeshBasicMaterial({ map: guideTex, transparent: true, side: THREE.DoubleSide })
     );
     vrGuidePanel.name = 'VR Note Guide Panel';
-    vrGuidePanel.position.set(-0.73, 1.33, -0.62);
+    vrGuidePanel.position.set(-0.76, 1.38, -0.72);
     vrGuidePanel.rotation.set(0.06, 0.46, 0);
     vrGuidePanel.renderOrder = 6;
     vrGuidePanel.visible = false;
@@ -128,7 +129,7 @@
     const vrActionPanel = new THREE.Group();
     vrActionPanel.name = 'VR Control Deck';
     // Mounted neatly above the front desk lip BELOW the banknote (zero desk-mat clipping, never blocks UV sweeping!)
-    vrActionPanel.position.set(0, 0.966, -0.21);
+    vrActionPanel.position.set(0, 0.98, -0.34);
     vrActionPanel.rotation.x = -0.54;
     vrUIRoot.add(vrActionPanel);
 
@@ -405,7 +406,8 @@
     function releaseNoteToDesk() {
       if (!noteIsHeld || !stage.banknoteMesh) return;
       scene.attach(stage.banknoteMesh);
-      stage.banknoteMesh.position.set(NOTE_BASE_POS[0], NOTE_BASE_POS[1] + HEIGHT_PRESETS[heightIndex].y * 0.5, NOTE_BASE_POS[2]);
+      const pos = stage.getNoteBasePos ? stage.getNoteBasePos() : VR_NOTE_POS;
+      stage.banknoteMesh.position.set(pos[0], pos[1], pos[2]);
       noteIsHeld = false;
       stage.setNoteHeld(false);
       pulseHaptic(activeLeftInputSource, 0.2, 18);
@@ -430,8 +432,8 @@
     function applyHeightPreset() {
       const preset = HEIGHT_PRESETS[heightIndex];
       vrUIRoot.position.y = preset.y;
-      if (!noteIsHeld && stage.banknoteMesh && (renderer.xr.isPresenting || previewMode)) {
-        stage.banknoteMesh.position.y = Math.max(0.95, NOTE_BASE_POS[1] + preset.y * 0.5);
+      if (renderer.xr.isPresenting || previewMode) {
+        stage.setNoteBasePos?.(VR_NOTE_POS[0], Math.max(0.98, VR_NOTE_POS[1] + preset.y), VR_NOTE_POS[2]);
       }
       refreshButtonLabels();
     }
@@ -648,6 +650,7 @@
       });
       vrUIRoot.visible = previewMode;
       vrGuidePanel.visible = previewMode && guideOpen;
+      if (!previewMode) stage.resetNoteBasePos?.();
       uvTorchMesh.position.set(...DESKTOP_TORCH_POS);
       uvTorchMesh.rotation.set(0, 0.14, 0);
       callbacks.onSessionEnd?.();
@@ -1263,8 +1266,11 @@
       vrUIRoot.visible = previewMode;
       vrGuidePanel.visible = previewMode && guideOpen;
       if (previewMode) {
+        applyHeightPreset();
         updatePanelMode(mode);
         refreshButtonLabels();
+      } else if (!renderer.xr.isPresenting) {
+        stage.resetNoteBasePos?.();
       }
     }
 
