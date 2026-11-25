@@ -4,8 +4,9 @@
 
   const $ = id => document.getElementById(id);
   const { BANKNOTE_SETS, DURATION_MS, NOTE_COUNT, SNAPSHOT_VERSION, Round } = FakeCashCore;
-  const booth = window.parent !== window ? window.parent.ScamuraiBooth : null;
-  const demo = new URLSearchParams(location.search).get('demo') === '1';
+  const booth = window.ScamuraiQRBooth || (window.parent !== window ? window.parent.ScamuraiBooth : null);
+  const isQRMode = !!window.ScamuraiQRBooth;
+  const demo = !isQRMode && new URLSearchParams(location.search).get('demo') === '1';
   const LANG_KEY = 'scamurai.lang';
   let lang = localStorage.getItem(LANG_KEY) === 'zh' ? 'zh' : 'en';
   const t = (en, zh) => (lang === 'zh' ? (zh ?? en) : en);
@@ -75,9 +76,11 @@
     $('pass-btn').disabled = !enabled;
     $('reject-btn').disabled = !enabled;
     if (vr) {
-      if (round?.status === 'finished' && !feedback) vr.updatePanelMode('finished');
+      if (!round) vr.updatePanelMode('prestart');
+      else if (round.status === 'finished' && !feedback) vr.updatePanelMode('finished');
+      else if (feedback) vr.updatePanelMode('feedback');
       else if (enabled) vr.updatePanelMode('playing');
-      else vr.updatePanelMode('hidden');
+      else vr.updatePanelMode('feedback');
     }
   }
 
@@ -87,7 +90,8 @@
     const score = round?.score ?? 0;
     const streak = round?.streak ?? 0;
     const noteNumber = Math.min(NOTE_COUNT, (round?.index ?? 0) + (feedback ? 0 : 1));
-    const currentNote = round ? (round.note || BANKNOTE_SETS[round.order[Math.max(0, round.index - 1)]]) : BANKNOTE_SETS[0];
+    const displayIdx = round ? (feedback ? Math.max(0, round.index - 1) : Math.min(NOTE_COUNT - 1, round.index)) : 0;
+    const currentNote = round ? BANKNOTE_SETS[round.order[displayIdx]] : BANKNOTE_SETS[0];
     const denom = currentNote?.denomination || 'RM50';
 
     $('note-display').textContent = t(`Note ${noteNumber} / ${NOTE_COUNT}`, `第 ${noteNumber} / ${NOTE_COUNT} 张`);
@@ -106,17 +110,22 @@
     setVerdictAvailability();
 
     if (vr) {
+      const pInfo = booth?.participantInfo?.();
       vr.updateHUD({
         timeText,
         timeRemaining,
+        durationSec: Math.round(DURATION_MS / 1000),
         score,
         streak,
         noteNumber,
         noteCount: NOTE_COUNT,
         denomination: denom,
         feedback,
+        started: !!round,
         finished: round?.status === 'finished',
-        endReason: round?.endReason
+        endReason: round?.endReason,
+        review: round ? round.review() : [],
+        participantLabel: pInfo ? `${pInfo.name} · ${pInfo.id}` : ''
       });
     }
   }
@@ -128,9 +137,11 @@
     });
     const langBtn = $('lang-btn');
     if (langBtn) langBtn.textContent = lang === 'zh' ? 'EN' : '中文';
-    $('again-btn').textContent = demo || !booth
-      ? t('Play again', '再来一局')
-      : t('Next participant', '下一位参与者');
+    $('again-btn').textContent = isQRMode
+      ? t('My participant page ↗', '我的个人成绩页 ↗')
+      : demo || !booth
+        ? t('Play again', '再来一局')
+        : t('Next participant', '下一位参与者');
 
     const vrBadge = $('vr-badge');
     if (vrBadge) {
@@ -319,7 +330,7 @@
         return;
       }
       isCorrect = !!verdict.correct;
-      if (verdict.reveal?.reason) reasonText = verdict.reveal.reason;
+      if (verdict.reason || verdict.reveal?.reason) reasonText = verdict.reason || verdict.reveal.reason;
       if (!round.recordAnswer(userChoice, isCorrect)) { submitting = false; endGame(); return; }
       submitting = false;
     } else {
@@ -345,6 +356,7 @@
     $('feedback-reason').textContent = t(feedback.reason, feedback.reasonZh || feedback.reason);
     card.dataset.correct = String(feedback.correct);
     card.hidden = false;
+    if (vr?.isPresenting) vr.pulseVerdictFeedback(feedback.correct);
     updateGameDisplays();
 
     if (round.status === 'finished') endGame();
@@ -479,14 +491,22 @@
         onFlip: () => stage.flipNote(),
         onTilt: () => stage.tiltTest(),
         onToggleUV: () => { stage.toggleUV(); syncUVLabel(); },
+        onNext: () => advanceAfterFeedback(),
+        onStart: () => startGame(),
+        onReset: () => { stage.resetView(); syncZoomLabel(); },
+        onToggleLang: () => {
+          lang = lang === 'zh' ? 'en' : 'zh';
+          localStorage.setItem(LANG_KEY, lang);
+          applyLocalizedStaticUI();
+        },
         onStatus: msg => setStatus(msg, msg),
         onControllersChanged: () => setVerdictAvailability(),
         onSessionStart: () => {
           setVerdictAvailability();
           updateGameDisplays();
           setStatus(
-            'VR active · Left stick rotates · Left trigger flips · Right stick zooms · Right trigger toggles UV / confirms',
-            'VR 已启动 · 左手摇杆旋转 · 左手扳机翻面 · 右手摇杆缩放 · 右手扳机开关紫外灯或确认按钮'
+            'Quest 3 VR active · L-Grip holds note · L-Stick rotates · R-Stick zooms · A/R-Trig toggles UV · X tilts · Y guide',
+            'Quest 3 VR 已启动 · 左握把持钞 · 左摇杆旋转 · 右摇杆缩放 · A/右扳机开关紫外灯 · X 全息 · Y 指南'
           );
         },
         onSessionEnd: () => {
@@ -497,6 +517,8 @@
           );
         }
       });
+      window.__FAKECASH_STAGE__ = stage;
+      window.__FAKECASH_VR__ = vr;
 
       const { loaded, total } = await stage.preloadTextures(BANKNOTE_SETS);
       if (loaded < total) {
@@ -557,6 +579,14 @@
 
       initialized = true;
       applyLocalizedStaticUI();
+
+      if (isQRMode && typeof booth.ready === 'function') {
+        const okJoin = await booth.ready();
+        if (!okJoin) {
+          $('start-overlay').hidden = true;
+          return;
+        }
+      }
 
       let snapshot = null;
       try { snapshot = booth?.snapshot(window) ?? null; } catch (error) { console.warn('Booth snapshot unavailable', error); }

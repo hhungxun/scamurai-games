@@ -410,6 +410,8 @@
     let flipAnim = null;
     let tiltAnim = null;
     let currentTiltDeg = 0;
+    let noteBackFacing = false;
+    let noteHeldByHand = false;
 
     // Reusable scratch math objects (zero GC churn in 90Hz VR)
     const _worldPos = new THREE.Vector3();
@@ -423,11 +425,15 @@
     const DESK_CLEAR_Y = 0.928;
 
     function keepAboveDesk() {
-      if (!banknoteMesh) return;
+      if (!banknoteMesh || noteHeldByHand) return;
       _halfX.set(0.225, 0, 0).applyQuaternion(banknoteMesh.quaternion);
       _halfY.set(0, 0.1125, 0).applyQuaternion(banknoteMesh.quaternion);
       const halfDrop = (Math.abs(_halfX.y) + Math.abs(_halfY.y)) * banknoteZoom;
       banknoteMesh.position.y = Math.max(NOTE_BASE_POS[1], DESK_CLEAR_Y + halfDrop);
+    }
+
+    function setNoteHeld(held) {
+      noteHeldByHand = !!held;
     }
 
     function makeFallbackTexture(label, uvMode) {
@@ -762,7 +768,9 @@
         activeCam.getWorldPosition(_camWorldPos);
         banknoteMesh.getWorldPosition(_worldPos);
         _toCam.subVectors(_camWorldPos, _worldPos).normalize();
-        const absDot = Math.min(1, Math.abs(_noteNormal.dot(_toCam)));
+        const signedDot = _noteNormal.dot(_toCam);
+        noteBackFacing = signedDot < 0;
+        const absDot = Math.min(1, Math.abs(signedDot));
         currentTiltDeg = Math.round(THREE.MathUtils.radToDeg(Math.acos(absDot)));
       }
 
@@ -786,6 +794,7 @@
       uvTorchMesh,
       torchBeamCone,
       DESKTOP_TORCH_POS,
+      NOTE_BASE_POS,
       MIN_ZOOM,
       MAX_ZOOM,
       ZOOM_STEP,
@@ -793,6 +802,9 @@
       get isUVOn() { return isUVOn; },
       get zoom() { return banknoteZoom; },
       get tiltDeg() { return currentTiltDeg; },
+      get isBackFacing() { return noteBackFacing; },
+      get isNoteHeld() { return noteHeldByHand; },
+      setNoteHeld,
       preloadTextures,
       buildBanknote,
       setUV,

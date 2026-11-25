@@ -165,8 +165,10 @@ html, body {
 .hud-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: nowrap;
 }
+.hud-right .btn { white-space: nowrap; }
 .hud-hint {
   font-size: 0.78rem;
   color: var(--muted);

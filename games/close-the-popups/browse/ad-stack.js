@@ -3,7 +3,7 @@
   'use strict';
   window.BROWSE_AD_STACK = C => {
     const {root,seed,t,esc,read,write,ads,adVisual,adDescription,adURL,redirectURL,wireAds,deck,chosen,adOffer,campaignSite,boothAds}=C;
-    const KEY='br-run-v9:'+seed, MISSING=Symbol('missing'), AUTO_MAX=boothAds?60:30, ID_MAX=boothAds?70:40, REVEAL_MS=10000;
+    const KEY='br-run-v9:'+seed, MISSING=Symbol('missing'), AUTO_MAX=boothAds?60:30, ID_MAX=boothAds?70:40, REVEAL_MS=10000, UNCLOSED_MAX=10;
     const GAPS=boothAds?[800,1100,950,1250,1000,1150]:[2200,2800,2500,3200,2300,3000];
     const FORMATS=['bounce','robot','dodge','player-error','bonus','captcha','tiny','drawer','panel','newsletter'];
     const formats=boothAds?['tiny','drawer','dodge','bounce','panel','newsletter']:FORMATS;
@@ -49,7 +49,8 @@
       const quietUntil=Number.isFinite(obj.quietUntil)&&obj.quietUntil>=0&&obj.quietUntil<=activeMs+5000?obj.quietUntil:0;
       const latestNext=Math.max(activeMs+5000,boothAds?rampAt:0);
       const nextAt=autoShown>=AUTO_MAX?null:Math.max(quietUntil,Number.isFinite(obj.nextAt)&&obj.nextAt>=0&&obj.nextAt<=latestNext?obj.nextAt:activeMs+(shown?2500:firstAt));
-      return {pacingVersion:9,activeMs,shown,autoShown,nextAt,quietUntil,burstUsed:obj.burstUsed===true||pending.some(p=>p.burst),pending};
+      const closed=Number.isInteger(obj.closed)?Math.max(0,Math.min(shown,obj.closed)):Math.max(0,shown-pending.length);
+      return {pacingVersion:9,activeMs,shown,autoShown,closed,nextAt,quietUntil,burstUsed:obj.burstUsed===true||pending.some(p=>p.burst),pending};
     };
     const stored=readRun(KEY);
     let initial=stored;
@@ -65,6 +66,8 @@
     let suspended=false,destroyed=false,last=performance.now(),lastOutsideFocus=null,modalId=null,externalModal=false;
     let restoreFrame=0,restoreGeneration=0,restoring=false,clearAfterRestore=false;
     const save=()=>{if(!suspended&&!destroyed)C.rawWrite(KEY,state);};
+    // Popups the player has not closed (still open or auto-rotated away) never exceed UNCLOSED_MAX.
+    const budget=()=>Math.max(0,UNCLOSED_MAX-(state.shown-state.closed));
     const burstActive=()=>state.pending.some(p=>p.burst===true);
     const phone=()=>matchMedia('(max-width: 640px)').matches;
     const limit=()=>boothAds?(state.activeMs<rampAt?(phone()?4:5):(phone()?5:7)):burstActive()?(phone()?5:10):(phone()?2:4);
@@ -135,6 +138,7 @@
     const closeOne=(id,reason='dismiss')=>{
       if(suspended)return;
       const entry=entries.get(id),ownedFocus=entry?.card.contains(document.activeElement);
+      if(state.pending.some(p=>p.id===id))state.closed++;
       state.pending=state.pending.filter(p=>p.id!==id);
       if(state.autoShown<AUTO_MAX)state.nextAt=Math.max(state.nextAt??0,state.activeMs+800,state.quietUntil);
       else state.nextAt=null;
@@ -149,6 +153,7 @@
       if(suspended){if(restoring)clearAfterRestore=true;return;}
       const ownedFocus=overlayRoot.contains(document.activeElement);
       for(const id of [...entries.keys()])removeEntry(id);
+      if(reason==='escape')state.closed+=state.pending.length;
       const wait=Number.isFinite(duration)?Math.max(3000,Math.min(5000,duration)):5000;
       state.pending=[];state.quietUntil=state.activeMs+wait;state.nextAt=state.autoShown<AUTO_MAX?state.quietUntil:null;
       save();applyModal();if(ownedFocus)returnFocus();
@@ -159,7 +164,7 @@
       if(suspended||restoring||externalModal||modalId!==null||state.burstUsed||state.activeMs<state.quietUntil)return false;
       state.burstUsed=true;
       const target=phone()?5:10,formats=['bounce','dodge','tiny','drawer'];
-      for(let index=0;state.pending.length<target&&state.shown<ID_MAX;index++){
+      for(let index=0;state.pending.length<target&&state.shown<ID_MAX&&budget()>0;index++){
         const id=++state.shown,format=formats[index%formats.length],layout=closeLayouts[(id-1)%closeLayouts.length];
         const closeStyle=hash('burst-close:'+id)%3===0?'dual':'visible';
         const site=chosen||deck[(id-1)%deck.length];
@@ -295,7 +300,7 @@
         if(before<REVEAL_MS&&p.closeElapsedMs>=REVEAL_MS)justRevealed=true;
       }
       if(justRevealed){for(const entry of entries.values())updateClose(entry);applyModal();save();}
-      const due=!burstActive()&&state.autoShown<AUTO_MAX&&state.shown<ID_MAX&&state.activeMs>=state.nextAt&&state.activeMs>=state.quietUntil;
+      const due=!burstActive()&&state.autoShown<AUTO_MAX&&state.shown<ID_MAX&&budget()>0&&state.activeMs>=state.nextAt&&state.activeMs>=state.quietUntil;
       if(due&&(state.pending.length<limit()||(boothAds&&state.activeMs>=rampAt&&retireOldest()))){
         const openingCard=boothAds&&state.autoShown===0;
         let format=formats[state.autoShown%formats.length];

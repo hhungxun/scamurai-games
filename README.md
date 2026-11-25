@@ -41,7 +41,7 @@ Every visitor registers once at the front desk and gets a Participant ID (studen
 ```
 
 - Before each round the SDK shows the Game Master start screen: station PIN (once per laptop), a search box to pick the Participant, and a **Leaving** button that opens the exit survey.
-- After `finish()` it shows the result and reloads the page for the next player. Replays are fine; the best round counts.
+- After `finish()` it shows the result and reloads the page for the next player. Each Participant gets **2 tries per game** (finished, non-cancelled Rounds; `MAX_TRIES` in `server/server.js`). The server refuses a third start with 409, the picker greys them out, and the participant page shows tries left. The best round counts.
 - While building, use `data-test="1"` on the script tag: you get a fake "Test Player" and nothing is saved.
 - `data-station` is your station number (1–5). Ask the group for the station PIN on the day; PINs never go in this repo.
 - Your station's exit-survey questions live in `server/stations.json`. Send a PR to change them.

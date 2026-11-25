@@ -5,7 +5,7 @@
 const { spawn } = require('node:child_process');
 const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
 const assert = require('node:assert/strict');
-const { writeFixture } = require('./fixture-keys');
+const { writeFixture, answerFor } = require('./fixture-keys');
 
 const PORT = 3100 + (process.pid % 500);
 const BASE = `http://127.0.0.1:${PORT}`;
@@ -65,6 +65,58 @@ async function main() {
     const res = await Promise.all([1, 2, 3].map(() => call('POST', '/api/participants', { pin: PINS.staff,
       body: { id: 'DUPE01', name: 'Dupe', ageGroup: reg.ageGroup, pbbAccount: false, scamExposure: reg.scamExposure, consent: true } })));
     assert.deepEqual(res.map(r => r.status).sort(), [200, 409, 409]);
+  });
+
+  await check(`self-registration via QR: ${PLAYERS} concurrent students + 15 guests + pause/resume toggle`, async () => {
+    const selfIds = Array.from({ length: PLAYERS }, (_, i) => `QR${String(i + 1).padStart(4, '0')}`);
+    const sRes = await Promise.all(selfIds.map(id => call('POST', '/api/participants/self', {
+      body: { id, name: `QR Player ${id}`, ageGroup: reg.ageGroup, pbbAccount: true, scamExposure: reg.scamExposure, consent: true } })));
+    assert.equal(sRes.filter(r => r.status !== 200).length, 0);
+    assert.ok(sRes.every(r => /^[a-f0-9]{64}$/.test(r.json.participantToken)));
+    const gRes = await Promise.all(Array.from({ length: 15 }, (_, i) => ok(call('POST', '/api/participants/self', {
+      body: { guest: true, name: `QR Guest ${i}`, ageGroup: reg.ageGroup, pbbAccount: false, scamExposure: reg.scamExposure, consent: true } }))));
+    assert.equal(new Set(gRes.map(r => r.id)).size, 15);
+    // Duplicate self-reg refuses without leaking participantToken
+    const dup = await call('POST', '/api/participants/self', {
+      body: { id: selfIds[0], name: 'Impostor', ageGroup: reg.ageGroup, pbbAccount: false, scamExposure: reg.scamExposure, consent: true } });
+    assert.equal(dup.status, 409);
+    assert.equal(dup.json.participantToken, undefined);
+    // Pause & resume via staff PIN
+    assert.equal((await call('POST', '/api/registration/settings', { pin: st(1), body: { selfRegistrationEnabled: false } })).status, 403);
+    await ok(call('POST', '/api/registration/settings', { pin: PINS.staff, body: { selfRegistrationEnabled: false } }));
+    assert.equal((await ok(call('GET', '/api/registration/status'))).selfRegistrationEnabled, false);
+    assert.equal((await call('POST', '/api/participants/self', {
+      body: { id: 'PAUSED01', name: 'Paused', ageGroup: reg.ageGroup, pbbAccount: false, scamExposure: reg.scamExposure, consent: true } })).status, 403);
+    await ok(call('POST', '/api/registration/settings', { pin: PINS.staff, body: { selfRegistrationEnabled: true } }));
+    assert.equal((await ok(call('GET', '/api/registration/status'))).selfRegistrationEnabled, true);
+  });
+
+  await check(`${PLAYERS} simultaneous Station 1 QR-joined rounds via X-Round-Token, server-scored`, async () => {
+    const s1Ids = Array.from({ length: PLAYERS }, (_, i) => `QR${String(i + 1).padStart(4, '0')}`);
+    await Promise.all(s1Ids.map(async (id, i) => {
+      const r = await ok(call('POST', '/api/rounds', { pin: st(1), body: { participantId: id } }));
+      await ok(call('POST', `/api/rounds/${r.roundId}/events`, { token: r.token, body: { data: { t: 'join', dev: 'd' + i } } }));
+      const d = await ok(call('POST', `/api/rounds/${r.roundId}/deal`, { token: r.token }));
+      assert.equal(d.ids.length, 10);
+      const wantCorrect = (i % 10) + 1;
+      for (const [idx, qid] of d.ids.entries()) {
+        const ans = await ok(call('POST', `/api/rounds/${r.roundId}/answer`, { token: r.token,
+          body: { qid, choice: answerFor('spot-the-fake-cash', qid, idx < wantCorrect) } }));
+        assert.equal(ans.correct, idx < wantCorrect);
+      }
+      const stResp = await ok(call('GET', `/api/rounds/${r.roundId}/state`, { token: r.token }));
+      assert.equal(stResp.answered.length, 10);
+      // Client attempts to forge score=100; server ignores it and computes exact wantCorrect * 10
+      const fin = await ok(call('POST', `/api/rounds/${r.roundId}/finish`, { token: r.token, body: { score: 100, maxScore: 100 } }));
+      assert.equal(fin.pct, wantCorrect * 10);
+    }));
+    // Token-play must be rejected on non-QR stations (e.g. Station 3) and undealt Station 1 token finish scores 0
+    const r3 = await ok(call('POST', '/api/rounds', { pin: st(3), body: { participantId: s1Ids[0] } }));
+    assert.equal((await call('POST', `/api/rounds/${r3.roundId}/deal`, { token: r3.token })).status, 403);
+    await ok(call('POST', `/api/rounds/${r3.roundId}/cancel`, { pin: st(3) }));
+    const undealt = await ok(call('POST', '/api/rounds', { pin: st(1), body: { participantId: s1Ids[0] } }));
+    const forged = await ok(call('POST', `/api/rounds/${undealt.roundId}/finish`, { token: undealt.token, body: { score: 100, maxScore: 100 } }));
+    assert.equal(forged.pct, 0);
   });
 
   // Everyone plays Station 5 at the same time: start, 8 verdict events from the "phone", finish from the "laptop".
@@ -196,10 +248,12 @@ async function main() {
     assert.equal((await ok(call('GET', `/api/rounds/${ra.roundId}/events?after=0`, { token: ra.token }))).ended, true);
   });
 
-  await check('after finishing, the player can start a fresh round', async () => {
-    const r = await ok(call('POST', '/api/rounds', { pin: st(5), body: { participantId: A } }));
-    await scan(r);
-    await ok(call('POST', `/api/rounds/${r.roundId}/finish`, { pin: st(5), body: { score: 0, maxScore: 800 } }));
+  await check('two tries per game: a third round at the same station is refused (409); other stations still open', async () => {
+    const res = await call('POST', '/api/rounds', { pin: st(5), body: { participantId: A } });
+    assert.equal(res.status, 409);
+    assert.match(res.json.error, /both tries/);
+    const pick = (await ok(call('GET', '/api/participants', { pin: st(5) }))).find(p => p.id === A);
+    assert.equal(pick.triesHere, 2); assert.equal(pick.maxTries, 2);
   });
 
   await check('cancel: phone sees cancelled, finish then 409, not counted, player can restart', async () => {

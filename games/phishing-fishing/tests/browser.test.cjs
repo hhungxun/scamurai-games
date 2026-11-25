@@ -17,7 +17,7 @@ async function restart(p){await p.locator('.new-player').first().click({force:tr
  browser=await chromium.launch({headless:true,...(process.env.BROWSER_PATH?{executablePath:process.env.BROWSER_PATH}:{})});
  const c=await browser.newContext({viewport:{width:1366,height:900},offline:true,reducedMotion:'reduce'}),p=await c.newPage();watch(p);await p.clock.install();await p.goto(url);
  await screenshot(p,'welcome');
- assert.match(await p.locator('.round-facts').innerText(),/10 emails/);assert.match(await p.locator('.round-facts').innerText(),/90 seconds/);await p.locator('#start-game').click();
+ await p.locator('#start-game').click();
  assert.equal(await p.locator('#timer-value').innerText(),'1:30');assert.equal(await p.locator('.case-context').isVisible(),false);
  assert.equal(await p.locator('[data-evidence],#submit-judgement,.evidence-pick').count(),0);
  assert.equal(await p.locator('.catch-report,.field-badges,.catch-fish').count(),0);

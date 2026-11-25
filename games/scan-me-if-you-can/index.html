@@ -147,7 +147,7 @@ function showQR(R) {
     <div class="qr">${q.createSvgTag({ cellSize: 8, margin: 2, scalable: true })}</div>
     <div class="box"><b>${esc(R.p.name)}: scan this with your phone camera</b>
       <ol class="how"><li>Allow camera access on your phone. It shows a QR number.</li><li>Find it on the board and scan it with the in-game scanner.</li>
-      <li>${S5.SECS} seconds per site: explore it, then tap <b>REAL</b> or <b>FAKE</b>.</li><li>Only the first site has a Start timer button. Later sites start the timer automatically once loaded.</li><li>8 sites. Right and fast = more points. A wrong call costs 100, so don't guess.</li></ol></div>
+      <li>${S5.SECS} seconds per site: explore it, then tap <b>REAL</b> or <b>FAKE</b>.</li><li>Only the first site has a Start timer button. Later sites start the timer automatically once loaded.</li></ol></div>
     <button class="ghost" id="mclose">Close (the QR stays on ${esc(R.p.name)}'s tile)</button></div></div>`;
   document.getElementById('mclose').onclick = closeModal;
 }

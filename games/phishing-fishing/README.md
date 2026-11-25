@@ -28,6 +28,8 @@ The game keeps Scamurai's paper, charcoal and red colours. After an answer, the 
 
 The result screen shows scams caught, safe mail released, scams escaped, safe mail miscast and unchecked mail. Choose any card to open and focus its email explanation. Field badges recognise correctly identified techniques, such as excessive permissions or unsafe attachments; they do not add points or affect event records.
 
+During play the inbox mimics Outlook on the web: app rail, Home/View/Help ribbon (Delete, Archive, Move to are inert), Favorites and account folder tree with a live Junk Email count, and a "Today" message group. Each classification shows an Outlook-style toast ("Reported · moved to Junk Email" / "Marked safe · kept in Inbox") without revealing whether it was right. A thin bar under the top bar drains over the 90 seconds (amber at 30 s, red at 10 s); the final 10 seconds add a red screen edge and countdown ticks. `sfx.js` synthesises short sound effects (cast, reel, splash, new mail, end jingle) with WebAudio; the speaker button in the top bar mutes them per laptop. The result screen awards an angler rank (Bait Taker → Deckhand → Seasoned Angler → Shark Spotter → Scamurai Master Angler), with confetti at 80+. None of this changes scoring.
+
 Eight cases include light campus humour across both classifications: a lost penguin, digital attendance assistant, cat mascot election, supper draw, study-room booking, desk-duck receipt and internship interview. Humour is not a clue.
 
 Changed scenarios have new IDs. An unfinished event deal containing a retired case requires explicit staff cancellation; it is not silently regraded. A saved demo containing retired cases restarts without writing event data. Historical completed server scores stay unchanged.

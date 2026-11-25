@@ -56,6 +56,18 @@
   <p><a id="passLink" style="color:var(--yellow)" target="_blank" rel="noreferrer">Open participant page</a></p>
   <button class="ghost" id="nextParticipant">Register next participant</button>
 </section>
+<section class="card" id="selfRegCard" hidden style="border-top:5px solid var(--yellow)">
+  <p class="eyebrow" style="color:var(--yellow)">SELF-SERVICE CHECK-IN</p>
+  <h2 style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">Player registration QR <span id="selfRegBadge" class="muted" style="font:600 12px Lexend,sans-serif;padding:4px 9px;border-radius:3px;border:1px solid var(--line)">Active</span></h2>
+  <p class="muted" style="margin-top:-10px">Let players scan this QR on their own phone to register and get their personal page immediately.</p>
+  <div id="selfRegQR" style="background:white;padding:14px;border-radius:10px;max-width:210px;margin:14px auto"></div>
+  <p class="muted" style="text-align:center;font-size:12px;word-break:break-all;margin:0 0 12px"><a id="selfRegLink" target="_blank" rel="noopener"></a></p>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">
+    <button type="button" id="showBigSelfQR" style="font-size:15px;padding:9px 14px;min-height:42px">Show big QR</button>
+    <button type="button" class="ghost" id="downloadSelfQR" style="font-size:13px;padding:8px 12px;min-height:42px">Download PNG</button>
+    <button type="button" class="ghost" id="toggleSelfReg" style="font-size:13px;padding:8px 12px;min-height:42px">Pause QR</button>
+  </div>
+</section>
 <div class="card" id="recent" hidden>
   <h2>Registered <span id="count" class="muted"></span></h2>
   <input id="search" placeholder="Search name or ID">
@@ -63,6 +75,16 @@
   <p class="muted" style="margin-top:14px"><a href="leaderboard.html" style="color:var(--yellow)">Leaderboard</a> ·
     <a href="#" id="lock" style="color:var(--grey)">Lock this device</a></p>
 </div></aside></div>
+</div>
+<div id="bigSelfQRModal" hidden style="position:fixed;inset:0;z-index:200;background:rgba(8,8,8,.88);display:grid;place-items:center;padding:20px">
+  <div class="card" style="max-width:520px;width:100%;text-align:center;border-top:5px solid var(--yellow);margin:0">
+    <p class="eyebrow" style="color:var(--yellow)">SCAMURAI / PLAYER CHECK-IN</p>
+    <h2 style="font-size:32px;margin-bottom:8px">Scan to Register</h2>
+    <p class="muted" style="margin-top:0">Point your phone camera here to fill in your details and get your personal Scamurai page.</p>
+    <div id="bigSelfQRBox" style="background:white;padding:18px;border-radius:14px;max-width:360px;margin:16px auto"></div>
+    <p class="muted" id="bigSelfQRUrl" style="font-size:13px;word-break:break-all"></p>
+    <button type="button" class="ghost wide" id="closeBigSelfQR">Close</button>
+  </div>
 </div>
 <script>
 const $ = id => document.getElementById(id);
@@ -76,14 +98,66 @@ async function api(path, opt = {}) {
   if (!r.ok) { const e = new Error(j.error || r.statusText); e.status = r.status; throw e; }
   return j;
 }
-let list = [], refreshTimer = null;
+let list = [], refreshTimer = null, selfRegOn = true;
+function selfRegUrl() { return `${location.origin}/self-register.html`; }
+function renderSelfRegQR() {
+  const url = selfRegUrl();
+  const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
+  $('selfRegQR').innerHTML = qr.createSvgTag({ cellSize: 5, margin: 4, scalable: true });
+  $('bigSelfQRBox').innerHTML = qr.createSvgTag({ cellSize: 8, margin: 4, scalable: true });
+  $('selfRegLink').href = url; $('selfRegLink').textContent = url;
+  $('bigSelfQRUrl').textContent = url;
+}
+function updateSelfRegUI() {
+  $('selfRegBadge').textContent = selfRegOn ? 'Active' : 'Paused';
+  $('selfRegBadge').style.color = selfRegOn ? '#a8dfb3' : '#ffaaa2';
+  $('selfRegBadge').style.borderColor = selfRegOn ? '#3f7c4f' : '#9c3a37';
+  $('toggleSelfReg').textContent = selfRegOn ? 'Pause QR' : 'Enable QR';
+  $('selfRegQR').style.opacity = selfRegOn ? '1' : '0.35';
+}
+async function loadSelfRegStatus() {
+  try {
+    const s = await api('/api/registration/status');
+    selfRegOn = s.selfRegistrationEnabled !== false;
+    updateSelfRegUI();
+  } catch {}
+}
+function downloadSelfQRPng() {
+  const url = selfRegUrl();
+  const qr = qrcode(0, 'H'); qr.addData(url); qr.make();
+  const count = qr.getModuleCount(), margin = 4, size = 1024;
+  const cell = Math.floor(size / (count + margin * 2));
+  const actual = cell * (count + margin * 2);
+  const c = document.createElement('canvas'); c.width = actual; c.height = actual;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, actual, actual);
+  ctx.fillStyle = '#000000';
+  for (let r = 0; r < count; r++) for (let col = 0; col < count; col++) {
+    if (qr.isDark(r, col)) ctx.fillRect((col + margin) * cell, (r + margin) * cell, cell, cell);
+  }
+  const a = document.createElement('a'); a.download = 'scamurai-registration-qr.png'; a.href = c.toDataURL('image/png'); a.click();
+}
+$('showBigSelfQR').onclick = () => { $('bigSelfQRModal').hidden = false; };
+$('closeBigSelfQR').onclick = () => { $('bigSelfQRModal').hidden = true; };
+$('bigSelfQRModal').onclick = e => { if (e.target === $('bigSelfQRModal')) $('bigSelfQRModal').hidden = true; };
+$('downloadSelfQR').onclick = downloadSelfQRPng;
+$('toggleSelfReg').onclick = async () => {
+  $('toggleSelfReg').disabled = true;
+  try {
+    const s = await api('/api/registration/settings', { method: 'POST', body: { selfRegistrationEnabled: !selfRegOn } });
+    selfRegOn = s.selfRegistrationEnabled;
+    updateSelfRegUI();
+  } catch (e) { $('err').textContent = e.message; }
+  finally { $('toggleSelfReg').disabled = false; }
+};
 async function unlock() {
   if ($('pinGo').disabled) return;
   $('pinGo').disabled = true;
   try {
     const a = await api('/api/auth', { method: 'POST' });
     if (a.role === 'station') throw Object.assign(new Error('That is a Station PIN. Use the staff PIN.'), {status:403});
-    $('pinCard').hidden = true; $('form').hidden = false; $('recent').hidden = false;
+    $('pinCard').hidden = true; $('form').hidden = false; $('selfRegCard').hidden = false; $('recent').hidden = false;
+    renderSelfRegQR(); loadSelfRegStatus();
     refresh(); clearInterval(refreshTimer); refreshTimer = setInterval(refresh, 10000); $('sid').focus();
   } catch (e) {
     if (e.status === 401 || e.status === 403 || e.message.includes('Station PIN')) setPin('');
@@ -138,7 +212,7 @@ function render() {
   const t = $('search').value.trim().toUpperCase();
   const rows = list.filter(p => !t || p.id.includes(t) || p.name.toUpperCase().includes(t)).reverse();
   $('count').textContent = `(${list.length})`;
-  $('rows').innerHTML = rows.slice(0, 50).map(p => `<tr><td>${esc(p.id)}</td><td>${esc(p.name)}</td><td>${p.stationsDone.length}/5</td><td>${esc(p.status)}${p.surveyDone ? ' ✓' : ''}</td><td><button class="ghost" data-pass="${esc(p.id)}">Personal QR</button>${p.status === 'left' ? ` <button class="ghost" data-reopen="${esc(p.id)}" data-name="${esc(p.name)}">Re-open</button>` : ''}</td></tr>`).join('');
+  $('rows').innerHTML = rows.slice(0, 50).map(p => `<tr><td>${esc(p.id)}${p.registeredBy === 'self-qr' ? ' <span style="font-size:10px;padding:1px 5px;border-radius:2px;border:1px solid var(--yellow);color:var(--yellow)">QR</span>' : ''}</td><td>${esc(p.name)}</td><td>${p.stationsDone.length}/5</td><td>${esc(p.status)}${p.surveyDone ? ' ✓' : ''}</td><td><button class="ghost" data-pass="${esc(p.id)}">Personal QR</button>${p.status === 'left' ? ` <button class="ghost" data-reopen="${esc(p.id)}" data-name="${esc(p.name)}">Re-open</button>` : ''}</td></tr>`).join('');
 }
 function showPass(p) {
   const url = `${location.origin}/participant.html#${p.participantToken}`;

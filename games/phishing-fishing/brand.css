@@ -25,3 +25,4 @@ body{background:var(--bg)}.site-header{height:90px;border-bottom:2px solid var(-
 .review-email .email-banner small{font-size:9px}
 .review-email .email-footer{font-size:9px;padding-top:10px}
 .review-email .email-action-button{font-size:11px;padding:7px 12px}
+.start-button{margin-top:24px}

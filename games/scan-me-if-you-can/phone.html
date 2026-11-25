@@ -69,8 +69,7 @@ async function render() {
         <p>points out of ${r.cards.length * 100}</p><p class="muted">${Object.keys(r.done).length} of ${r.cards.length} sites judged</p>
         ${over === 'cancelled' ? '<p>This round was cancelled and does not count.</p>' : over && n ? '<p>This round has ended at the laptop.</p>' : !n ? '<p>All done! Your Game 5 results are below.</p>' : ''}</section>
         ${n && !over ? `<a class="btn" href="${resume}">${active ? `Resume QR #${active}` : 'Continue playing'}</a>${active && (r.started || {})[active] ? '<p class="muted">Your current site timer keeps running while you view scores.</p>' : ''}` : !n ? '<a class="btn" href="/leaderboard.html">View leaderboard ↗</a>' : ''}
-        <section class="box"><table class="score-list"><caption>Results by QR</caption><thead><tr><th scope="col">QR</th><th scope="col">Result</th><th scope="col">Points</th></tr></thead><tbody>${rows}</tbody></table>
-        <p class="muted">Wrong calls deduct 100 points. Your total cannot go below zero.</p></section>`;
+        <section class="box"><table class="score-list"><caption>Results by QR</caption><thead><tr><th scope="col">QR</th><th scope="col">Result</th><th scope="col">Points</th></tr></thead><tbody>${rows}</tbody></table></section>`;
     } else if (over && n) {
       app.innerHTML = H + `<div class="box">${over === 'cancelled' ? "The Game Master cancelled this round (it doesn't count)." : 'This round has ended at the laptop.'} Ask them for a new Join QR.</div>`;
     } else if (n) {

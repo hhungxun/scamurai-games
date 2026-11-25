@@ -34,6 +34,24 @@
   .reward-pass .pass-title{font:400 23px/1.15 Anton,Impact,sans-serif;letter-spacing:.4px;text-transform:uppercase;color:var(--yellow);margin:0 0 8px}
   .reward-pass .pass-who{font-weight:600;color:var(--paper);margin:0 0 6px}
   .reward-pass .pass-note{font-size:13px;color:#d6f5dc;margin:0}
+  .todo{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 0;padding:0;list-style:none}
+  .todo li{display:flex;align-items:center;gap:6px;font-size:12.5px;line-height:1.2;padding:6px 10px;border:1px solid var(--dim);border-radius:999px;color:var(--grey)}
+  .todo li b{font:15px/1 Anton,Impact,sans-serif;color:var(--paper)}
+  .todo li.completed{border-color:#4d8a59;color:#a8dfb3;background:#16261a}.todo li.completed b{color:#a8dfb3}
+  .todo li.playing{border-color:var(--yellow);color:var(--yellow);background:#2a2518}
+  .todo li.next{border-color:var(--red);color:var(--paper)}
+  .next-up{margin:14px 0 0;font-size:14px}.next-up strong{color:var(--yellow)}
+  .station .bar{height:4px;background:#2c2927;border-radius:2px;margin-top:8px;overflow:hidden;width:min(220px,100%)}
+  .station .bar i{display:block;height:100%;background:var(--yellow);border-radius:2px;transition:width .6s ease}
+  .station .score.is-playing{font:600 12px/1 Lexend,system-ui,sans-serif;letter-spacing:1px;text-transform:uppercase;padding:10px 12px;border-color:var(--yellow);color:var(--yellow);animation:pp-blink 1.6s ease-in-out infinite}
+  @keyframes pp-blink{50%{opacity:.55}}
+  .station.just-scored{animation:pp-flash 2.4s ease-out}
+  @keyframes pp-flash{0%,30%{background:rgba(237,207,97,.18)}100%{background:transparent}}
+  .score-toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translate(-50%,140%);z-index:50;background:var(--yellow);color:#171616;font:600 15px/1.3 Lexend,system-ui,sans-serif;padding:12px 18px;border-radius:4px;box-shadow:0 8px 28px rgba(0,0,0,.45);transition:transform .35s cubic-bezier(.2,.9,.3,1.2);width:max-content;max-width:calc(100vw - 32px);text-align:center}
+  .score-toast.show{transform:translate(-50%,0)}.score-toast b{font:22px/1 Anton,Impact,sans-serif;margin-right:6px}
+  #connection{font-size:12px;display:flex;align-items:center;gap:8px}#connection:before{content:'';width:8px;height:8px;border-radius:50%;background:var(--dim);flex:none}
+  #connection.live:before{background:#7CFC8A;box-shadow:0 0 0 3px rgba(124,252,138,.18)}#connection.warn:before{background:var(--yellow)}
+  @media (prefers-reduced-motion:reduce){.station.just-scored,.station .score.is-playing{animation:none}.score-toast{transition:none}}
 </style>
 <script src="participant.js"></script>
 <script src="/vendor/jsQR.js"></script><script src="/qr-scanner.js"></script><script src="/games/scan-me-if-you-can/s5.js"></script>
@@ -44,6 +62,7 @@
 <div id="profile"></div>
 <section id="scan-panel" hidden><div id="portal-scanner"></div><button class="ghost wide" id="back-participant">Back to my participant page</button></section>
 <section id="survey-panel" class="card" hidden></section>
+<div class="score-toast" id="score-toast" role="status" aria-live="polite"></div>
 <div class="meta"><button class="ghost" id="refresh">Refresh scores</button><a href="leaderboard.html" style="color:var(--yellow)">Leaderboard</a></div>
 </main><script>
 const P = ScamuraiParticipant, root = document.getElementById('profile'), connection = document.getElementById('connection');
@@ -52,7 +71,9 @@ const rewardPassHtml = p => `<div class="reward-pass" id="reward-pass"><p class=
 // The pass travels in a fragment, is saved on this phone, then removed from the address bar.
 const incoming = location.hash.slice(1);
 if (incoming) { P.remember(incoming); history.replaceState(null, '', location.pathname + location.search); }
-let pending = false, lastToken = '', profile = null, scanner = null, surveyConfig = null;
+let pending = false, lastToken = '', profile = null, scanner = null, surveyConfig = null, lastHtml = '', seenScores = null, toastTimer = null;
+const setConn = (text, state = '') => { connection.textContent = text; connection.className = 'muted ' + state; };
+function toast(html) { const t = document.getElementById('score-toast'); t.innerHTML = html; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 4200); }
 let wantsScan = new URLSearchParams(location.search).get('scan') === '1';
 let linkRound = !incoming && (new URLSearchParams(location.search).get('from') === 'station5' || !P.token()) ? P.round() : null;
 const surveyPanel = document.getElementById('survey-panel');
@@ -63,8 +84,8 @@ async function refresh() {
     if (linkRound) { if (!await P.rememberRound(linkRound)) throw new Error('Your Game 5 round changed. Open My scores from your current round.'); linkRound = null; history.replaceState(null, '', location.pathname); }
     const token = P.token();
     if (!token) {
-      lastToken = '';
-      root.innerHTML = '<section class="card"><h2>Your own page, all event long</h2><p>Scan your personal QR at the registration desk. This phone will remember your page so you can return here for your name, ID, scores and progress.</p><p class="muted">Already playing Game 5? Open My scores from the game to connect your page.</p></section>';
+      lastToken = ''; lastHtml = ''; seenScores = null;
+      root.innerHTML = '<section class="card"><h2>Your own page, all event long</h2><p>Scan the registration QR or register at the front desk. This phone will remember your page so you can return here for your name, ID, scores and progress.</p><a class="btn wide" href="/self-register.html">Register on this phone ↗</a><p class="muted" style="margin-top:12px">Already playing Game 1 or Game 5? Open My scores from the game to connect your page.</p></section>';
       connection.textContent = 'Your personal QR is needed to open your details.'; return;
     }
     if (lastToken && lastToken !== token) root.innerHTML = '';
@@ -74,6 +95,11 @@ async function refresh() {
     if (P.token() !== token) { root.innerHTML = ''; return; }
     if (!res.ok) { if (res.status === 401) root.innerHTML = ''; throw Object.assign(new Error(p.error || 'Could not load your scores.'), {status:res.status}); }
     profile = p;
+    const s1OpenId = p.stations.find(s => s.n === 1)?.openRoundId;
+    let s1Local = null;
+    try { s1Local = JSON.parse(localStorage.getItem('scamurai.s1.round') || 'null'); } catch {}
+    const s1Action = s1Local && s1Local.participantId === p.id && s1OpenId === s1Local.roundId
+      ? `<section class="card actions"><h2>Your Game 1 round</h2><a class="btn" href="/games/spot-the-fake-cash/play.html">Resume Spot the Fake Cash ↗</a><p class="muted">Your 2-minute round timer continues while you view this page.</p></section>` : '';
     const r = P.round(), ownRound = r && r.participantId === p.id;
     const next = ownRound && r.cards.find(n => !r.done[n]);
     const active = ownRound && r.cards.find(n => !r.done[n] && (r.started || {})[n]);
@@ -81,29 +107,39 @@ async function refresh() {
       : ownRound && r.firstCard && !r.done[r.firstCard] ? `/games/scan-me-if-you-can/c.html?n=${r.firstCard}` : '/games/scan-me-if-you-can/phone.html';
     const roundActions = ownRound ? `<section class="card actions"><h2>Your Game 5 round</h2>${next && p.stations.find(s => s.n === 5)?.openRoundId === r.id ? `<a class="btn" href="${resume}">${active ? `Resume QR #${active}` : 'Continue playing'}</a>${active ? '<p class="muted">Your site timer keeps running while you view this page.</p>' : ''}` : ''}<a class="btn ghost" href="/games/scan-me-if-you-can/phone.html?view=scores">Game 5 QR results</a></section>` : '';
     const allStationsDone = p.stations.every(s => s.status === 'completed');
+    const nextStation = p.stations.find(s => s.status !== 'completed' && s.status !== 'playing');
+    const todo = `<ol class="todo" aria-label="Station progress">${p.stations.map(s => `<li class="${s === nextStation ? 'next' : s.status}"><b>${s.n}</b>${s.status === 'completed' ? '✓ Done' : s.status === 'playing' ? 'Playing' : s === nextStation ? 'Next' : 'To play'}</li>`).join('')}</ol>`;
     const canSelfSurvey = !p.checkedOut && !p.surveyDone && p.stationsDone.length > 0;
     const playCardBody = p.checkedOut || p.surveyDone
       ? `<p class="eyebrow">ALL DONE</p>${p.eligible ? rewardPassHtml(p) : ''}<a class="btn wide" href="/leaderboard.html">View leaderboard ↗</a><p class="muted">Thanks for playing! Check the <a href="/leaderboard.html">leaderboard</a> for the live rankings.</p>`
       : allStationsDone
         ? `<p class="eyebrow">NEXT: EXIT SURVEY</p><button class="btn wide" id="open-survey">Fill in exit survey ↗</button><button class="btn ghost wide" id="start-scamming" style="margin-top:10px">Scan a station QR</button><p class="muted">All five stations done! Fill in the quick exit survey right here on your phone to qualify for the prize ranking.</p><p class="reward-hint"><strong>Free drinks &amp; snacks:</strong> Finish the exit survey now, then show your phone at the registration desk to claim!</p>`
-        : `<p class="eyebrow">YOUR NEXT CHALLENGE</p><button class="btn wide" id="start-scamming">Start Scamming ↗</button><p class="muted">${p.stations.filter(s => s.status === 'completed').length} of ${p.stations.length} stations done. Scan station codes and Game Master Join QRs here. Everything stays in this browser.</p><p class="reward-hint"><strong>Free drinks &amp; snacks:</strong> Finish all 5 games and the exit survey, then show your phone at the registration desk to claim!</p>`;
-    root.innerHTML = `<section class="card identity"><p class="muted">Registered name</p><h2 id="participant-name">${esc(p.name)}</h2><p>${esc(p.idKind)}: <strong id="participant-id">${esc(p.id)}</strong></p>
+        : `<p class="eyebrow">YOUR NEXT CHALLENGE</p>${nextStation ? `<p class="next-up">Up next: <strong>Station ${nextStation.n} · ${esc(nextStation.name)}</strong></p>` : ''}<button class="btn wide" id="start-scamming">Start Scamming ↗</button>${todo}<p class="muted">${p.stations.filter(s => s.status === 'completed').length} of ${p.stations.length} stations done. Scan station codes and Game Master Join QRs here. Everything stays in this browser.</p><p class="reward-hint"><strong>Free drinks &amp; snacks:</strong> Finish all 5 games and the exit survey, then show your phone at the registration desk to claim!</p>`;
+    const html = `<section class="card identity"><p class="muted">Registered name</p><h2 id="participant-name">${esc(p.name)}</h2><p>${esc(p.idKind)}: <strong id="participant-id">${esc(p.id)}</strong></p>
       <p class="muted">${p.checkedOut ? 'Checked out' : p.stations.some(s => s.status === 'playing') ? 'Playing now' : 'Registered · welcome to Scamurai'}</p>
       <a class="scores-jump" href="#my-scores">My scores · ${p.total} / ${p.maxTotal} ↓</a></section>
       <section class="card play-card">${playCardBody}</section>
+      ${s1Action}
       ${next ? roundActions : ''}
       <section class="card total" id="my-scores"><p class="eyebrow">MY SCORES</p><h2>Total score</h2><div class="number" id="event-total">${p.total}<span style="font-size:30px;color:var(--grey)"> / ${p.maxTotal}</span></div>
-      <p>${p.stationsDone.length} of ${p.stations.length} stations completed</p><progress value="${p.stationsDone.length}" max="${p.stations.length}" aria-label="Stations completed"></progress><p class="muted">Your best finished round at each station counts.</p></section>
-      <section class="card station-panel"><p class="eyebrow">MY SCORES BY STATION</p><h2>Your stations</h2>${p.stations.map(s => `<div class="station" data-station="${s.n}"><div><strong>${s.n}. ${esc(s.name)}</strong><p class="muted ${s.status}">${s.status === 'playing' ? 'Playing now · score updates when the round finishes' : s.status === 'completed' ? 'Completed' : 'Not played yet'}</p></div><span class="score${s.score !== null ? ' has-score' : ''}">${s.score === null ? '—' : s.score + ' / 100'}</span></div>`).join('')}</section>
+      <p>${p.stationsDone.length} of ${p.stations.length} stations completed</p><progress value="${p.stationsDone.length}" max="${p.stations.length}" aria-label="Stations completed"></progress><p class="muted"><strong>You get ${p.maxTries || 2} tries per game.</strong> Your best finished round at each station counts.</p></section>
+      <section class="card station-panel"><p class="eyebrow">MY SCORES BY STATION</p><h2>Your stations</h2>${p.stations.map(s => `<div class="station" data-station="${s.n}"><div><strong>${s.n}. ${esc(s.name)}</strong><p class="muted ${s.status}">${s.status === 'playing' ? 'Playing now · score updates when the round finishes' : s.status === 'completed' ? 'Completed' : 'Not played yet'} · ${Math.max(0, (p.maxTries || 2) - (s.tries || 0))} of ${p.maxTries || 2} tries left</p>${s.score !== null ? `<div class="bar"><i style="width:${Math.max(0, Math.min(100, s.score))}%"></i></div>` : ''}</div>${s.status === 'playing' && s.score === null ? '<span class="score is-playing">Playing</span>' : `<span class="score${s.score !== null ? ' has-score' : ''}">${s.score === null ? '—' : s.score + ' / 100'}</span>`}</div>`).join('')}</section>
       <section class="card visit-panel"><h2>Exit survey &amp; check-out</h2><p>Exit survey: <strong>${p.surveyDone ? 'Completed' : 'Not completed yet'}</strong></p><p>${p.eligible ? 'All five stations and the exit survey are complete. You qualify for the prize ranking.' : 'Complete all five stations and the exit survey to qualify for the prize ranking.'}</p>
-      ${p.eligible ? '<p class="muted">Show your phone at the registration desk to claim your free drinks &amp; snacks.</p>' : !p.surveyDone && !p.checkedOut ? '<p class="muted">After finishing all 5 games and the exit survey, show your phone at the registration desk for free drinks &amp; snacks.</p>' : ''}
       ${canSelfSurvey ? (allStationsDone ? `<button class="btn wide" id="open-survey-visit">Fill in exit survey</button><p class="muted">When you are ready to leave, fill in the exit survey right here on your phone — no need to wait for a Game Master.</p>` : `<button class="btn ghost wide" id="open-survey-visit">Leaving early? Fill in exit survey</button><p class="muted">Only submit now if you are leaving the event early. Checking out ends play — finish all 5 games first for free drinks &amp; snacks and the prize ranking.</p>`) : !p.surveyDone && !p.checkedOut ? '<p class="muted">Play at least one station, then fill in the exit survey right here on your phone before you leave.</p>' : ''}</section>
       ${!next ? roundActions : ''}`;
-    connection.textContent = P.persistent() ? 'Up to date · refreshes automatically every 5 seconds' : 'Your browser is blocking site storage. You can view your info here; allow storage for this site to scan and play.';
+    if (html !== lastHtml || !root.firstElementChild) { root.innerHTML = html; lastHtml = html; }
+    const scores = Object.fromEntries(p.stations.map(s => [s.n, s.score]));
+    if (seenScores && seenScores.id === p.id) {
+      const fresh = p.stations.filter(s => s.score !== null && (seenScores.s[s.n] === null || s.score > seenScores.s[s.n]));
+      fresh.forEach(s => root.querySelector(`.station[data-station="${s.n}"]`)?.classList.add('just-scored'));
+      if (fresh.length) toast(`<b>+${fresh[0].score}</b> ${esc(fresh[0].name)} saved · total ${p.total} / ${p.maxTotal}`);
+    }
+    seenScores = { id: p.id, s: scores };
+    setConn(P.persistent() ? 'Up to date · refreshes automatically every 5 seconds' : 'Your browser is blocking site storage. You can view your info here; allow storage for this site to scan and play.', P.persistent() ? 'live' : 'warn');
     if (wantsScan) { wantsScan = false; openScanner(); }
   } catch (e) {
     if (e.status === 401) { scanner?.stop(); scanner = null; profile = null; root.hidden = false; document.getElementById('scan-panel').hidden = true; surveyPanel.hidden = true; }
-    connection.textContent = e.status === 401 || e.message.includes('Game 5') ? e.message : 'Cannot refresh right now. Showing the last update; trying again shortly.';
+    setConn(e.status === 401 || e.message.includes('Game 5') ? e.message : 'Cannot refresh right now. Showing the last update; trying again shortly.', 'warn');
   }
   finally { pending = false; if (lastToken && lastToken !== P.token()) queueMicrotask(refresh); }
 }
@@ -213,7 +249,7 @@ function openScanner() {
       if (['/games/real-or-ai/', '/games/real-or-ai/index.html'].includes(u.pathname)) return {navigate:'/station.html?n=4'};
       if (['/games/close-the-popups/', '/games/close-the-popups/index.html'].includes(u.pathname)) return {navigate:'/station.html?n=2'};
       if (u.pathname === '/games/scan-me-if-you-can/' || u.pathname === '/games/scan-me-if-you-can/index.html') return {navigate:'/station.html?n=5'};
-      if (u.pathname === '/games/scan-me-if-you-can/phone.html') {
+      if (u.pathname === '/games/scan-me-if-you-can/phone.html' || u.pathname === '/games/spot-the-fake-cash/play.html') {
         const match = /^#(\d+)\.([A-Za-z0-9_-]+)$/.exec(u.hash);
         if (!match) return 'Ask the Game Master to show your personal Join QR.';
         try {

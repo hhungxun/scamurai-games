@@ -148,10 +148,11 @@ def run():
                 # Checked-out participants can be re-opened by the front desk if they checked out early.
                 ok('POST', '/api/participants/PORTAL001/reopen', {}, pin='1111')
                 # Existing shared SDK games expose the same personal page during play and after finish.
+                # Use Station 2 here (PORTAL001 already used both tries at Station 1 under MAX_TRIES=2).
                 game = staff.new_page(); game.on('pageerror', lambda e: errors.append(str(e)))
                 game.goto(BASE + '/games/_template/')
-                game.evaluate("""() => { const s=document.createElement('script'); s.src='/sdk.js'; s.dataset.station='1'; document.head.appendChild(s); }""")
-                game.wait_for_selector('.scm input[type=password]'); game.fill('.scm input[type=password]', '5001'); game.click('.scm .go')
+                game.evaluate("""() => { const s=document.createElement('script'); s.src='/sdk.js'; s.dataset.station='2'; document.head.appendChild(s); }""")
+                game.wait_for_selector('.scm input[type=password]'); game.fill('.scm input[type=password]', '5002'); game.click('.scm .go')
                 game.wait_for_selector('.scm .find'); game.fill('.scm .find', 'PORTAL001')
                 game.wait_for_function("!document.querySelector('.scm .go').disabled"); game.click('.scm .go')
                 game.click('#scamurai-personal-page button'); game.wait_for_selector('#scamurai-personal-page svg')

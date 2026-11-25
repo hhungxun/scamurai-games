@@ -128,7 +128,7 @@ h1, h2, h3 { font-family: var(--display); line-height: 1.08; font-weight: 900; l
   align-items: start; gap: clamp(24px, 5vw, 52px);
 }
 .booth-brief-copy h1, .booth-result-hero h1, .booth-recovery h1 { font-size: clamp(2rem, 4vw, 3.1rem); color: var(--ink); }
-.booth-brief-text { max-width: 40rem; margin: 16px 0 22px; font-size: 1.05rem; font-weight: 500; }
+.booth-brief-copy h1 { margin-bottom: 22px; }
 .booth-start-hint { margin-bottom: 22px; padding: 14px 16px 14px 18px; border: 3px solid var(--ink); border-left: 10px solid var(--yellow); background: var(--paper); box-shadow: var(--shadow); }
 .booth-start-hint strong { display: block; font-size: 1rem; text-transform: uppercase; }
 .booth-start-hint p { margin: 6px 0 0; }

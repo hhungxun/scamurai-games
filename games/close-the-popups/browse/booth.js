@@ -162,14 +162,13 @@
           <div class="booth-brief-copy">
             <p class="booth-eyebrow">${esc(item.site)}${item.advanced ? ` · ${t('Advanced', '进阶')}` : ''}${mode === 'clean' ? ` · ${esc(modeName(mode))}` : ''}</p>
             <h1 id="booth-title">${esc(txt(item.title))}</h1>
-            <p class="booth-brief-text">${taskText(item.brief, item)}</p>
             ${item.hint ? `<aside class="booth-start-hint"><strong>${t('Hint', '提示')}</strong><p>${taskText(item.hint, item)}</p></aside>` : ''}
             <div class="booth-goals">
               <h2>${t('What to do', '要做的事')}</h2>
               <ol>${item.goals.map(goal => `<li>${taskText(goal, item)}</li>`).join('')}</ol>
             </div>
             <button id="booth-start" type="button" class="booth-button booth-button-primary">${t('Start task', '开始任务')} <span aria-hidden="true">→</span></button>
-            <p id="booth-start-note" class="booth-note" role="status">${t('You have 60 seconds once the site loads. The clock keeps running if you switch tabs. Finish and submit within 30 seconds for full speed points. The task and speed are worth up to 40 points each. Closing pop-ups safely helps you earn the other 20.', '网页打开后有 60 秒，切换标签页也照常计时。30 秒内做完并交卷，速度分拿满。任务和速度各占 40 分，安全关闭弹窗也能得分，最多 20 分。')}</p>
+            <p id="booth-start-note" class="booth-note" role="status" hidden></p>
           </div>
           <figure class="booth-brief-figure"><img class="booth-brief-photo" src="${esc(item.briefCover||item.cover)}" alt="" width="480" height="360">${item.coverNote?`<figcaption>${esc(txt(item.coverNote))}</figcaption>`:""}</figure>
         </section>
@@ -192,6 +191,7 @@
         try { await window.CLOSE_POPUPS_BRIDGE.abort(); } catch {}
         starting = false;
         button.disabled = false;
+        note.hidden = false;
         note.textContent = t('This round could not be prepared. Allow this site’s session storage, then try again. Your challenge has not started.', '未能准备本轮。请允许此网站的会话存储，再试一次。挑战尚未开始。');
         note.textContent = error?.message || note.textContent;
         note.classList.add('is-error');

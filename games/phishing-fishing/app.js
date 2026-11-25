@@ -36,8 +36,52 @@
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v.1"/>',
     cross: '<path d="m6 6 12 12M6 18 18 6"/>',
     trophy: '<path d="M8 3h8v5c0 5-8 5-8 0V3Zm0 1H4v3c0 3 4 3 4 3m8-6h4v3c0 3-4 3-4 3m-4 2v6m-4 3h8m-4-3v3"/>',
-    lock: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/>'
+    lock: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/>',
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4m8-4v4"/>',
+    people: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-4 3.4-6 6.5-6s5.7 2 6.5 6M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14c2 .6 3.2 2.6 3.6 6"/>',
+    todo: '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
+    apps: '<rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/>',
+    trash: '<path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13"/>',
+    archive: '<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10h14V9M10 13h4"/>',
+    move: '<path d="M3 7h7l2 2h9v10H3Z"/><path d="m12 14 3-3m0 0-3-3m3 3H8" transform="translate(0 2)"/>',
+    gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M4.9 4.9l2.1 2.1m10 10 2.1 2.1M4.9 19.1 7 17m10-10 2.1-2.1"/>',
+    bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4Zm4 4h4"/>',
+    sound: '<path d="M4 9h4l5-4v14l-5-4H4Z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/>',
+    mute: '<path d="M4 9h4l5-4v14l-5-4H4Z"/><path d="m17 9 5 6m0-6-5 6"/>',
+    star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"/>',
+    folderChev: '<path d="m7 9 5 5 5-5"/>'
   };
+  const sfx = window.FishingSfx || { reel() {}, release() {}, mail() {}, tick() {}, start() {}, end() {}, toggle() { return true; }, muted: true };
+  let toastTimer = null, lastTickSecond = null, celebrated = false;
+  function actionToast(classification, remaining) {
+    let el = document.querySelector("#ol-toast");
+    if (!el) { el = document.createElement("div"); el.id = "ol-toast"; el.className = "ol-toast"; el.setAttribute("aria-hidden", "true"); document.body.append(el); }
+    const phish = classification === "phishing";
+    el.className = `ol-toast ${phish ? "phish" : "safe"}`;
+    el.innerHTML = `${icon(phish ? "flag" : "shield")}<span><strong>${phish ? "Reported · moved to Junk Email" : "Marked safe · kept in Inbox"}</strong><small>${remaining ? `${remaining} email${remaining === 1 ? "" : "s"} left to triage` : "Inbox cleared!"}</small></span><span class="ol-toast-fish" aria-hidden="true">${phish ? "🎣" : "🐟"}</span>`;
+    void el.offsetWidth; el.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 1500);
+  }
+  function hideToast() { clearTimeout(toastTimer); document.querySelector("#ol-toast")?.classList.remove("show"); }
+  function anglerRank(score, max) {
+    const r = score / max;
+    if (r >= 1) return { title: "Scamurai Master Angler", emoji: "🏆", note: "A perfect net. Not one scam slipped through." };
+    if (r >= 0.8) return { title: "Shark Spotter", emoji: "🦈", note: "You read the water like a pro." };
+    if (r >= 0.6) return { title: "Seasoned Angler", emoji: "🎣", note: "Solid catch. A couple of crafty ones got away." };
+    if (r >= 0.4) return { title: "Deckhand", emoji: "⚓", note: "You're learning the tides. Check the clues below." };
+    return { title: "Bait Taker", emoji: "🪱", note: "The scammers had a good day. Read the clues and cast again!" };
+  }
+  function confetti() {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const box = document.createElement("div"); box.className = "pf-confetti"; box.setAttribute("aria-hidden", "true");
+    const colours = ["#e52521", "#edcf61", "#0f6cbd", "#107c41", "#242424"];
+    for (let i = 0; i < 70; i++) {
+      const b = document.createElement("i");
+      b.style.cssText = `left:${Math.random() * 100}%;background:${colours[i % colours.length]};animation-delay:${Math.random() * 0.6}s;animation-duration:${1.8 + Math.random() * 1.4}s;--drift:${(Math.random() - 0.5) * 220}px;--spin:${(Math.random() - 0.5) * 1080}deg`;
+      box.append(b);
+    }
+    document.body.append(box); setTimeout(() => box.remove(), 3800);
+  }
   function icon(name, cls = "") {
     return `<svg class="icon ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name] || icons.mail}</svg>`;
   }
@@ -140,6 +184,8 @@
     lastAnnouncement = null;
     emailObserver?.disconnect();
     emailObserver = null;
+    lastTickSecond = null;
+    hideToast();
   }
   function focusHeading() {
     const heading = main.querySelector("h1");
@@ -150,6 +196,7 @@
     if (!initial && host) { host.next(window); return; }
     clearWork();
     showingResults = false;
+    celebrated = false;
     reviewLoaded = true;
     pendingAnswers.clear();
     let saved = initial && host ? host.snapshot(window) : null;
@@ -204,14 +251,7 @@
           <h1 tabindex="-1">Phishing<br><span>Fishing</span><span class="title-dot">.</span></h1>
           <p class="hero-subtitle">Catch the scams.<br>Let safe mail swim.</p>
           <p class="hero-description">Triage your XMUM Outlook inbox. Inspect the sender, hover or click links &amp; attachments safely, and use Check Yourself on the right whenever you’re unsure.</p>
-          <div class="round-facts" aria-label="Round details">
-            <div>${icon("mail")}<span><strong>${questionCount} emails</strong><small>One Outlook inbox</small></span></div>
-            <div>${icon("clock")}<span><strong>${esc(settings.roundSeconds)} seconds</strong><small>One shared timer</small></span></div>
-            <div>${icon("trophy")}<span><strong>100 points</strong><small>A perfect score</small></span></div>
-          </div>
           <button class="button primary start-button" id="start-game" type="button">Start Game ${icon("arrow")}</button>
-          <p class="scoring-note">${questionCount} emails · ${pointsPerEmail} points per correct answer. Wrong and unanswered emails earn 0 points. ${demo ? "Unscored demo: no event result is saved." : "Your best completed Station 3 score counts."}</p>
-          <p class="start-note">Use Check Yourself on the right when you want to verify against your own app or portal. Checking is free; the timer keeps running.</p>
         </div>
         <div class="hero-art fishing-hero" aria-hidden="true">
           <div class="art-grid"></div>
@@ -241,12 +281,14 @@
     try { save(); } catch (error) { storageFailure(error); return; }
     page = "playing";
     document.body.dataset.screen = page;
+    sfx.start();
     renderEmail();
     ticker = setInterval(tick, 100);
     tick();
   }
   function progressRail() {
     return `<aside class="round-sidebar" aria-label="Inbox message list">
+      <div class="ol-group-head">Today</div>
       <ol class="email-progress">${round.questions.map((em, i) => {
         const ans = round.answers[i], done = ans !== null, active = i === round.index;
         const hasAtt = em.body.some(b => b.type === "attachment");
@@ -438,10 +480,20 @@
           <span class="ol-progress-pill">Email <strong id="email-number">${round.index + 1}</strong> / ${round.questions.length}</span>
           <div class="ol-timer" id="timer" role="timer" aria-live="off" aria-label="Time remaining">${icon("clock")}<strong id="timer-value">${formatClock(Math.ceil(round.remainingMs() / 1000))}</strong></div>
           <button class="ol-top-btn" id="ol-open-reference" type="button" aria-haspopup="dialog" aria-controls="reference-dialog">${icon("info")} How to verify</button>
+          <button class="ol-top-icon" id="ol-sound" type="button" aria-pressed="${!sfx.muted}" aria-label="${sfx.muted ? "Turn sound on" : "Turn sound off"}" title="Sound effects">${icon(sfx.muted ? "mute" : "sound")}</button>
+          <span class="ol-top-icon ol-top-inert" aria-hidden="true">${icon("bell")}</span>
+          <span class="ol-top-icon ol-top-inert" aria-hidden="true">${icon("gear")}</span>
           <span class="ol-user-avatar" title="${esc(email.recipient || 'student@xmum.edu.my')}">${esc(userInitials)}</span>
         </div>
       </header>
+      <div class="ol-timebar" aria-hidden="true"><i id="timebar-fill"></i></div>
+      <div class="ol-ribbon-tabs" aria-hidden="true"><span class="on">Home</span><span>View</span><span>Help</span></div>
       <div class="ol-ribbon" role="toolbar" aria-label="Mail actions">
+        <span class="ol-cmd ol-new-mail-cmd ol-cmd-muted" aria-hidden="true">${icon("mail")} <span>New mail</span></span>
+        <span class="ol-cmd ol-cmd-muted ol-cmd-ghost" aria-hidden="true">${icon("trash")} <span>Delete</span></span>
+        <span class="ol-cmd ol-cmd-muted ol-cmd-ghost" aria-hidden="true">${icon("archive")} <span>Archive</span></span>
+        <span class="ol-cmd ol-cmd-muted ol-cmd-ghost ol-cmd-move" aria-hidden="true">${icon("move")} <span>Move to</span></span>
+        <span class="ol-sep" aria-hidden="true"></span>
         <button class="ol-cmd ol-cmd-safe" type="button" data-answer="legitimate" data-question="${esc(email.id)}">${icon("shield")} <span>Mark Safe</span> <kbd>L</kbd></button>
         <button class="ol-cmd ol-cmd-phish" type="button" data-answer="phishing" data-question="${esc(email.id)}">${icon("flag")} <span>Report Phishing</span> <kbd>P</kbd></button>
         <span class="ol-sep" aria-hidden="true"></span>
@@ -449,14 +501,24 @@
         <span class="ol-ribbon-hint">Answers revealed at end of round</span>
       </div>
       <div class="ol-workspace">
+        <nav class="ol-apprail" aria-hidden="true">
+          <span class="on" title="Mail">${icon("mail")}</span><span title="Calendar">${icon("calendar")}</span><span title="People">${icon("people")}</span><span title="To Do">${icon("todo")}</span><span title="Apps">${icon("apps")}</span>
+        </nav>
         <nav class="ol-nav" aria-label="Mail folders">
-          <div class="ol-folder ol-folder-active">${icon("mail")} <span>Inbox</span> <b>${remainingCount}</b></div>
+          <div class="ol-nav-label">${icon("folderChev")} Favorites</div>
+          <div class="ol-folder active">${icon("mail")} <span>Inbox</span> <b>${remainingCount}</b></div>
           <div class="ol-folder">${icon("arrow")} <span>Sent Items</span></div>
+          <div class="ol-nav-label ol-nav-account">${icon("folderChev")} ${esc(email.recipient ? String(email.recipient).replace(/^.*<|>.*$/g, "") : "student@xmum.edu.my")}</div>
+          <div class="ol-folder">${icon("mail")} <span>Inbox</span> <b>${remainingCount}</b></div>
+          <div class="ol-folder ol-junk">${icon("flag")} <span>Junk Email</span> <b id="junk-count" ${reportedCount ? "" : "hidden"}>${reportedCount}</b></div>
           <div class="ol-folder">${icon("paperclip")} <span>Drafts</span></div>
-          <div class="ol-folder">${icon("flag")} <span>Junk Email</span> ${reportedCount ? `<b>${reportedCount}</b>` : ""}</div>
+          <div class="ol-folder">${icon("arrow")} <span>Sent Items</span></div>
+          <div class="ol-folder">${icon("trash")} <span>Deleted Items</span></div>
+          <div class="ol-folder">${icon("archive")} <span>Archive</span></div>
           <div class="ol-nav-foot">${icon("lock")} student@xmum.edu.my<br>Safe training mailbox</div>
         </nav>
         <section class="ol-list-pane" aria-label="Inbox messages">
+          <div class="ol-list-title"><span>Inbox ${icon("star")}</span><span class="ol-list-tools" aria-hidden="true">${icon("todo")}${icon("folderChev")}</span></div>
           <div class="ol-list-head"><div class="ol-tabs"><span class="ol-tab-active">Focused</span><span class="ol-tab-dim">Other</span></div><span class="ol-list-count">${remainingCount} unread</span></div>
           ${progressRail()}
         </section>
@@ -489,6 +551,12 @@
 
     main.querySelectorAll("[data-answer]").forEach(button => button.addEventListener("click", () => submitAnswer(button.dataset.question, button.dataset.answer)));
     main.querySelector("#ol-open-reference").onclick = () => referenceDialog.showModal();
+    main.querySelector("#ol-sound").onclick = event => {
+      const nowMuted = sfx.toggle(), btn = event.currentTarget;
+      btn.innerHTML = icon(nowMuted ? "mute" : "sound");
+      btn.setAttribute("aria-pressed", String(!nowMuted));
+      btn.setAttribute("aria-label", nowMuted ? "Turn sound on" : "Turn sound off");
+    };
 
     const recordPane = main.querySelector("#verification-record");
     const ribbonVerify = main.querySelector("#verify-independent");
@@ -566,6 +634,12 @@
       if (button.dataset.answer === round.answers[round.index - 1]?.classification) button.classList.add("answer-recorded");
     });
     announce("Answer recorded.");
+    const recorded = classification;
+    if (recorded === "phishing") sfx.reel(); else sfx.release();
+    actionToast(recorded, round.questions.length - round.index);
+    const junk = main.querySelector("#junk-count");
+    if (junk && recorded === "phishing") { junk.hidden = false; junk.textContent = round.answers.filter(a => a && a.classification === "phishing").length; junk.classList.remove("bump"); void junk.offsetWidth; junk.classList.add("bump"); }
+    main.querySelector('.email-progress li[aria-current="step"]')?.classList.add(recorded === "phishing" ? "flying-junk" : "flying-safe");
     if (round.status === "finished") {
       showResults();
       return;
@@ -577,6 +651,8 @@
       if (round.expire()) { showResults(); return; }
       locked = false;
       renderEmail();
+      main.querySelector('.email-progress li[aria-current="step"]')?.classList.add("arrived");
+      sfx.mail();
       tick();
     }, 320);
   }
@@ -588,6 +664,14 @@
     const timer = document.querySelector("#timer");
     document.querySelector("#timer-value").textContent = clockStr;
     timer.classList.toggle("timer-urgent", remaining <= 10);
+    const fill = document.querySelector("#timebar-fill");
+    if (fill) {
+      const frac = Math.max(0, Math.min(1, round.remainingMs() / (settings.roundSeconds * 1000)));
+      fill.style.transform = `scaleX(${frac})`;
+      fill.parentElement.dataset.level = remaining <= 10 ? "urgent" : remaining <= 30 ? "warn" : "ok";
+    }
+    document.body.classList.toggle("pf-final", remaining <= 10);
+    if (remaining <= 10 && remaining > 0 && remaining !== lastTickSecond && !document.hidden) { lastTickSecond = remaining; sfx.tick(remaining <= 5); }
     window.SitePopups?.syncClock(clockStr, remaining <= 10);
     timer.setAttribute("aria-label", `${remaining} seconds remaining, shared across all ${round.questions.length} emails`);
     if ([30, 10, 5].includes(remaining) && remaining !== lastAnnouncement) {
@@ -647,6 +731,8 @@
       ? performanceMessage(results)
       : ["Round complete.", "Your answers were submitted, but the server review could not be loaded yet. Retry below to see your score breakdown and verdicts."];
     const earned = `${results.correct} correct × ${results.pointsPerEmail}`;
+    const rank = reviewLoaded ? anglerRank(results.score, results.maximum) : null;
+    document.body.classList.remove("pf-final");
     const finalScore = `<strong>${results.score} / ${results.maximum}</strong>`;
     const scoreBreakdown = !reviewLoaded
       ? "Verdicts and score breakdown are waiting on the server review."
@@ -656,7 +742,7 @@
     main.className = "results-screen";
     main.innerHTML = `
       <div class="results-topline"><span class="eyebrow">THE INBOX CHALLENGE / ROUND COMPLETE</span><button class="button primary new-player" type="button">${icon("refresh")} New Player</button></div>
-      <section class="results-hero"><div class="score-circle" style="--score-angle:${reviewLoaded ? results.score / results.maximum * 360 : 0}deg"><div><strong>${reviewLoaded ? results.score : "—"}<span>/ ${results.maximum}</span></strong><small>YOUR SCORE</small></div></div><div class="results-copy"><span class="completion-label">${icon(reviewLoaded && results.correct === results.reviews.length ? "trophy" : "shield")} ${results.endReason === "timeout" ? "Time's up. Let's find the clues." : "Inbox checked. A little more awareness."}</span><h1 tabindex="-1">${title}</h1><p>${message}</p><div class="result-stats"><div><strong>${results.answered}</strong><small>Emails answered / ${questionCount}</small></div><div><strong>${reviewLoaded ? (results.accuracy * 100).toFixed(1) : "—"}<span>%</span></strong><small>${reviewLoaded ? `Label accuracy (${results.correct} right, ${results.incorrect} wrong)` : "Label accuracy (pending review)"}</small></div><div><strong>${results.timeUsed.toFixed(1)}<span>s</span></strong><small>Time used of ${esc(settings.roundSeconds)}s</small></div></div><p class="score-breakdown">${scoreBreakdown} ${demo ? 'Practice score only.' : 'The displayed score counts toward your event result.'}</p></div></section>
+      <section class="results-hero"><div class="score-circle" style="--score-angle:${reviewLoaded ? results.score / results.maximum * 360 : 0}deg"><div><strong>${reviewLoaded ? results.score : "—"}<span>/ ${results.maximum}</span></strong><small>YOUR SCORE</small></div></div><div class="results-copy"><span class="completion-label">${icon(reviewLoaded && results.correct === results.reviews.length ? "trophy" : "shield")} ${results.endReason === "timeout" ? "Time's up. Let's find the clues." : "Inbox checked. A little more awareness."}</span>${rank ? `<div class="angler-rank"><span class="angler-emoji" aria-hidden="true">${rank.emoji}</span><span><small>YOUR ANGLER RANK</small><strong>${rank.title}</strong><em>${rank.note}</em></span></div>` : ""}<h1 tabindex="-1">${title}</h1><p>${message}</p><div class="result-stats"><div><strong>${results.answered}</strong><small>Emails answered / ${questionCount}</small></div><div><strong>${reviewLoaded ? (results.accuracy * 100).toFixed(1) : "—"}<span>%</span></strong><small>${reviewLoaded ? `Label accuracy (${results.correct} right, ${results.incorrect} wrong)` : "Label accuracy (pending review)"}</small></div><div><strong>${results.timeUsed.toFixed(1)}<span>s</span></strong><small>Time used of ${esc(settings.roundSeconds)}s</small></div></div><p class="score-breakdown">${scoreBreakdown} ${demo ? 'Practice score only.' : 'The displayed score counts toward your event result.'}</p></div></section>
       ${!reviewLoaded ? `<div class="timeout-note" role="alert">${icon("info")} Could not load the verdicts from the server. <button class="button primary" id="retry-review" type="button" style="margin-left:auto">Retry loading review</button></div>` : ""}
       ${results.unanswered ? `<div class="timeout-note">${icon("clock")} ${results.unanswered} email${results.unanswered === 1 ? " was" : "s were"} unanswered.</div>` : ""}
       ${reviewLoaded ? catchReport(results) : ""}
@@ -682,6 +768,12 @@
     }));
     window.scrollTo(0, 0);
     focusHeading();
+    if (reviewLoaded && !celebrated) {
+      celebrated = true;
+      const good = results.score / results.maximum >= 0.6;
+      sfx.end(good);
+      if (results.score / results.maximum >= 0.8) confetti();
+    }
     announce(reviewLoaded
       ? `Round complete. Score ${results.score} out of ${results.maximum}. ${results.answered} answered, ${results.correct} correct, ${results.incorrect} incorrect, ${results.unanswered} unanswered. Accuracy ${(results.accuracy * 100).toFixed(1)} percent. Review answers below.`
       : "Round complete. Could not load the review from the server. Use Retry loading review.");

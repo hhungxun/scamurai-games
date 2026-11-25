@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Scamurai · Self-Registration</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .existing-banner{border-top:5px solid var(--yellow)}
+  .existing-banner h2{margin-bottom:10px}
+  .done-card{border-top:5px solid #7CFC8A;text-align:center}
+  .done-card .eyebrow{color:#7CFC8A;margin:0 0 8px}
+  .done-id{font:400 clamp(40px,10vw,56px)/1.05 Anton,Impact,sans-serif;color:var(--yellow);letter-spacing:1px;margin:10px 0 8px}
+  .guest-note{background:#2a2518;border:1px solid rgba(237,207,97,.45);border-left:4px solid var(--yellow);border-radius:3px;padding:12px 14px;margin:14px 0;text-align:left;font-size:13px}
+  .paused-card{border-top:5px solid var(--red)}
+  .btn-stack{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+  .btn-stack .btn{width:100%}
+</style>
+<script src="/participant.js"></script>
+<script src="/site.js" defer></script>
+<link rel="icon" href="/assets/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/assets/apple-touch-icon.png"></head>
+<body data-site-nav data-page="self-register"><main class="wrap" id="main-content">
+<div class="top"><img src="assets/logo.jpg" alt=""><div><h1>CHECK <em>IN.</em></h1><p class="tag">Self-registration · Scamurai 2026</p></div></div>
+
+<section class="card existing-banner" id="existingCard" hidden>
+  <p class="eyebrow" style="color:var(--yellow)">ALREADY REGISTERED ON THIS PHONE</p>
+  <h2 id="existingName">Welcome back</h2>
+  <p id="existingIdLine"></p>
+  <div class="btn-stack">
+    <a class="btn" href="/participant.html">Open my participant page ↗</a>
+    <button class="ghost" type="button" id="registerAnother">Register a different person on this phone</button>
+  </div>
+</section>
+
+<section class="card paused-card" id="pausedCard" hidden>
+  <p class="eyebrow" style="color:#ffaaa2">FRONT DESK CHECK-IN</p>
+  <h2>QR self-registration is paused</h2>
+  <p>Please step up to the registration desk — a Secretary will register you in 15 seconds and show your personal QR.</p>
+  <div class="btn-stack">
+    <a class="btn ghost" href="/participant.html">Already registered? Open my page</a>
+  </div>
+</section>
+
+<form class="card" id="form" autocomplete="off" hidden>
+  <p class="eyebrow" style="color:var(--yellow)">SCAMURAI / PLAYER CHECK-IN</p>
+  <h2>Register to play</h2>
+  <p class="muted" style="margin-top:-10px">Fill in your details once to get your personal Scamurai page and track your scores across all 5 stations.</p>
+
+  <div class="chips" style="margin-top:14px">
+    <label><input type="radio" name="kind" value="student" checked><span>XMUM student</span></label>
+    <label><input type="radio" name="kind" value="guest"><span>Guest (no student ID)</span></label>
+  </div>
+
+  <div id="idRow">
+    <label for="sid">Student ID</label>
+    <input id="sid" placeholder="e.g. PHY2209123" maxlength="20" autocapitalize="characters" style="text-transform:uppercase">
+  </div>
+
+  <label for="name">Name</label>
+  <input id="name" maxlength="80" placeholder="As you want it on the leaderboard (first name shown)">
+
+  <label>Age group</label>
+  <div class="chips">
+    <label><input type="radio" name="age" value="≤18"><span>≤18</span></label>
+    <label><input type="radio" name="age" value="19–21"><span>19–21</span></label>
+    <label><input type="radio" name="age" value="22–25"><span>22–25</span></label>
+    <label><input type="radio" name="age" value="26+"><span>26+</span></label>
+  </div>
+
+  <label>Do you have a Public Bank account?</label>
+  <div class="chips">
+    <label><input type="radio" name="pbb" value="yes"><span>Yes</span></label>
+    <label><input type="radio" name="pbb" value="no"><span>No</span></label>
+  </div>
+
+  <label>Have you, or someone close to you, been targeted by a scam?</label>
+  <div class="chips">
+    <label><input type="radio" name="exp" value="yes-me"><span>Yes, me</span></label>
+    <label><input type="radio" name="exp" value="yes-someone-close"><span>Someone close</span></label>
+    <label><input type="radio" name="exp" value="no"><span>No</span></label>
+    <label><input type="radio" name="exp" value="prefer-not-to-say"><span>Prefer not to say</span></label>
+  </div>
+
+  <label class="consent" style="margin-top:18px"><input type="checkbox" id="consent">
+    <span>I agree that my answers and game scores are recorded for this event and the club's report. My name is shown on the leaderboard as first name + last 3 digits of my ID. Personal data is deleted within 30 days after 26 Nov 2026.</span></label>
+
+  <p class="err" id="err" role="alert"></p>
+  <button class="wide" id="go" type="submit">Complete registration</button>
+</form>
+
+<section class="card done-card" id="doneCard" hidden>
+  <p class="eyebrow">REGISTRATION COMPLETE</p>
+  <h2 id="doneName">You're in!</h2>
+  <p class="muted" id="doneKind">Participant ID</p>
+  <div class="done-id" id="doneId"></div>
+  <div class="guest-note" id="guestNote" hidden>
+    <strong>Remember your Guest ID!</strong> You can use this ID at any station laptop, and it is saved automatically on your participant page.
+  </div>
+  <p>Your personal page is now remembered on this phone. Tap below to start playing and scanning station QR codes.</p>
+  <div class="btn-stack">
+    <a class="btn" id="openPageBtn" href="/participant.html">Open my participant page ↗</a>
+    <a class="btn ghost" id="scanNowBtn" href="/participant.html?scan=1">Start Scamming (scan a station QR)</a>
+  </div>
+</section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const val = n => (document.querySelector(`input[name=${n}]:checked`) || {}).value;
+
+document.querySelectorAll('input[name=kind]').forEach(r => {
+  r.onchange = () => { $('idRow').hidden = val('kind') === 'guest'; };
+});
+
+async function boot() {
+  let enabled = true;
+  try {
+    const st = await fetch('/api/registration/status').then(r => r.json());
+    if (st && st.selfRegistrationEnabled === false) enabled = false;
+  } catch {}
+
+  let existing = null;
+  const tok = window.ScamuraiParticipant?.token();
+  if (tok) {
+    try {
+      const res = await fetch('/api/participant/me', { headers: { 'X-Participant-Token': tok } });
+      if (res.ok) existing = await res.json();
+    } catch {}
+  }
+
+  if (existing) {
+    $('existingName').textContent = existing.name;
+    $('existingIdLine').innerHTML = `${esc(existing.idKind || 'Participant ID')}: <strong style="color:var(--yellow)">${esc(existing.id)}</strong> · ${existing.stationsDone.length}/5 stations done`;
+    $('existingCard').hidden = false;
+    $('registerAnother').onclick = () => {
+      $('existingCard').hidden = true;
+      if (enabled) { $('form').hidden = false; $('sid').focus(); }
+      else $('pausedCard').hidden = false;
+    };
+    return;
+  }
+
+  if (!enabled) {
+    $('pausedCard').hidden = false;
+    return;
+  }
+  $('form').hidden = false;
+  $('sid').focus();
+}
+
+$('form').onsubmit = async e => {
+  e.preventDefault();
+  $('err').innerHTML = '';
+  const guest = val('kind') === 'guest';
+  const rawId = $('sid').value.trim().toUpperCase();
+  const body = {
+    guest,
+    id: rawId,
+    name: $('name').value.trim(),
+    ageGroup: val('age'),
+    pbbAccount: val('pbb') == null ? null : val('pbb') === 'yes',
+    scamExposure: val('exp'),
+    consent: $('consent').checked
+  };
+
+  const errors = [];
+  if (!guest) {
+    if (!rawId) errors.push('Enter your student ID (or choose Guest).');
+    else if (!/^[A-Z0-9]{4,20}$/.test(rawId) || /^G\d+$/.test(rawId)) errors.push('Student ID should be 4–20 letters/digits.');
+  }
+  if (body.name.length < 2) errors.push('Name is required (at least 2 characters).');
+  if (!body.ageGroup) errors.push('Pick an age group.');
+  if (body.pbbAccount === null) errors.push('Answer the Public Bank question.');
+  if (!body.scamExposure) errors.push('Answer the scam question.');
+  if (!body.consent) errors.push('Consent is required to take part.');
+
+  if (errors.length) {
+    $('err').innerHTML = errors.length === 1
+      ? esc(errors[0])
+      : `<ul style="margin:6px 0 0;padding-left:20px">${errors.map(m => `<li>${esc(m)}</li>`).join('')}</ul>`;
+    $('err').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return;
+  }
+
+  $('go').disabled = true;
+  try {
+    const res = await fetch('/api/participants/self', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(j.error || 'Could not register right now. Please try again.');
+
+    window.ScamuraiParticipant?.remember(j.participantToken);
+    $('doneName').textContent = `Welcome, ${j.name}!`;
+    $('doneKind').textContent = guest ? 'Your Guest ID' : 'Your Student ID';
+    $('doneId').textContent = j.id;
+    $('guestNote').hidden = !guest;
+    $('openPageBtn').href = `/participant.html#${j.participantToken}`;
+    $('scanNowBtn').href = `/participant.html?scan=1#${j.participantToken}`;
+
+    $('form').hidden = true;
+    $('doneCard').hidden = false;
+    $('doneCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (err) {
+    $('err').textContent = err.message;
+  } finally {
+    $('go').disabled = false;
+  }
+};
+
+boot();
+</script>
+</body></html>

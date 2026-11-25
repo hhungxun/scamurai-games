@@ -1,5 +1,275 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script>/* Scored play needs the event server (API + booth assets). GitHub Pages is static: send it there. */if(/\.github\.io$/.test(location.hostname))location.replace("https://scamurai.physicsxmum.my"+location.pathname.replace(/^\/scamurai-games/,"")+location.search+location.hash)</script><meta name="description" content="Spot the Fake Cash · Scamurai Station 1. Practise spotting suspicious security features."><title>Spot the Fake Cash · Scamurai Station 1</title><link rel="stylesheet" href="/desktop-booth.css"><link rel="stylesheet" href="./css/booth.css"><script src="../../sdk.js" data-station="1" data-demo-param="demo"></script><script defer src="/desktop-booth.js" data-game="spot-the-fake-cash" data-title="Spot the Fake Cash" data-demo-status="Inspect ten banknotes in an unscored demo." data-station="1"></script><link rel="stylesheet" href="../shared/theme.css"><link rel="icon" href="/assets/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/assets/apple-touch-icon.png"></head><body>
-<header class="booth-top"><a id="booth-brand" class="booth-wordmark" href="/">SCAM<span>URAI</span></a><span>01 / SPOT THE FAKE CASH</span><strong id="booth-player"><span id="booth-identity">Choose your registered name</span></strong><a id="booth-personal" target="_blank" rel="noopener">My scores</a><button id="booth-next" hidden>Next participant</button><button id="booth-retry" hidden>Retry save</button><button id="booth-survey" hidden>Exit survey</button><button id="booth-cancel" hidden>Cancel round</button><button id="booth-leaving">Leaving</button><a id="demo-link" class="try-demo" href="?demo=1">Try demo</a><span id="booth-demo-pill" hidden>DEMO · <a href="./">Exit demo</a></span></header>
-<p id="booth-status" role="status" aria-live="polite">Connecting to Scamurai…</p>
-<section id="booth-idle"><p>SCAMURAI / CURRENCY AUTHENTICATION</p><h1>SPOT THE<br>FAKE CASH.</h1><p>Choose your registered name or student/guest ID, then inspect the samples. Each laptop runs its own participant. Your best finished score counts.</p><button id="booth-select">Choose participant</button><a class="try-demo" href="?demo=1">Try an unscored demo →</a></section>
-<iframe id="booth-frame" title="Spot the Fake Cash inspection game" allow="fullscreen; xr-spatial-tracking" hidden></iframe><noscript>Enable JavaScript to play.</noscript></body></html>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<script>/* Scored play needs the event server (API + booth assets). GitHub Pages is static: send it there. */
+if(/\.github\.io$/.test(location.hostname))location.replace("https://scamurai.physicsxmum.my"+location.pathname.replace(/^\/scamurai-games/,"")+location.search+location.hash);
+if(new URLSearchParams(location.search).get('demo')==='1')location.replace('./booth.html?demo=1');</script>
+<meta name="robots" content="noindex,nofollow">
+<title>Station 1 · Spot the Fake Cash</title>
+<link rel="stylesheet" href="/style.css">
+<style>
+  .dash{max-width:1300px;margin:0 auto;padding:18px 22px}
+  .dash-top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+  .head{display:flex;align-items:center;gap:14px}
+  .head .logo{width:58px;height:58px;object-fit:cover;border:1px solid var(--line);border-radius:3px}
+  .acts{display:flex;gap:10px;flex-wrap:wrap}
+  .ghost.sm{padding:6px 10px;font-size:13px;min-height:38px}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+  .tile{background:rgba(36,34,33,.96);border:1px solid var(--line);border-top:4px solid var(--red);border-radius:4px;padding:16px;display:flex;flex-direction:column;gap:10px}
+  .tile .who{display:flex;justify-content:space-between;align-items:start;gap:8px}
+  .tile .who b{font-size:18px}
+  .tile .pts{font:400 44px/1 Anton,Impact,sans-serif;color:var(--yellow);text-align:right}
+  .strip{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
+  .strip span{background:#171616;border:1px solid var(--line);border-radius:3px;text-align:center;font:600 12px Lexend,sans-serif;padding:6px 0;color:var(--grey)}
+  .strip .ok{background:#1f5a32;border-color:#4ade80;color:#fff}
+  .strip .no{background:#6a1414;border-color:#f87171;color:#fff}
+  .tile .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .tile.over{border-top-color:var(--yellow);outline:1px solid var(--yellow)}
+  .tile.dead{opacity:.62;border-top-color:var(--dim)}
+  .tile .err{color:#ff6b6b;font-weight:600}
+  .empty{color:var(--grey);text-align:center;padding:56px 20px;border:2px dashed var(--dim);border-radius:4px;grid-column:1/-1}
+  .modal{position:fixed;inset:0;background:rgba(8,8,8,.84);display:grid;place-items:center;z-index:50;padding:16px;overflow:auto}
+  .modal .card{background:var(--bg);border:1px solid var(--line);border-top:5px solid var(--yellow);border-radius:4px;padding:22px;max-width:540px;width:100%;display:flex;flex-direction:column;gap:12px;margin:0}
+  .qr{background:#fff;border-radius:12px;padding:14px;display:grid;place-items:center}
+  .qr svg{width:100%;height:auto;max-width:360px}
+  ol.how{margin:6px 0 0;padding-left:20px;font-size:14px}ol.how li{margin:4px 0}
+  .box{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:4px;padding:12px 14px}
+  details.sum summary{cursor:pointer;color:var(--grey);font-size:13px}
+</style>
+<script src="/sdk.js" data-station="1"></script>
+<script src="/vendor/qrcode.js"></script>
+<script src="/site.js" defer></script>
+<link rel="icon" href="/assets/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+</head>
+<body data-site-nav data-game="cash">
+<main class="dash" id="app"><p class="muted">Loading…</p></main>
+<div id="modal"></div>
+<script>
+/* Station 1 laptop: Game Master dashboard for many Participants at once (mirrors Station 5).
+ * "+ New player" opens the SDK picker and displays a personal Join QR (play.html#<roundId>.<token>).
+ * Participants scan the Join QR to play on their own phone or open on Meta Quest 3 VR (no PIN on their device).
+ * The server deals the 10 banknotes, judges every answer, and computes the authoritative 0-100 score.
+ * Reloading the page, or opening it on a second laptop, rebuilds the tiles from open Rounds. */
+const N = 10, MAX = 100;
+const app = document.getElementById('app'), modal = document.getElementById('modal');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const dir = location.pathname.replace(/[^/]*$/, '');
+const joinUrl = R => `${location.origin}${dir}play.html#${R.roundId}.${R.token}`;
+
+const rounds = new Map();
+window.S1_ROUNDS = rounds;
+window.S1_JOIN = null;   // exposed for E2E tests without a camera
+
+function track({ roundId, token, startedAt, participant }) {
+  if (rounds.has(roundId)) return rounds.get(roundId);
+  const R = {
+    roundId, token, startedAt, p: participant,
+    deal: null, answered: [], joined: false, devs: new Set(), lastEvId: 0,
+    state: 'open', result: null, err: '', offline: false
+  };
+  rounds.set(roundId, R);
+  return R;
+}
+
+function liveScore(R) {
+  return R.answered.filter(a => a.correct).length * 10;
+}
+
+async function pollRound(R) {
+  if (R.state !== 'open') return;
+  let st, ev;
+  try {
+    const [rSt, rEv] = await Promise.all([
+      fetch(`/api/rounds/${R.roundId}/state`, { headers: { 'X-Round-Token': R.token } }),
+      fetch(`/api/rounds/${R.roundId}/events?after=${R.lastEvId}`, { headers: { 'X-Round-Token': R.token } })
+    ]);
+    if (rSt.status === 403 || rSt.status === 404) { R.state = 'gone'; return; }
+    st = await rSt.json();
+    ev = rEv.ok ? await rEv.json() : { events: [] };
+  } catch {
+    R.offline = true;
+    return;
+  }
+  R.offline = false;
+  R.deal = st.deal || null;
+  R.answered = st.answered || [];
+  for (const e of ev.events || []) {
+    R.lastEvId = Math.max(R.lastEvId, e.id);
+    const d = e.data || {};
+    if (d.t === 'join') R.joined = true;
+    if (d.dev) R.devs.add(d.dev);
+  }
+  if (R.deal || R.answered.length) R.joined = true;
+
+  if (st.cancelled) R.state = 'cancelled';
+  else if (st.ended) { R.state = 'ended'; fetchResult(R); }
+
+  if (R.joined && modal.dataset.round == R.roundId) closeModal();
+}
+
+async function end(R) {
+  if (R.state !== 'open' && R.state !== 'ending') return;
+  R.state = 'ending'; draw();
+  try {
+    R.result = await Scamurai.finishRound(R.roundId, { score: liveScore(R), maxScore: MAX });
+    R.state = 'ended';
+  } catch (e) {
+    if (e.status === 409) R.state = 'cancelled';
+    else { R.state = 'open'; R.err = 'Could not save: ' + e.message; }
+  }
+  draw();
+}
+
+async function fetchResult(R) {
+  if (!R.result) {
+    try { R.result = await Scamurai.finishRound(R.roundId, { score: liveScore(R), maxScore: MAX }); draw(); } catch {}
+  }
+}
+
+async function cancel(R) {
+  if (!confirm(`Cancel ${R.p.name}'s round? It won't count, and they can start again.`)) return;
+  try { await Scamurai.cancelRound(R.roundId); R.state = 'cancelled'; }
+  catch (e) { if (e.status === 409) R.state = 'ended'; else alert(e.message); }
+  draw();
+}
+
+function showQR(R) {
+  const url = joinUrl(R);
+  const q = qrcode(0, 'M'); q.addData(url); q.make();
+  window.S1_JOIN = url;
+  modal.dataset.round = R.roundId;
+  modal.innerHTML = `<div class="modal"><div class="card">
+    <div class="head"><img class="logo" src="/assets/logo.jpg" alt=""><div><h1>Spot the <em>Fake Cash</em></h1><p class="tag">${esc(R.p.name)} · ${esc(R.p.id)}</p></div></div>
+    <div class="qr">${q.createSvgTag({ cellSize: 8, margin: 2, scalable: true })}</div>
+    <div class="box"><b>${esc(R.p.name)}: scan this with your phone camera or Start Scamming</b>
+      <ol class="how">
+        <li>Opens <b>Spot the Fake Cash</b> linked directly to your account (no PIN needed).</li>
+        <li>Inspect <b>10 Malaysian Ringgit notes</b> in <b>2 minutes</b> using the 365nm UV torch, Tilt Hologram check, and Flip.</li>
+        <li>Tap <b>Start Inspection</b> on phone, or <b>Enter VR Mode</b> on Meta Quest 3.</li>
+        <li>Your score saves automatically when you finish.</li>
+      </ol>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <a class="btn" style="flex:1;font-size:16px" href="${esc(url)}" target="_blank" rel="noopener">Open on this device ↗</a>
+      <button class="ghost" id="mclose" style="flex:1">Close (QR stays on tile)</button>
+    </div>
+  </div></div>`;
+  document.getElementById('mclose').onclick = closeModal;
+}
+
+function closeModal() { modal.innerHTML = ''; delete modal.dataset.round; }
+
+function tile(R) {
+  const n = R.answered.length;
+  const strip = Array.from({ length: N }, (_, i) => {
+    const a = R.answered[i];
+    const cls = a ? (a.correct ? 'ok' : 'no') : '';
+    const title = a ? `Note #${i + 1}: ${a.correct ? 'Correct' : 'Wrong'} (said ${a.choice}, actual ${a.answer})` : `Note #${i + 1}`;
+    return `<span class="${cls}" title="${esc(title)}">${i + 1}</span>`;
+  }).join('');
+
+  let status, btns;
+  if (R.state === 'open' || R.state === 'ending') {
+    status = R.err ? `<span class="err">${esc(R.err)}</span>`
+      : R.offline ? 'Reconnecting…'
+      : !R.joined ? 'Waiting for player to scan Join QR'
+      : !R.deal ? 'Joined · reading instructions'
+      : `${n} of ${N} notes judged`;
+    if (R.devs.size > 1) status += ` · <b style="color:var(--red)">${R.devs.size} devices joined this round</b>`;
+    status += ` · <span class="el" data-t="${R.deal?.at || R.startedAt}"></span>`;
+    btns = `<button class="ghost sm" data-a="qr">Join QR</button><a class="ghost sm" href="${esc(joinUrl(R))}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">Play here ↗</a><button class="ghost sm" data-a="end">End now</button><button class="ghost sm" data-a="cancel">Cancel</button>`;
+  } else if (R.state === 'ended') {
+    const r = R.result;
+    status = r ? `<b style="color:var(--yellow)">${r.pct}%</b> · best here ${r.best}% · ${r.stationsDone.length}/5 stations` : 'Round over';
+    btns = (r && r.surveyDue ? `<button class="btn" data-a="survey">Exit survey</button>` : '') + `<button class="ghost sm" data-a="dismiss">Dismiss</button>`;
+  } else {
+    status = R.state === 'cancelled' ? 'Cancelled (doesn’t count)' : 'Round not found';
+    btns = `<button class="ghost sm" data-a="dismiss">Dismiss</button>`;
+  }
+
+  const detail = n ? `<details class="sum"><summary>Answers (${n}/${N})</summary>${R.answered.map((a, idx) =>
+    `<div><small>#${idx + 1} · <b>${String(a.answer || '').toUpperCase()}</b> · said ${esc(String(a.choice || '').toUpperCase())} · ${a.correct ? '+10' : '+0'}</small></div>`
+  ).join('')}</details>` : '';
+
+  const shownScore = R.state === 'ended' && R.result ? R.result.pct : liveScore(R);
+  return `<div class="tile ${R.state === 'ended' ? 'over' : R.state === 'cancelled' || R.state === 'gone' ? 'dead' : ''}" data-id="${R.roundId}">
+    <div class="who"><div><b>${esc(R.p.name)}</b><br><small class="muted">${esc(R.p.id)} · round ${R.roundId}</small></div><div class="pts">${shownScore}</div></div>
+    <div class="strip">${strip}</div><div class="muted">${status}</div>${detail}<div class="row">${btns}</div></div>`;
+}
+
+function draw() {
+  const all = [...rounds.values()];
+  const t = document.getElementById('tiles'); if (!t) return;
+  if (!all.length) {
+    t.innerHTML = `<div class="empty">No one is playing Station 1 right now. Press <b>+ New player</b> to show a Join QR, or open <b>Kiosk / VR Headset Mode</b>.</div>`;
+  } else {
+    t.querySelector('.empty')?.remove();
+    t.querySelectorAll('.tile').forEach(el => { if (!rounds.has(+el.dataset.id)) el.remove(); });
+    for (const R of all) {
+      const html = tile(R);
+      let el = t.querySelector(`.tile[data-id="${R.roundId}"]`);
+      if (el && el._html === html) continue;
+      const wasOpen = el?.querySelector('details')?.open;
+      const tmp = document.createElement('div'); tmp.innerHTML = html; const nu = tmp.firstElementChild; nu._html = html;
+      if (wasOpen && nu.querySelector('details')) nu.querySelector('details').open = true;
+      el ? el.replaceWith(nu) : t.appendChild(nu);
+    }
+  }
+  tick();
+  document.getElementById('count').textContent = all.filter(R => R.state === 'open').length;
+}
+
+function tick() {
+  document.querySelectorAll('.el[data-t]').forEach(e => {
+    const s = Math.max(0, Math.round((Date.now() - +e.dataset.t) / 1000));
+    e.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  });
+}
+
+async function newPlayer() {
+  const p = await Scamurai.pick();
+  if (!p) return;
+  const R = track({ roundId: p.roundId, token: p.token, startedAt: p.startedAt, participant: { id: p.id, name: p.name } });
+  showQR(R); draw(); pollRound(R).then(draw);
+}
+
+async function syncOpen() {
+  try {
+    for (const o of await Scamurai.openRounds()) if (!rounds.has(o.roundId)) track(o);
+  } catch {}
+}
+
+Scamurai.onDashboard(async ({ stationName }) => {
+  app.innerHTML = `<div class="dash-top">
+      <div class="head"><img class="logo" src="/assets/logo.jpg" alt=""><div><h1>Spot the <em>Fake Cash</em></h1><p class="tag">${esc(stationName || 'Station 1')} · <span id="count">0</span> playing</p></div></div>
+      <div class="acts">
+        <button class="btn" id="new">+ New player</button>
+        <button class="ghost" id="leave">Leaving</button>
+        <a class="ghost" href="booth.html">Kiosk / Laptop mode</a>
+        <a class="ghost" href="game.html?demo=1">Try demo</a>
+      </div>
+    </div><div class="tiles" id="tiles"></div>`;
+  document.getElementById('new').onclick = newPlayer;
+  document.getElementById('leave').onclick = () => Scamurai.leaving();
+  document.getElementById('tiles').onclick = e => {
+    const b = e.target.closest('[data-a]'); if (!b) return;
+    const R = rounds.get(+b.closest('.tile').dataset.id); if (!R) return;
+    ({
+      qr: () => showQR(R),
+      end: () => confirm(`End ${R.p.name}'s round now? Unjudged notes score 0.`) && end(R),
+      cancel: () => cancel(R),
+      survey: () => Scamurai.survey({ id: R.p.id, name: R.p.name }, R.result.stationsDone),
+      dismiss: () => { rounds.delete(R.roundId); draw(); }
+    })[b.dataset.a]();
+  };
+  await syncOpen(); draw();
+  let busy = false;
+  setInterval(async () => {
+    if (busy) return; busy = true;
+    try { await Promise.all([...rounds.values()].map(pollRound)); draw(); } finally { busy = false; }
+  }, 1500);
+  setInterval(syncOpen, 8000);
+  setInterval(tick, 1000);
+});
+</script>
+</body></html>

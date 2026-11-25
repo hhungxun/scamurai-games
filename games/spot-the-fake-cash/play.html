@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Spot the Fake Cash · Play via QR</title>
+  <link rel="stylesheet" href="./css/styles.css">
+  <style>
+    .qr-player-chip{font-size:.76rem;font-weight:700;padding:4px 9px;border-radius:4px;background:rgba(237,207,97,.14);border:1px solid rgba(237,207,97,.45);color:var(--gold);white-space:nowrap;max-width:210px;overflow:hidden;text-overflow:ellipsis}
+    .qr-player-banner{margin:0 0 12px;padding:8px 12px;border-radius:5px;background:rgba(237,207,97,.10);border:1px solid rgba(237,207,97,.35);color:var(--gold);font-size:.84rem;font-weight:600}
+    .qr-save-status{margin:10px 0 14px;padding:10px 12px;border-radius:5px;background:rgba(34,160,85,.18);border:1px solid #4ade80;color:#bbf7d0;font-size:.86rem;font-weight:600}
+    .qr-save-status[data-error="true"]{background:rgba(229,37,33,.22);border-color:#f87171;color:#fecaca}
+    #qr-scanner-host{margin-top:14px}
+    #qr-scanner-host .scanner{padding:16px;border:1px solid var(--line);border-radius:6px;background:#16171c}
+    #qr-scanner-host .scanner-view{position:relative;aspect-ratio:1;max-height:42vh;background:#080808;overflow:hidden;border:1px solid var(--line);border-radius:4px}
+    #qr-scanner-host .scanner-view video{width:100%;height:100%;object-fit:cover;display:block}
+    #qr-scanner-host .scanner-guide{position:absolute;inset:15%;border:3px solid #f3efe5;pointer-events:none}
+    .btn-link{text-decoration:none}
+  </style>
+  <link rel="icon" href="/assets/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+  <!-- Live QR rounds NEVER load demo-answers.js: all deals and verdicts come authoritatively from the server. -->
+  <script defer src="/participant.js"></script>
+  <script defer src="/vendor/jsQR.js"></script>
+  <script defer src="/qr-scanner.js"></script>
+  <script defer src="./vendor/three.min.js"></script>
+  <script defer src="./js/game-core.js"></script>
+  <script defer src="./js/scene-stage.js"></script>
+  <script defer src="./js/vr-rig.js"></script>
+  <script defer src="./js/s1-qr.js"></script>
+  <script defer src="./js/game.js"></script>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <main id="ui-layer">
+    <header class="hud-navbar">
+      <div class="hud-left">
+        <span class="hud-pill hud-note" id="note-display">Note 1 / 10</span>
+        <span class="hud-pill hud-denom" id="denom-badge" data-denom="RM50">RM50</span>
+        <div class="note-pips" id="note-pips" aria-label="Round progress"></div>
+      </div>
+
+      <div class="hud-metrics">
+        <div class="metric metric-time">
+          <span class="metric-label" data-i18n-en="TIME" data-i18n-zh="剩余时间">TIME</span>
+          <strong class="time-box" id="time-display" aria-label="Time remaining">02:00</strong>
+        </div>
+        <div class="metric metric-score">
+          <span class="metric-label" data-i18n-en="SCORE" data-i18n-zh="得分">SCORE</span>
+          <strong id="score-display">0 / 100</strong>
+        </div>
+        <div class="metric metric-streak">
+          <span class="metric-label" data-i18n-en="STREAK" data-i18n-zh="连对">STREAK</span>
+          <strong id="streak-display">0</strong>
+        </div>
+      </div>
+
+      <div class="hud-right">
+        <span id="qr-player-chip" class="qr-player-chip" hidden></span>
+        <span id="status" class="hud-hint" role="status"></span>
+        <a class="btn btn-ghost-sm btn-link" href="/participant.html" data-i18n-en="My scores" data-i18n-zh="我的成绩">My scores</a>
+        <button class="btn btn-ghost-sm" id="guide-btn" type="button"
+          data-i18n-en="Note Guide" data-i18n-zh="防伪指南">Note Guide</button>
+        <button class="btn btn-ghost-sm" id="lang-btn" type="button" title="Switch language / 切换语言">中文</button>
+      </div>
+    </header>
+
+    <aside class="guide-drawer" id="guide-drawer" hidden aria-label="Genuine Ringgit checklist">
+      <div class="guide-drawer-head">
+        <strong data-i18n-en="RINGGIT SECURITY CHECKLIST (RM5–RM100)" data-i18n-zh="马币真钞防伪速查（RM5–RM100）">RINGGIT SECURITY CHECKLIST (RM5–RM100)</strong>
+        <button class="icon-close" id="guide-close-btn" type="button" aria-label="Close">×</button>
+      </div>
+      <ul>
+        <li>
+          <span class="check-tag tag-tilt" data-i18n-en="TILT · HOLOGRAM" data-i18n-zh="倾斜 · 全息变色">TILT · HOLOGRAM</span>
+          <span data-i18n-en="Tilt the note (Drag or press T): genuine notes flash rainbow gold ↔ green ↔ violet on the right strip &amp; diamond patch. Fakes stay dull and flat."
+            data-i18n-zh="倾斜钞票（拖动或按 T 键）：真钞右侧全息条与左侧菱形徽标会呈现金属彩虹变色；假钞死板无光泽。">Tilt the note (Drag or press T): genuine notes flash rainbow gold ↔ green ↔ violet on the right strip &amp; diamond patch. Fakes stay dull and flat.</span>
+        </li>
+        <li>
+          <span class="check-tag tag-uv" data-i18n-en="UV · FRONT &amp; BACK" data-i18n-zh="紫外 · 正反特征">UV · FRONT &amp; BACK</span>
+          <span data-i18n-en="Check glowing red/blue front security fibres, matching UV denomination (watch for bleached RM10→RM20!), and the 5-block green UV thread on the back."
+            data-i18n-zh="检查正面发光红蓝防伪纤维、紫外面额是否与钞票一致（谨防漂白改印假钞），以及背面 5 段发光安全线。">Check glowing red/blue front security fibres, matching UV denomination (watch for bleached RM10→RM20!), and the 5-block green UV thread on the back.</span>
+        </li>
+        <li>
+          <span class="check-tag" data-i18n-en="DAY · PRINT, LOGOS &amp; SERIALS" data-i18n-zh="日照 · 徽章、图案与编号">DAY · PRINT, LOGOS &amp; SERIALS</span>
+          <span data-i18n-en="Front: Hibiscus + BANK NEGARA MALAYSIA (not MALAYA) + clear RM5 window. Back: horizontal &amp; vertical serial numbers MUST match, top-left BNM Kijang deer shield must be intact, RM20 has 2 turtles, RM50 has biotech molecules."
+            data-i18n-zh="正面：大红花 + BANK NEGARA MALAYSIA（非 MALAYA）+ RM5 透明视窗。背面：横竖两个编号必须一致，左上角国行鼠鹿徽章完整，RM20 应有两只海龟，RM50 中央应有生物分子图。">Front: Hibiscus + BANK NEGARA MALAYSIA (not MALAYA) + clear RM5 window. Back: horizontal &amp; vertical serial numbers MUST match, top-left BNM Kijang deer shield must be intact, RM20 has 2 turtles, RM50 has biotech molecules.</span>
+        </li>
+        <li>
+          <span class="check-tag" data-i18n-en="DENOMINATIONS" data-i18n-zh="各面额背面图案">DENOMINATIONS</span>
+          <span data-i18n-en="RM5 Green (Hornbill · Polymer) · RM10 Red (Rafflesia) · RM20 Orange (Turtles) · RM50 Cyan (Palm &amp; Molecules) · RM100 Purple (Mt. Kinabalu)."
+            data-i18n-zh="RM5 绿（犀鸟·塑料钞）· RM10 红（大王花）· RM20 橙（海龟）· RM50 青（油棕与分子图）· RM100 紫（神山）。">RM5 Green (Hornbill · Polymer) · RM10 Red (Rafflesia) · RM20 Orange (Turtles) · RM50 Cyan (Palm &amp; Molecules) · RM100 Purple (Mt. Kinabalu).</span>
+        </li>
+      </ul>
+    </aside>
+
+    <div class="bottom-dock">
+      <div id="feedback" class="feedback-card" role="status" hidden>
+        <div class="feedback-body">
+          <strong id="feedback-title"></strong>
+          <p id="feedback-reason"></p>
+        </div>
+        <button class="btn btn-ghost-sm" id="feedback-next-btn" type="button"
+          data-i18n-en="Next →" data-i18n-zh="下一张 →">Next →</button>
+      </div>
+
+      <div class="action-bar" id="action-bar" aria-label="Inspection controls" hidden>
+        <div class="control-group">
+          <button class="btn btn-uv" id="uv-btn" type="button" aria-pressed="true">
+            <span class="uv-dot" aria-hidden="true"></span>
+            <span id="uv-label">UV On</span>
+            <kbd>Space</kbd>
+          </button>
+          <button class="btn btn-tilt" id="tilt-btn" type="button">
+            <span data-i18n-en="Tilt Hologram" data-i18n-zh="倾斜查全息">Tilt Hologram</span>
+            <kbd>T</kbd>
+          </button>
+          <button class="btn" id="flip-btn" type="button">
+            <span data-i18n-en="Flip 180°" data-i18n-zh="翻面 180°">Flip 180°</span>
+            <kbd>F</kbd>
+          </button>
+          <div class="zoom-group" aria-label="Zoom controls">
+            <button class="btn btn-icon" id="zoom-out-btn" type="button" aria-label="Zoom out">−</button>
+            <span class="zoom-pct" id="zoom-pct">100%</span>
+            <button class="btn btn-icon" id="zoom-in-btn" type="button" aria-label="Zoom in">+</button>
+            <button class="btn btn-subtle" id="zoom-reset-btn" type="button">
+              <span data-i18n-en="Reset" data-i18n-zh="重置视角">Reset</span>
+              <kbd>0</kbd>
+            </button>
+          </div>
+        </div>
+
+        <div class="verdict-group">
+          <button class="btn btn-pass" id="pass-btn" type="button">
+            <span data-i18n-en="PASS · GENUINE" data-i18n-zh="PASS · 真钞">PASS · GENUINE</span>
+            <kbd>P / ←</kbd>
+          </button>
+          <button class="btn btn-reject" id="reject-btn" type="button">
+            <span data-i18n-en="REJECT · FAKE" data-i18n-zh="REJECT · 假钞">REJECT · FAKE</span>
+            <kbd>R / →</kbd>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- QR Gate Overlay (shown when opened without a valid Join QR or after remote cancel) -->
+  <div class="overlay" id="qr-gate" hidden>
+    <section class="panel">
+      <span class="eyebrow">STATION 01 // JOIN VIA QR</span>
+      <h2 id="qr-gate-title">Scan your Station 1 Join QR</h2>
+      <p class="panel-lead" id="qr-gate-msg">Ask the Station 1 Game Master to pick your name and show your Join QR.</p>
+      <div class="panel-actions">
+        <button class="btn btn-primary btn-lg" id="qr-scan-btn" type="button">Scan Join QR</button>
+        <a class="btn btn-lg btn-link" id="qr-participant-link" href="/participant.html">My participant page</a>
+        <a class="btn btn-lg btn-link" href="./game.html?demo=1">Try unscored demo</a>
+      </div>
+      <div id="qr-scanner-host" hidden></div>
+    </section>
+  </div>
+
+  <!-- Start Briefing Overlay -->
+  <div class="overlay" id="start-overlay">
+    <section class="panel start-panel" aria-labelledby="game-title">
+      <div class="panel-top-row">
+        <span class="eyebrow" data-i18n-en="STATION 01 // CURRENCY LAB" data-i18n-zh="第 01 站 // 钞票鉴伪实验室">STATION 01 // CURRENCY LAB</span>
+        <span class="vr-badge" id="vr-badge">Desktop &amp; Touch Mode</span>
+      </div>
+      <p id="qr-player-banner" class="qr-player-banner" hidden></p>
+      <h1 id="game-title" data-i18n-en="SPOT THE FAKE CASH" data-i18n-zh="真假钞票大考验">SPOT THE FAKE CASH</h1>
+      <p class="panel-lead"
+        data-i18n-en="Inspect 10 Malaysian Ringgit notes (RM5, RM10, RM20, RM50 &amp; RM100) in 2 minutes using your 365nm UV torch and Tilt Hologram check."
+        data-i18n-zh="在 2 分钟内检验 10 张不同面额马币（RM5、RM10、RM20、RM50 与 RM100），结合 365nm 紫外手电与倾斜全息防伪测试辨别真伪。">Inspect 10 Malaysian Ringgit notes (RM5, RM10, RM20, RM50 &amp; RM100) in 2 minutes using your 365nm UV torch and Tilt Hologram check.</p>
+
+      <p id="asset-status" class="asset-status" hidden></p>
+
+      <div class="panel-actions">
+        <button class="btn btn-primary btn-lg" id="start-game-btn" type="button" disabled
+          data-i18n-en="Start Inspection" data-i18n-zh="开始鉴钞挑战">Start Inspection</button>
+        <button class="btn btn-vr btn-lg" id="enter-vr-btn" type="button" disabled
+          data-i18n-en="Enter VR Mode (Quest 3)" data-i18n-zh="进入 Quest 3 VR 模式">Enter VR Mode (Quest 3)</button>
+      </div>
+      <p id="vr-status" class="vr-status-note" role="status" hidden></p>
+    </section>
+  </div>
+
+  <!-- Results & Forensic Review Overlay -->
+  <div class="overlay" id="result-overlay" hidden>
+    <section class="panel result-panel" aria-labelledby="result-title">
+      <span class="eyebrow" data-i18n-en="STATION 01 // FORENSIC REPORT" data-i18n-zh="第 01 站 // 鉴钞复盘报告">STATION 01 // FORENSIC REPORT</span>
+      <h2 id="result-title" tabindex="-1">Inspection complete!</h2>
+      <p id="qr-save-status" class="qr-save-status" hidden></p>
+
+      <div class="result-hero">
+        <div class="result-score" id="result-score">0 / 100</div>
+        <div class="result-stats">
+          <div>
+            <small data-i18n-en="Correct" data-i18n-zh="判断正确">Correct</small>
+            <strong id="stat-correct">0 / 0</strong>
+          </div>
+          <div>
+            <small data-i18n-en="Accuracy" data-i18n-zh="准确率">Accuracy</small>
+            <strong id="stat-accuracy">0%</strong>
+          </div>
+          <div>
+            <small data-i18n-en="Unjudged" data-i18n-zh="未作答">Unjudged</small>
+            <strong id="stat-unjudged">0</strong>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="review-heading" data-i18n-en="Banknote Review" data-i18n-zh="逐张钞票解析">Banknote Review</h3>
+      <ol id="review-list" class="review-list"></ol>
+
+      <div class="panel-actions">
+        <button class="btn btn-primary btn-lg" id="again-btn" type="button">My participant page ↗</button>
+        <button class="btn btn-reject btn-lg" id="qr-retry-save" type="button" hidden>Retry save</button>
+        <a class="btn btn-lg btn-link" href="/leaderboard.html">View leaderboard ↗</a>
+      </div>
+    </section>
+  </div>
+
+  <div id="error-panel" role="alert" hidden></div>
+</body>
+</html>

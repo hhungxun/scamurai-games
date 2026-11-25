@@ -14,6 +14,7 @@ const HOST = process.env.HOST || '127.0.0.1';
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const ROOT = path.resolve(__dirname, '..');
 const PUBLIC = path.join(__dirname, 'public');
+const MAX_TRIES = 2;                      // finished (non-cancelled) Rounds allowed per Participant per Station
 const IDLE_MS = 15 * 60 * 1000;            // Abandoned after 15 min without activity
 const CORS_ORIGINS = (process.env.CORS_ORIGINS || 'https://hhungxun.github.io').split(',');
 
@@ -70,6 +71,10 @@ CREATE TABLE IF NOT EXISTS participant_passes (
   participant_id TEXT PRIMARY KEY REFERENCES participants(id),
   token TEXT NOT NULL UNIQUE
 );
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
 `);
 // Migration: a cancelled Round is closed without counting towards anything.
 if (!db.prepare('PRAGMA table_info(rounds)').all().some(c => c.name === 'cancelled')) db.exec('ALTER TABLE rounds ADD COLUMN cancelled INTEGER NOT NULL DEFAULT 0');
@@ -107,7 +112,13 @@ const q = {
   passOf: db.prepare('SELECT token FROM participant_passes WHERE participant_id=?'),
   insertPass: db.prepare('INSERT OR IGNORE INTO participant_passes (participant_id,token) VALUES (?,?)'),
   participantByPass: db.prepare('SELECT p.* FROM participants p JOIN participant_passes a ON a.participant_id=p.id WHERE a.token=?'),
+  getSetting: db.prepare('SELECT value FROM settings WHERE key=?'),
+  setSetting: db.prepare('INSERT INTO settings (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value'),
 };
+function selfRegEnabled() {
+  const row = q.getSetting.get('self_registration');
+  return row ? row.value !== '0' : true;
+}
 function participantPass(id) {
   const saved = q.passOf.get(id);
   if (saved) return saved.token;
@@ -118,6 +129,7 @@ function participantPass(id) {
 // ---- domain: derive a Participant's progress from their Rounds ----
 function summarise(p, rounds, now = Date.now()) {
   const best = {};                          // station -> { pct, ms, roundId }
+  const tries = {};                         // station -> finished Rounds
   let last = p.registered_at, openSince = 0;
   for (const r of rounds) {
     if (r.ended_at == null) {
@@ -125,6 +137,7 @@ function summarise(p, rounds, now = Date.now()) {
       continue;
     }
     last = Math.max(last, r.ended_at);
+    tries[r.station] = (tries[r.station] || 0) + 1;
     // Compare the same one-decimal Station Score that is displayed and added to totals.
     const pct = r.max_score > 0 ? Math.round(Math.max(0, Math.min(100, (r.score / r.max_score) * 100)) * 10) / 10 : 0;
     const ms = r.ended_at - r.started_at;
@@ -139,7 +152,7 @@ function summarise(p, rounds, now = Date.now()) {
   else if (!openSince && now - last > IDLE_MS) status = 'abandoned';
   const survey = p.survey ? JSON.parse(p.survey) : null;
   return {
-    id: p.id, name: p.name, status, stationsDone, best, total, totalMs,
+    id: p.id, name: p.name, status, stationsDone, best, tries, total, totalMs,
     roundsPlayed: rounds.filter(r => r.ended_at != null).length,
     surveyDone: !!survey && (survey.stationsDone || []).length === STATION_COUNT,
     eligible: stationsDone.length === STATION_COUNT && !!survey && (survey.stationsDone || []).length === STATION_COUNT,
@@ -221,10 +234,8 @@ route('POST', '/api/auth', async req => {
   return { role: who.role, station: who.station || null, stationName: st ? st.name : null };
 });
 
-// Registration (Secretary)
-route('POST', '/api/participants', async req => {
-  const who = auth(req, ['staff']);
-  const b = await readJson(req);
+// Registration helper shared by Secretary desk and Player QR self-registration
+function registerParticipant(b, registeredBy, dupMsg) {
   const name = clip(b.name, 80).trim();
   need(name.length >= 2, 400, 'Name is required');
   need(AGE_GROUPS.includes(b.ageGroup), 400, 'Pick an age group');
@@ -239,13 +250,35 @@ route('POST', '/api/participants', async req => {
     } else {
       id = cleanId(b.id);
       need(validStudentId(id), 400, 'Student ID should be 4–20 letters/digits');
-      need(!q.getP.get(id), 409, `${id} is already registered`);
+      need(!q.getP.get(id), 409, dupMsg ? dupMsg(id) : `${id} is already registered`);
     }
     q.insP.run({ id, name, age_group: b.ageGroup, pbb_account: b.pbbAccount ? 1 : 0, scam_exposure: b.scamExposure,
-      consent: 1, registered_at: Date.now(), registered_by: who.role });
+      consent: 1, registered_at: Date.now(), registered_by: registeredBy });
   });
   tx();
   return { id, name, participantToken: participantPass(id) };
+}
+
+// Registration (Secretary)
+route('POST', '/api/participants', async req => {
+  const who = auth(req, ['staff']);
+  const b = await readJson(req);
+  return registerParticipant(b, who.role);
+});
+
+// Self-registration via QR (public; can be paused/resumed by Secretary)
+route('GET', '/api/registration/status', () => ({ selfRegistrationEnabled: selfRegEnabled() }));
+route('POST', '/api/registration/settings', async req => {
+  auth(req, ['staff']);
+  const b = await readJson(req);
+  need(typeof b.selfRegistrationEnabled === 'boolean', 400, 'selfRegistrationEnabled must be boolean');
+  q.setSetting.run('self_registration', b.selfRegistrationEnabled ? '1' : '0');
+  return { selfRegistrationEnabled: selfRegEnabled() };
+});
+route('POST', '/api/participants/self', async req => {
+  need(selfRegEnabled(), 403, 'QR self-registration is currently paused. Please register with the Secretary at the front desk.');
+  const b = await readJson(req);
+  return registerParticipant(b, 'self-qr', id => `${id} is already registered. If that is you, ask the registration desk to show your personal QR.`);
 });
 
 // Personal pass: read-only, unguessable, and separate from staff/Station PINs.
@@ -272,11 +305,11 @@ route('GET', '/api/participant/me', req => {
     id: p.id, name: p.name, idKind: /^G\d+$/.test(p.id) ? 'Guest ID' : 'Student ID',
     total: s.total, maxTotal: STATION_COUNT * 100, stationsDone: s.stationsDone,
     roundsPlayed: s.roundsPlayed, surveyDone: s.surveyDone, eligible: s.eligible,
-    checkedOut: !!p.checked_out_at,
+    checkedOut: !!p.checked_out_at, maxTries: MAX_TRIES,
     stations: CONFIG.stations.map(st => {
       const open = rounds.find(r => r.station === st.n && r.ended_at == null && Date.now() - r.started_at < IDLE_MS);
       return { n: st.n, name: st.name, score: s.best[st.n]?.pct ?? null, openRoundId: open?.id ?? null,
-        status: open ? 'playing' : s.best[st.n] ? 'completed' : 'not-started' };
+        status: open ? 'playing' : s.best[st.n] ? 'completed' : 'not-started', tries: s.tries[st.n] || 0 };
     }),
   };
 });
@@ -284,10 +317,12 @@ route('GET', '/api/participant/me', req => {
 // Picker list for start screens and the registration desk
 route('GET', '/api/participants', async req => {
   const who = auth(req, ['staff', 'station']);
-  return allSummaries().map(({ s }) => ({
+  return allSummaries().map(({ p, s }) => ({
     id: s.id, name: s.name, status: s.status, stationsDone: s.stationsDone, total: s.total,
+    registeredBy: p.registered_by || 'staff',
     playedHere: who.station ? s.stationsDone.includes(who.station) : undefined,
     bestHere: who.station && s.best[who.station] ? s.best[who.station].pct : undefined,
+    triesHere: who.station ? s.tries[who.station] || 0 : undefined, maxTries: MAX_TRIES,
     playingHere: who.station ? !!q.openOf.get(s.id, who.station, Date.now() - IDLE_MS) : undefined,
     surveyDone: s.surveyDone,
   }));
@@ -307,6 +342,8 @@ route('POST', '/api/rounds', async req => {
   db.transaction(() => {   // one open Round per Participant per Station
     const open = q.openOf.get(id, who.station, Date.now() - IDLE_MS);
     need(!open, 409, `${p.name} is already playing here (round ${open && open.id}). End or cancel that round first.`);
+    const used = q.roundsOf.all(id).filter(x => x.station === who.station && x.ended_at != null).length;
+    need(used < MAX_TRIES, 409, `${p.name} has used both tries here (${MAX_TRIES} per game). Their best score counts.`);
     r = q.insR.run(id, who.station, Date.now(), token);
   })();
   return { roundId: r.lastInsertRowid, token, station: who.station, participant: { id, name: p.name } };
@@ -330,12 +367,24 @@ route('POST', '/api/rounds/:id/cancel', async (req, { id }) => {
 
 // ---- Server-side scoring (Stations 1, 3, 4) ----
 // The browser gets the deal (question ids only) and, for Cash and Real-or-AI, a verdict per answer. It never gets the key.
+// Station 1 also supports QR-joined devices authenticated by the Round's X-Round-Token (never touches wrongPins).
+const TOKEN_PLAY_STATIONS = new Set([1]);
 function ownRound(req, id) {
   const who = auth(req, ['station']);
   const r = q.getR.get(+id);
   need(r, 404, 'No such round');
   need(who.role === 'admin' || r.station === who.station, 403, 'Not your station\'s round');
   return r;
+}
+function ownRoundOrToken(req, id) {
+  const tok = req.headers['x-round-token'];
+  if (tok !== undefined) {
+    const r = q.getR.get(+id);
+    need(r && tok === r.token, 403, 'Bad round token');
+    need(TOKEN_PLAY_STATIONS.has(r.station), 403, 'This station requires a Station PIN');
+    return { r, viaToken: true };
+  }
+  return { r: ownRound(req, id), viaToken: false };
 }
 function gameOf(r) {
   const game = scoring.STATION_GAME[r.station];
@@ -344,8 +393,47 @@ function gameOf(r) {
   return game;
 }
 
+route('GET', '/api/rounds/:id/state', async (req, { id }) => {
+  const r = q.getR.get(+id);
+  need(r, 404, 'No such round');
+  if (req.headers['x-round-token'] !== r.token) {
+    const pin = req.headers['x-pin'];
+    need(pin, 403, 'Bad round token');
+    const who = auth(req, ['station']);
+    need(who.role === 'admin' || who.station === r.station, 403, 'Not your station\'s round');
+  }
+  const p = q.getP.get(r.participant_id);
+  const game = scoring.STATION_GAME[r.station] || null;
+  const d = r.deal ? JSON.parse(r.deal) : null;
+  const rawAns = JSON.parse(r.answers || '{}');
+  const answered = [];
+  if (d && game && KEYS && KEYS.games[game]) {
+    const key = KEYS.games[game];
+    for (const qid of d.ids) {
+      const k = String(qid);
+      if (!(k in rawAns)) continue;
+      const choice = rawAns[k];
+      const lookup = game === 'real-or-ai' || game === 'phishing-fishing' ? k : +k;
+      const j = scoring.judges[game](key, lookup, choice);
+      answered.push({ qid, choice, ...(j.reveal ? { correct: j.correct, ...j.reveal } : {}) });
+    }
+  }
+  return {
+    roundId: r.id,
+    station: r.station,
+    participant: { id: p.id, name: p.name },
+    startedAt: r.started_at,
+    ended: r.ended_at != null,
+    cancelled: !!r.cancelled,
+    score: r.score,
+    maxScore: r.max_score,
+    deal: d ? { ids: d.ids, at: d.at, durationMs: game ? scoring.DURATION_MS[game] : null } : null,
+    answered,
+  };
+});
+
 route('POST', '/api/rounds/:id/deal', async (req, { id }) => {
-  const r = ownRound(req, id);
+  const { r } = ownRoundOrToken(req, id);
   const game = gameOf(r);
   need(!r.cancelled && r.ended_at == null, 409, 'Round is over');
   if (!r.deal) {
@@ -360,7 +448,7 @@ route('POST', '/api/rounds/:id/deal', async (req, { id }) => {
 
 route('POST', '/api/rounds/:id/answer', async (req, { id }) => {
   const b = await readJson(req);
-  const r = ownRound(req, id);
+  const { r } = ownRoundOrToken(req, id);
   const game = gameOf(r);
   need(r.deal && !r.cancelled && r.ended_at == null, 409, 'Round is not open');
   const d = JSON.parse(r.deal);
@@ -394,7 +482,7 @@ const SELF_SCORED_MAX = { 2: 100, 5: 800 };
 
 route('POST', '/api/rounds/:id/finish', async (req, { id }) => {
   const b = await readJson(req);
-  const r = ownRound(req, id);
+  const { r, viaToken } = ownRoundOrToken(req, id);
   need(!r.cancelled, 409, 'Round was cancelled');
   let score, max;
   if (scoring.STATION_GAME[r.station]) {
@@ -402,6 +490,9 @@ route('POST', '/api/rounds/:id/finish', async (req, { id }) => {
       const game = gameOf(r);
       const res = scoring.scoreOf(game, JSON.parse(r.deal).ids, JSON.parse(r.answers || '{}'), KEYS);
       score = res.score; max = scoring.maxOf(game);    // the server dealt: the browser's numbers are ignored
+    } else if (viaToken) {
+      // A QR-joined client can never submit an undealt self-claimed score.
+      score = 0; max = scoring.maxOf(gameOf(r));
     } else {
       // No server deal yet (these games still score client-side): trust the browser's score, clamped.
       max = scoring.maxOf();
