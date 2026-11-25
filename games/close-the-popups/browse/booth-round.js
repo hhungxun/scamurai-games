@@ -3,7 +3,6 @@
   'use strict';
   const VERSION = 'ending3', PREFIX = 'br-booth-v1:', INDEX = 'br-booth-index-v1', LIMIT = 12, DURATION = 60000;
   const RULES = {
-    'minute5-taipei-flight':{scene:'tripuccino',file:'tripuccino.html',target:'od698'},
     'minute4-penang-indoor': {scene:'events',file:'events.html',target:'penang-state-gallery',key:'bp-outings-saved'},
     'minute3-courier-redelivery': {scene:'courier',file:'courier.html',target:'TM24081301',key:'courier-completed'},
     'minute3-search-official': {scene:'search',file:'search.html',target:'pixelpress',key:'search-official-downloads',checks:[{key:'search-official-visits',items:['pixelpress'],label:['Official Photo Tools page opened','已打开图片工具官方页']}]},
@@ -47,7 +46,7 @@
   };
   // Optional, append-only condition facts share the existing boolean checks array.
   // Missing facts in older frozen rounds stay unknown; they are never fabricated.
-  const DETAIL_CHECKS = {'minute5-taipei-flight':2,'minute2-movie-animation':1,'minute2-travel-interchange':4,'minute3-courier-redelivery':2,'minute3-search-official':1};
+  const DETAIL_CHECKS = {'minute2-movie-animation':1,'minute2-travel-interchange':4,'minute3-courier-redelivery':2,'minute3-search-official':1};
   const FILES = new Set(Object.values(RULES).map(r => r.file));
   const isObject = v => v !== null && typeof v === 'object' && !Array.isArray(v);
   const finite = v => typeof v === 'number' && Number.isFinite(v);
@@ -184,10 +183,6 @@
     const e=record.evidence,checks=[], add=(en,zh,met,detail='')=>checks.push({label:[en,zh],met:Boolean(met),detail});
     const saved=(en,zh)=>add(en,zh,e.saved,e.saved?'✓':'—');
     switch (record.taskId) {
-      case 'minute5-taipei-flight':
-        add('KUL → TPE, 23 January 2027, one adult','KUL → TPE，2027年1月23日，1人',e.checks?.[0]===true);
-        add('Cheapest all-in fare, MYR 467, no paid extras','最低含税价 MYR 467，无付费附加服务',e.checks?.[1]===true);
-        saved('Simulated flight payment completed','机票模拟付款已完成');break;
       case 'minute3-courier-redelivery':saved('Free redelivery saved for tomorrow afternoon at the existing address','已保存明天下午、原地址的免费改约');break;
       case 'minute3-search-official':saved('Official getting-started TXT download dispatched','已从官方页发起入门说明 TXT 下载');break;
       case 'minute-wall-aurora': saved('Required photograph saved','符合题目的照片已收藏'); add('2560 × 1440 JPG download dispatched','2560 × 1440 JPG 已发起下载',e.exports.some(x=>x.kind==='wallpaper'&&x.id==='orbital-aurora'&&x.width===2560&&x.height===1440&&x.format==='image/jpeg'),e.exports.filter(x=>x.kind==='wallpaper').map(x=>`${x.width} × ${x.height} · JPG · ${x.bytes} B`).join('; ')); break;
@@ -229,7 +224,6 @@
   // Correct target selection establishes its fixed catalogue facts, not a separate
   // unobservable "read the metadata" action. Unknown historical facts stay neutral.
   const CONDITION_EVIDENCE = {
-    'minute5-taipei-flight':[[0],[1],[2]],
     'minute2-wall-earthrise':[[1],'found',[0]],
     'minute2-recipe-budget':['found',[1],[2],[0]],
     'minute2-tool-webp':[[0],[1],[0]],
@@ -329,17 +323,6 @@
       try {return C.read(key,fallback);} catch {return fallback;}
     };
     let details=[];
-    if(record.taskId==='minute5-taipei-flight'){
-      const sameRound=value=>isObject(value)&&value.roundId===record.id&&time(value.at)&&value.at>=record.startedAt&&value.at<record.deadline&&value.at<=now;
-      const storedOrders=read('tc-orders',[]),checkout=read('tc-checkout',null);
-      const paid=Array.isArray(storedOrders)?storedOrders.filter(value=>sameRound(value)&&window.TRIPUCCINO_BOOKING?.validOrder(value)):[];
-      const matches=value=>value?.from==='KUL'&&value?.to==='TPE'&&value?.date==='2027-01-23'&&value?.adults===1;
-      const cheapest=value=>matches(value)&&value.flightId==='od698'&&value.unitPrice===467&&value.total===467&&value.extras?.bag===0&&value.extras?.seat==='auto'&&value.extras?.cover===false;
-      const order=paid.find(cheapest)||paid[0];
-      const candidate=order||(sameRound(checkout)?checkout:{from:C.params?.get('from')||'',to:C.params?.get('to')||'',date:C.params?.get('date')||'',adults:Number(C.params?.get('adults')||1),flightId:C.params?.get('f')});
-      e.saved=Boolean(order);
-      details=[matches(candidate),order||sameRound(checkout)?cheapest(candidate):matches(candidate)&&candidate.flightId==='od698'];
-    }
     if (rule.key) {
       const values=read(rule.key,[]);
       e.saved=Array.isArray(values)&&values.some(x=>rule.key==='nature-sightings'?isObject(x)&&x.id===rule.target:x===rule.target);

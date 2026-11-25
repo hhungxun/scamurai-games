@@ -4,16 +4,6 @@
   'use strict';
 
   const campaigns = {
-    tripuccino: {
-      brand:['Travel offers desk','旅行优惠服务台'],
-      cards:[
-        ['coupon',['Flight deal','机票优惠'],['Taipei flights from RM99','台北机票低至 RM99'],['Unlock this fare','解锁票价'],['Pay a reservation deposit on a separate promotion page.','前往独立推广页缴付订位定金。']],
-        ['desk',['Travel essentials','旅行用品'],['Pack for your Taiwan trip','为台湾之旅准备行李'],['Browse travel gear','浏览旅行用品'],['Explore luggage and travel accessories at another shop.','到另一家店查看旅行箱与配件。']],
-        ['security',['Booking verification','预订验证'],['Verify your account before ticketing','出票前请验证账户'],['Verify booking','验证预订'],['A separate account check claims to release your flight ticket.','独立的账户核验页声称可以释放你的机票。']],
-        ['prize',['Travel reward','旅行奖励'],['Your Taiwan trip won a free hotel stay','你的台湾之旅获赠酒店住宿'],['Claim your stay','领取住宿'],['Pay a claim fee to register this travel prize.','缴付领取手续费登记旅行奖品。']],
-        ['coupon',['Payment shortcut','付款快捷入口'],['Finish your flight booking here','在这里完成机票付款'],['Continue payment','继续付款'],['Open a separate member offer before completing your ticket purchase.','完成购票前，打开独立会员推广页。']]
-      ]
-    },
     courier: {
       brand: ['Delivery notice desk', '派送通知台'],
       cards: [

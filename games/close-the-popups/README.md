@@ -55,7 +55,7 @@ The standalone Stillwall pages, scripts, styles, vendor copies and unused earlie
 
 Station 2 is included in the shared configuration, homepage, staff navigation, printed station QR labels, participant QR routing and exit survey. Its participant-facing station page directs phones to the desktop laptop instead of asking Participants for a staff PIN. The server serves the local audio/video with media content types.
 
-Scored Rounds draw from the 11 active tasks. The host persists the assignment, prevents redraws from changing it, and rejects starting an unassigned task. Staff practice retains task choice. Previously started rounds and results for retired tasks remain accessible. If a retired task was drawn before a round started, the next draw assigns an active task. Existing shared server duration rules apply, including briefing/loading/save time in the event tie-break.
+Scored Rounds draw from the 10 active tasks. The host persists the assignment, prevents redraws from changing it, and rejects starting an unassigned task. Staff practice retains task choice. Previously started rounds and results for retired tasks remain accessible. If a retired task was drawn before a round started, the next draw assigns an active task. Existing shared server duration rules apply, including briefing/loading/save time in the event tie-break.
 
 Run `node server/test/popup-score.js` and `python3 server/test/e2e_popup.py` from the repo root for repeatable local checks. These tests use throwaway data. Local validation does not establish equal task difficulty or verify physical laptop audio/popup settings.
 
@@ -90,11 +90,3 @@ Completed demos release their local binding when another task starts. Returning 
 Celebration and timeout result cards use the shared in-game theme. The celebration particles use its red/charcoal palette. Skip, audio controls, reduced motion and one-use ending playback remain supported. Submitting still means the Round ended, not that every task condition was met.
 
 An explicit **Start** after drawing/selecting a new demo task replaces an unfinished rehearsal, including one left on the chooser past its deadline. Reload and Resume still retain the existing Round’s deadline. Event-play protections are unchanged. `python3 server/test/e2e_popup_draw.py` exercises the Draw route after browser Back and an expired, unfinished demo.
-
-## Tripuccino flight task
-
-Tripuccino adds a desktop flight-booking website to the active task pool. The XMUM semester-break task asks for KUL → TPE on 23 January 2027, one adult, the cheapest all-in fare (MYR 467), and a completed game payment with no paid extras. The initial search is SIN → HKG on 26 January, so the player must set the route and date.
-
-The airport directory supports continent/country browsing and search; the sample flight inventory covers KUL/SZB → TPE from December 2026 to March 2027. Other routes show an empty result. Prices and schedules are game data. Passenger drafts and orders stay in per-tab scene storage. Payment uses game funds and never requests card credentials. Only a valid order created in the current round before its deadline counts as paid.
-
-Run `python server/test/e2e_tripuccino.py` for the booking, grading, browser-state and timeout regression checks.
