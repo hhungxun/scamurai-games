@@ -368,7 +368,7 @@
       {
         "target": "body",
         "text": "https://hasil.gov.my-notice.com",
-        "explanation": "The real owner of this address is notice.com, not LHDN."
+        "explanation": "The real owner of this address is my-notice.com, not LHDN."
       },
       {
         "target": "body",

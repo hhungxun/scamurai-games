@@ -146,7 +146,7 @@
     "Safe inspection only — file will not execute or download.": "仅作安全检查——文件不会运行或下载。",
     "Preview attachment in safe sandbox": "在安全沙盒中预览附件",
     "Click Details, hover/click links, or click attachments to inspect safely.": "点击“详情”、悬停或点击链接，或点击附件，都可以安全检查。",
-    "Keep in Inbox · Legitimate": "保留在收件箱 · 正常",
+    "Keep in Inbox · Legitimate": "保留在收件箱（正常邮件）",
     "Reported · moved to Junk Email": "已举报 · 移至垃圾邮件",
     "Marked safe · kept in Inbox": "已标记为安全 · 保留在收件箱",
     "Inbox cleared!": "收件箱已清空！",
@@ -242,8 +242,8 @@
     "Legitimate": "正常邮件",
     "Phishing": "钓鱼邮件",
     "Review details": "查看详情",
-    "Why this request is phishing": "为什么这个请求是钓鱼",
-    "Why this request is legitimate in this case": "为什么这个请求在此情况下是正常的",
+    "Why this request is phishing": "为什么这是钓鱼请求",
+    "Why this request is legitimate in this case": "为什么在这种情况下这是正常请求",
     "Counterpoint": "反方观点",
     "Why not Legitimate?": "为什么不是正常邮件？",
     "Why not Phishing?": "为什么不是钓鱼邮件？",
@@ -498,6 +498,10 @@
   }
 
   document.documentElement.lang = "zh-Hans";
+  // Short CJK badges must not break mid-word in the narrow popup header.
+  const style = document.createElement("style");
+  style.textContent = ".ol-pop-sandbox,.ol-pop-close{white-space:nowrap}";
+  document.head.append(style);
   if (root.EMAIL_BANK && root.EMAIL_BANK_ZH) root.EMAIL_BANK_ZH.apply(root.EMAIL_BANK);
 
   const ATTRS = ["aria-label", "title", "placeholder", "alt"];
