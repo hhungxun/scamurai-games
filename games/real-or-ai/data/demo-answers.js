@@ -21,5 +21,17 @@ window.REAL_OR_AI_DEMO_ANSWERS = {
   "V08": "ai",
   "V09": "real",
   "V10": "ai",
-  "V11": "real"
+  "V11": "real",
+  "V12": "real",
+  "V13": "ai",
+  "V14": "real",
+  "V15": "ai",
+  "V16": "real",
+  "V17": "ai",
+  "V18": "real",
+  "V19": "ai",
+  "V20": "real",
+  "V21": "ai",
+  "V22": "real",
+  "V23": "ai"
 };

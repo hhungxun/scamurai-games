@@ -10,7 +10,7 @@ A self-contained **static website** designed for an event booth. Players identif
 - English interface, immediate next question, result page, answer review, replay.
 - No framework, no installation, no backend; relative paths work on GitHub Pages **and in a nested folder**.
 
-> ⚠️ CONTENT PROVENANCE: The five "Real" voice clips (V01, V03, V05, V07, V09) are genuine recordings supplied by the organisers (19 Nov 2026). The five "AI" voice clips (V02, V04, V06, V08, V10) are AI-generated with ElevenLabs `eleven_multilingual_v2` (20 Nov 2026) using the premade voices Chris, Bella, Charlie, Sarah and Daniel. Obtain consent before publishing images or recordings of classmates.
+> ⚠️ CONTENT PROVENANCE: The original "Real" voice clips (V01, V03, V05, V07, V09, V11) are genuine recordings supplied by the organisers (19 Nov 2026). Additional AI-sounding "Real" human clips (V12, V14, V16, V18, V20, V22) are verified human recordings from Wikimedia Commons (Public Domain VOA Learning English / BT Speaking Clock / NIST WWV, and CC BY-SA Spoken Wikipedia / Sydney Trains DVA). The "AI" voice clips include ElevenLabs `eleven_multilingual_v2` (V02, V04, V06, V08, V10) and conversational neural multilingual HD voices with realistic phone-mic mastering (V13, V15, V17, V19, V21, V23). Obtain consent before publishing images or recordings of classmates.
 
 ## Booth integration (Station 4)
 
