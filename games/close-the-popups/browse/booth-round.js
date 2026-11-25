@@ -3,7 +3,7 @@
   'use strict';
   const VERSION = 'ending3', PREFIX = 'br-booth-v1:', INDEX = 'br-booth-index-v1', LIMIT = 12, DURATION = 60000;
   const RULES = {
-    'minute4-penang-indoor': {scene:'events',file:'events.html',target:'penang-state-gallery',key:'bp-outings-saved'},
+    'minute4-penang-indoor': {scene:'events',file:'events.html',target:'penang-state-gallery'},
     'minute3-courier-redelivery': {scene:'courier',file:'courier.html',target:'TM24081301',key:'courier-completed'},
     'minute3-search-official': {scene:'search',file:'search.html',target:'pixelpress',key:'search-official-downloads',checks:[{key:'search-official-visits',items:['pixelpress'],label:['Official Photo Tools page opened','已打开图片工具官方页']}]},
     'minute-wall-aurora': {scene:'wallpapers',file:'wallpaper.html',target:'orbital-aurora',key:'wall-saved',exportKind:'wallpaper'},
@@ -17,7 +17,8 @@
     'minute-travel-klcc': {scene:'travel',file:'travel.html',target:'klcc',trip:{from:'sentral-kj',to:'klcc',time:'10:00',changes:0}},
     'minute-market-starter': {scene:'market',file:'market.html',target:'canon-good',key:'loop-saved'},
     'minute2-wall-earthrise': {scene:'wallpapers',file:'wallpaper.html',target:'earthrise-1972',exportKind:'wallpaper',checks:[
-      {key:'wall-compare',items:['earthrise-1968','earthrise-1972'],label:['Both Earthrise photographs are in Compare','两张「地出」照片均已加入对比']}
+      // Older finished rounds use the same check slot for adding the two photos to Compare.
+      {key:'wall-saved',items:['earthrise-1968','earthrise-1972'],label:['Both Earthrise photos added','已加入两张「地出」照片']}
     ]},
     'minute2-recipe-budget': {scene:'recipes',file:'recipe.html',target:'red-lentil-soup',key:'bp-recipes-saved',checks:[
       {key:'bp-recipe-servings-red-lentil-soup',value:6,label:['Six servings selected','已设为六人份']},
@@ -122,7 +123,7 @@
   };
   const store = record => {
     try {
-      // A cached renderer may still hold a record from before the hint was used.
+      // Preserve flags written by older versions of a saved round.
       const authoritative=readRecord(record.id);
       if(authoritative?.usedSecondHint===true)record.usedSecondHint=true;
       if(authoritative?.guaranteed===true)record.guaranteed=true;
@@ -205,14 +206,14 @@
         break;
       }
       case 'minute2-movie-animation':saved('Sintel is on the watchlist','《辛特尔》已加入想看片单');break;
-      case 'minute4-penang-indoor':saved('Two-hour indoor Penang gallery saved within RM30','已保存RM30以内的槟城室内两小时美术馆指南');break;
+      case 'minute4-penang-indoor':saved('Indoor Penang attraction saved within RM30 and 3 hours','已收藏预算不超过 RM30、用时不超过 3 小时的槟城室内景点');break;
       case 'minute2-outing-craft':saved('Central Market craft outing saved','已保存中央艺术坊手作行程');break;
       case 'minute2-book-verne':
         saved('French edition saved','已收藏法文版');
         add('French opening excerpt TXT downloaded','已发起法文开篇 TXT 下载',e.exports.some(x=>x.kind==='book'&&x.id===e.targetId&&x.format==='text/plain'));
         break;
       case 'minute2-museum-manet':saved('Narrower canvas added to My Exhibition','较窄的作品已加入我的展览');break;
-      case 'minute2-nature-woodpeckers':saved('Smaller woodpecker added to the observation list','较小的啄木鸟已加入观察清单');break;
+      case 'minute2-nature-woodpeckers':saved('Shorter woodpecker added to the observation list','身长较短的啄木鸟已加入观察清单');break;
       case 'minute2-travel-interchange':add('17:20 KLCC (KJ) → Bukit Bintang (KG) saved with Less walking','已用「较少步行」保存 17:20 KLCC（KJ）至武吉免登（KG）',e.saved&&Boolean(e.trip),e.trip?.date||'');break;
       case 'minute2-market-lens':saved('Canon kit with lens saved','已收藏附镜头的佳能套机');break;
     }
@@ -224,19 +225,19 @@
   // Correct target selection establishes its fixed catalogue facts, not a separate
   // unobservable "read the metadata" action. Unknown historical facts stay neutral.
   const CONDITION_EVIDENCE = {
-    'minute2-wall-earthrise':[[1],'found',[0]],
+    'minute2-wall-earthrise':[[1],[0]],
     'minute2-recipe-budget':['found',[1],[2],[0]],
-    'minute2-tool-webp':[[0],[1],[0]],
+    'minute2-tool-webp':[[0],[1]],
     'minute2-movie-animation':[[0],'detail0',[0,1]],
     'minute2-outing-craft':['found',[0],[1]],
     'minute2-book-verne':[[2],[0],[1]],
     'minute2-museum-manet':[[1],'found',[0]],
-    'minute2-nature-woodpeckers':[[1],'found',[0]],
+    'minute2-nature-woodpeckers':[[1],[0]],
     'minute2-travel-interchange':['detail0','detail1','detail2','detail3'],
-    'minute2-market-lens':[[1],[0],[0]],
+    'minute2-market-lens':[[1],[0]],
     'minute3-courier-redelivery':['found','detail0','detail1'],
     'minute3-search-official':[[1],[0],'detail0'],
-    'minute4-penang-indoor':[[0],[0],[0]]
+    'minute4-penang-indoor':[[0]]
   };
   const conditions = input => {
     const record=input&&idOK(input.id)?normalize(input,input.id):null;
@@ -343,8 +344,14 @@
       if(isObject(trace)&&trace.version===1&&trace.roundId===record.id&&Array.isArray(trace.clicked)&&trace.clicked.every(id=>['software','security'].includes(id)))details=[trace.clicked.length===0];
     }
     if (record.taskId==='minute4-penang-indoor') {
-      const values=read('bp-outing-details',{}),plan=isObject(values)?values[rule.target]:null;
-      e.saved=e.saved&&isObject(plan)&&plan.id===rule.target&&plan.country==='Malaysia'&&plan.area==='Penang'&&plan.kind==='attraction'&&plan.shelter==='indoor'&&plan.cost===20&&plan.hours===2&&plan.transit==='connection';
+      const saved=read('bp-outings-saved',[]),plans=read('bp-outing-details',{});
+      e.saved=Array.isArray(saved)&&isObject(plans)&&saved.some(id=>{
+        if(typeof id!=='string')return false;
+        const plan=plans[id];
+        return isObject(plan)&&plan.id===id&&plan.country==='Malaysia'&&plan.area==='Penang'
+          &&plan.kind==='attraction'&&plan.shelter==='indoor'
+          &&finite(plan.cost)&&plan.cost>=0&&plan.cost<=30&&finite(plan.hours)&&plan.hours>0&&plan.hours<=3;
+      });
     }
     if (record.taskId==='minute-recipe-lunch') {const value=read('bp-recipe-servings-chickpea-salad',2);e.servings=[1,2,4,6].includes(value)?value:2;}
     if (rule.trip) {
@@ -392,7 +399,7 @@
   };
   const modalActive = () => {
     if (!active) return false;
-    return Boolean(active.C.root?.inert) || Array.from(document.querySelectorAll('dialog[open]')).some(d=>d!==dialog) || Array.from(document.querySelectorAll('[aria-modal="true"]')).some(d=>d!==dialog&&!d.hidden&&!d.closest('[hidden]')&&d.getClientRects().length);
+    return Array.from(document.querySelectorAll('dialog[open]')).some(d=>d!==dialog) || Array.from(document.querySelectorAll('[aria-modal="true"]')).some(d=>d!==dialog&&!d.hidden&&!d.closest('[hidden]')&&d.getClientRects().length);
   };
   const syncControls = () => {
     if(!bar)return;
@@ -408,32 +415,14 @@
     bar.innerHTML=`<div class="br-booth-time"><small>${translate('TIME LEFT','剩余时间')}</small><strong data-booth-clock role="timer" aria-live="off">1:00</strong></div><div class="br-booth-current"><span>${record.mode==='clean'?translate('CLEAN ROUND','无广告挑战'):translate('AD CHALLENGE','广告挑战')}</span><b>${escape(text(task.title))}</b>${task.badge?`<strong class="br-booth-badge">${escape(text(task.badge))}</strong>`:""}</div><div class="br-booth-actions"><button type="button" data-booth-task>${translate('View task','查看任务')}</button><button type="button" data-booth-submit>${translate('Submit','交卷')}</button><button type="button" data-booth-void aria-label="${translate('Staff: void this round','工作人员：作废本轮')}">${translate('Staff','工作人员')}</button></div>`;
     dialog=document.createElement('dialog');dialog.id='br-booth-task-dialog';dialog.setAttribute('aria-labelledby','br-booth-dialog-title');
     const goals=task.goals || task.steps || [];
-    // Pick the top-bar label to secure the 20-point floor. The round clock keeps running.
-    const warmupOwn=text(task.badge||task.title),warmupOthers=(window.BROWSE_BOOTH_TASKS||[]).filter(t=>t.id!==task.id&&t.badge).map(t=>text(t.badge)).filter(x=>x!==warmupOwn);
-    const warmupPos=parseInt(record.seed.slice(2,4),16)%3,warmupOffset=parseInt(record.seed.slice(4,6),16)%Math.max(1,warmupOthers.length-1);
-    const warmupChoices=[warmupOthers[warmupOffset],warmupOthers[(warmupOffset+1)%warmupOthers.length]].filter(x=>x!==undefined);
-    warmupChoices.splice(Math.min(warmupPos,warmupChoices.length),0,warmupOwn);
-    const warmupDone=record.guaranteed===true;
-    const warmupMarkup=`<section class="br-booth-warmup" aria-labelledby="br-booth-warmup-title"><div class="br-booth-dialog-kicker">${translate('WARM-UP · 20 POINTS GUARANTEED','热身 · 保底20分')}</div><h2 id="br-booth-warmup-title">${translate('Tap the label shown in the top bar of this page','点击页面顶部栏里显示的任务标签')}</h2><div class="br-booth-warmup-options">${warmupChoices.map(x=>`<button type="button" data-booth-warmup="${escape(x)}"${warmupDone?' disabled':''}>${escape(x)}</button>`).join('')}</div><p class="br-booth-warmup-status" role="status" aria-live="polite">${warmupDone?translate('Warm-up done ✓ 20 points secured.','热身完成 ✓ 已保底20分。'):''}</p></section>`;
-    dialog.innerHTML=`<div class="br-booth-dialog-inner"><div class="br-booth-dialog-kicker">${translate('YOUR TASK','本轮任务')}</div><h1 id="br-booth-dialog-title">${escape(text(task.title))}</h1><p>${escape(C.siteName)}</p><ul class="br-booth-conditions">${goals.map(x=>`<li><span aria-hidden="true">□</span> ${taskText(x)}</li>`).join('')}</ul>${task.hint?`<details class="br-booth-start-hint"><summary>${translate('Hint','提示')}</summary><p>${taskText(task.hint)}</p></details>`:''}${task.hint2?`<button type="button" data-booth-second-hint aria-expanded="false" aria-controls="br-booth-hint2">${translate('Another hint','再看一个提示')}</button><p id="br-booth-hint2" hidden>${taskText(task.hint2)}</p>`:''}${warmupMarkup}<p class="br-booth-dialog-rule">${translate('The timer keeps running while you read this or switch tabs. A staff member checks the result.','看提示或切换标签页时，倒计时都不会停。结果由工作人员核对。')}</p><button type="button" data-booth-dialog-close>${translate('Back to the task','回到任务')}</button></div>`;
-    dialog.querySelector('[data-booth-second-hint]')?.addEventListener('click',()=>{
-      if(!canAct())return;
-      const fresh=current();if(!fresh)return;
-      fresh.usedSecondHint=true;fresh.updatedAt=Math.max(fresh.updatedAt,Date.now());
-      if(!store(fresh))return;
-      dialog.querySelector('#br-booth-hint2').hidden=false;
-      dialog.querySelector('[data-booth-second-hint]').setAttribute('aria-expanded','true');
-    });
-    dialog.querySelectorAll('[data-booth-warmup]').forEach(btn=>btn.addEventListener('click',()=>{
-      const status=dialog.querySelector('.br-booth-warmup-status');
-      if(btn.dataset.boothWarmup!==warmupOwn){status.textContent=translate('Not that one. Look at the top bar and try again.','不是这个。请看页面顶部栏，再试一次。');return;}
-      if(!canAct())return;
-      const fresh=current();if(!fresh)return;
-      fresh.guaranteed=true;fresh.updatedAt=Math.max(fresh.updatedAt,Date.now());
-      if(!store(fresh))return;
-      dialog.querySelectorAll('[data-booth-warmup]').forEach(b=>{b.disabled=true;});
-      status.textContent=translate('Warm-up done ✓ 20 points secured.','热身完成 ✓ 已保底20分。');
-    }));
+    dialog.innerHTML=`<div class="br-booth-dialog-inner">
+      <div class="br-booth-dialog-kicker">${translate('YOUR TASK','本轮任务')}</div>
+      <h1 id="br-booth-dialog-title">${escape(text(task.title))}</h1>
+      <p>${escape(C.siteName)}</p>
+      <ol class="br-booth-conditions">${goals.map(goal=>`<li>${taskText(goal)}</li>`).join('')}</ol>
+      <p class="br-booth-dialog-rule">${translate('The timer keeps running while you read.','查看任务时，倒计时会继续。')}</p>
+      <button type="button" data-booth-dialog-close>${translate('Back to the task','回到任务')}</button>
+    </div>`;
     document.body.append(bar,dialog);document.documentElement.classList.add('br-booth-running');document.documentElement.style.setProperty('--br-booth-offset','56px');
     bar.querySelector('[data-booth-task]').addEventListener('click',()=>{if(!canAct()||modalActive())return;reminder?.remove();reminder=null;emit('browse:booth-dialog',{open:true});dialog.showModal();});
     bar.querySelector('[data-booth-submit]').addEventListener('click',()=>{if(!modalActive()&&canAct())end('submitted');});
@@ -447,18 +436,19 @@
     });
     dialog.querySelector('[data-booth-dialog-close]').addEventListener('click',()=>dialog.close());
     dialog.addEventListener('close',()=>{dialog.querySelector('.br-booth-void-confirm')?.remove();emit('browse:booth-dialog',{open:false});syncControls();});
-    // The native dialog owns its focus rules. Ads retain their existing focus trap.
+    // Native dialogs own their focus rules. The ad stack keeps the toolbar reachable.
     observer=new MutationObserver(syncControls);observer.observe(document.body,{attributes:true,attributeFilter:['inert','open','hidden','aria-modal'],childList:true,subtree:true});
     const soundButton=document.createElement('button');soundButton.type='button';soundButton.dataset.boothSound='';
     bar.querySelector('.br-booth-actions').prepend(soundButton);
     window.parent.CLOSE_POPUPS_HOST?.mountFullscreen?.(window, bar.querySelector('.br-booth-actions'), record.lang);
+    window.BROWSE_BOOTH_DOWNLOADS?.mount(bar.querySelector('.br-booth-actions'),C);
     countdown=window.BROWSE_COUNTDOWN_SOUND?.({button:soundButton,readRound:current,isLive:()=>Boolean(active&&!suspended&&!restoring&&!redirecting),lang:record.lang});
     syncControls();
   };
   const openingReminder = record => {
     if(reminder && Date.now()>=reminderUntil){reminder.remove();reminder=null;}
     const age=Date.now()-record.startedAt;
-    if(age<4000||age>=7000||reminder||modalActive()||dialog?.open)return;
+    if(age<4000||age>=7000||reminder||active?.C.root?.inert||modalActive()||dialog?.open)return;
     const key='br-booth-ui-v1:'+record.id;
     try{if(sessionStorage.getItem(key)==='reminded')return;sessionStorage.setItem(key,'reminded');}catch{return;}
     const task=taskData(record.taskId),text=v=>Array.isArray(v)?v[record.lang==='zh'?1:0]:v;

@@ -97,16 +97,31 @@
       objectURLs.delete(url);
       URL.revokeObjectURL(url);
     };
-    const downloadGuide = () => {
+    const guideName = 'phototools-getting-started.txt';
+    const recordDownload = simulated => {
+      if (!canMutate()) return false;
+      if (!addOfficialEvidence('search-official-downloads')) {
+        message(t('The download was requested, but practice progress could not be recorded.', '已发起下载，但未能记录练习进度。'));
+        return false;
+      }
+      message(simulated
+        ? t('The TXT is in this round’s simulated downloads.', 'TXT 已加入本轮游戏的模拟下载。')
+        : t('TXT download requested. Check your browser’s downloads for the file.', '已发起 TXT 下载，请在浏览器下载列表中检查文件。'));
+      return true;
+    };
+    const downloadGuide = button => {
       if (!official || !canMutate()) return;
       // Re-read immediately before the action, so a BFCache closure cannot replace newer evidence.
       if (!addOfficialEvidence('search-official-visits') || !canMutate()) return;
+      if (window.BROWSE_BOOTH_DOWNLOADS?.request({
+        name:guideName,label:'TXT',details:t('TXT · UTF-8 plain text','TXT · UTF-8 纯文本')
+      },button,() => recordDownload(true))) return;
       let objectURL = '', anchor, downloadEvent;
       try {
         objectURL = URL.createObjectURL(new Blob([guideText()], {type: 'text/plain;charset=utf-8'}));
         anchor = document.createElement('a');
         anchor.href = objectURL;
-        anchor.download = 'phototools-getting-started.txt';
+        anchor.download = guideName;
         anchor.hidden = true;
         anchor.addEventListener('click', event => { downloadEvent = event; }, {once: true});
         document.body.append(anchor);
@@ -125,17 +140,12 @@
         message(t('Couldn’t download the guide. Try again.', '指南没下载下来，请再试一次。'));
         return;
       }
-      if (!canMutate()) return;
-      if (!addOfficialEvidence('search-official-downloads')) {
-        message(t('The download was requested, but practice progress could not be recorded.', '已发起下载，但未能记录练习进度。'));
-        return;
-      }
-      message(t('TXT download requested. Check your browser’s downloads for the file.', '已发起 TXT 下载，请在浏览器下载列表中检查文件。'));
+      recordDownload(false);
     };
     const click = event => {
       const button = event.target.closest('button');
       if (!button || !root.contains(button)) return;
-      if (button.hasAttribute('data-official-download')) { downloadGuide(); return; }
+      if (button.hasAttribute('data-official-download')) { downloadGuide(button); return; }
       const id = button.dataset.searchDismiss;
       if (!sponsoredIDs.includes(id) || !canMutate()) return;
       const current = allowedArray('search-dismissed', sponsoredIDs);

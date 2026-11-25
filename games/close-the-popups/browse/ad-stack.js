@@ -215,7 +215,7 @@
       const genuine=`<button class="br-real-close${lower?' br-corner-close':''}" type="button" data-br-close ${p.closeStyle==='ghost'?'hidden':''} aria-label="${t('Dismiss advertisement','关闭广告')}">×</button>`;
       const stage=document.createElement('div');stage.className='br-interrupt '+(isModal?'br-ad-backdrop br-stack-modal-stage':'br-motion-stage br-stack-stage');
       stage.dataset.brEntry=String(p.id);stage.dataset.brBurst=String(p.burst===true);stage.style.zIndex=String(isModal?11000:9000+p.id);
-      stage.innerHTML=`<section class="br-ad br-ad-${esc(p.format)} br-ad-${esc(p.site)} br-stack-card ${moving?'br-motion-card':''} ${isModal?'br-stack-modal':''}" data-close-style="${p.closeStyle}" data-close-corner="${p.closeCorner}" data-decoy="${p.decoy}" ${isModal?'role="dialog" aria-modal="true"':'role="region"'} aria-label="${esc(t('Sponsored message','赞助信息'))}" tabindex="-1">
+      stage.innerHTML=`<section class="br-ad br-ad-${esc(p.format)} br-ad-${esc(p.site)} br-stack-card ${moving?'br-motion-card':''} ${isModal?'br-stack-modal':''}" data-close-style="${p.closeStyle}" data-close-corner="${p.closeCorner}" data-decoy="${p.decoy}" role="${isModal?'dialog':'region'}"${isModal&&!boothAds?' aria-modal="true"':''} aria-label="${esc(t('Sponsored message','赞助信息'))}" tabindex="-1">
         ${p.closeStyle!=='visible'?`<button class="br-ghost-close" type="button" data-br-close aria-label="${t('Dismiss advertisement','关闭广告')}">×</button>`:''}${lower?genuine:''}<div class="br-ad-scroll">
         <div class="br-ad-top"><span>${t('Sponsored','赞助内容')} · ${esc(offer.brand)}</span>${!lower?genuine:''}${p.decoy?`<a class="br-false-close br-decoy-close" data-br-ad="${p.site}" data-br-decoy aria-label="${t('Open sponsor offer','打开赞助推广')}">×</a>`:p.format==='panel'&&p.closeStyle!=='ghost'?`<a class="br-false-close" data-br-ad="${p.site}" aria-label="${t('Open sponsor offer','打开赞助推广')}">×</a>`:''}</div>
         ${moving?`<div class="br-motion-label">${p.format==='bounce'?t('↗ ONE MORE OFFER','↗ 再来一条优惠'):t('✦ CATCH ME FIRST','✦ 先追上我再说')}</div>`:''}
@@ -279,10 +279,12 @@
       for(const entry of entries.values()){updateClose(entry);positionEntry(entry);}
       applyModal();
     }
-    overlayRoot.addEventListener('keydown',event=>{
+    (boothAds?document:overlayRoot).addEventListener('keydown',event=>{
       if(event.key!=='Tab'||modalId===null||externalModal)return;
       const dialog=entries.get(modalId)?.card;if(!dialog)return;
       const controls=[...dialog.querySelectorAll('a[href]:not([aria-disabled=true]),button:not([disabled])')].filter(el=>el.getClientRects().length);
+      // A booth ad blocks the site, but the player's toolbar remains in the tab order.
+      if(boothAds)controls.push(...document.querySelectorAll('#br-booth-bar .br-booth-actions:not([inert]) button:not([disabled])'));
       const first=controls[0],end=controls.at(-1);if(!first)return;
       if(event.shiftKey&&document.activeElement===first){event.preventDefault();end.focus();}
       else if(!event.shiftKey&&document.activeElement===end){event.preventDefault();first.focus();}
