@@ -143,7 +143,7 @@ def run():
       for _ in range(10):answer(p)
       p.wait_for_function("JSON.parse(sessionStorage.getItem('scamurai.booth.3.demo.v1')).status==='saved'")
      else:
-      f.wait_for_selector('[data-booth-task]');f.locator('[data-booth-task="minute2-movie-animation"]').click();f.click('#booth-start');f.wait_for_selector('[data-booth-submit]');f.locator('[data-booth-submit]').click(force=True);f.wait_for_selector('.booth-score')
+      f.wait_for_selector('[data-booth-task]');f.locator('[data-booth-task="minute2-tool-webp"]').click();f.click('#booth-start');f.wait_for_selector('[data-booth-submit]');f.locator('[data-booth-submit]').click(force=True);f.wait_for_selector('.booth-score')
      assert not writes,writes;c.close()
     legacy=browser.new_context();lp=legacy.new_page();legacy_writes=[]
     lp.on('request',lambda r:legacy_writes.append(r.url) if r.method=='POST' and '/api/' in r.url else None)

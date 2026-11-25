@@ -2,8 +2,7 @@
 (() => {
   'use strict';
   window.BROWSE_SITE_SUPPORT = C => {
-    const {root,t,esc,scene}=C;
-    const brands={wallpapers:'Stillwall',recipes:'Pantry & Plate',tools:'Pixelpress',movies:'Frame Movies',events:'Out There',books:'Folio',museum:'Open Collection',nature:'Field Guide',travel:'Trackside',market:'loop',courier:'TrackMY',search:'Findline'};
+    const {root,t,esc,scene,siteName}=C;
     const help={
       wallpapers:['Search or filter the collection, open an image and choose an export size. Select up to three works to compare.','搜索或筛选图库，打开图片后选择导出尺寸。可选最多三张图片进行对比。'],
       recipes:['Choose a category or search a recipe. Open it to change servings, tick ingredients and save it. Prices are per serving; the selected-servings total is shown separately.','按分类或关键词找食谱。打开后可调整份量、勾选食材并收藏。单价按每份计，所选人数的总价另列。'],
@@ -16,10 +15,10 @@
       travel:['Choose the origin and destination platforms, date, time and preference. Plan a journey, check its connections and save it. The network map also opens station menus. Times are illustrative.','选择出发与到达站台、日期、时间和偏好。查询后核对换乘并保存行程；网络图也可打开车站菜单。时刻仅作示例。'],
       market:['Compare prices, condition and included items before saving a listing. A model reference photo does not establish the condition of an individual camera. Enquiries are local drafts.','收藏刊登前先比较价格、状态和附带物品。型号参考照片不能证明某台相机的实际状况；询问内容仅为本地草稿。'],
       courier:['Select a sample parcel or enter its tracking number. Eligible parcels have a free redelivery form. Use only the supplied fictional addresses. No delivery is actually arranged.','选择示例包裹或输入单号。符合条件的包裹提供免费改约表单；请仅用给出的虚构地址，不会实际安排派送。'],
-      search:['Read the source domain and sponsored label before opening a result. The local index includes a Pixelpress reference page with a free TXT guide. Sponsored entries are separate offers.','打开结果前核对来源域名与赞助标记。本地索引提供 Pixelpress 参考页和免费 TXT 说明；赞助条目为独立推广。']
+      search:['Read the source domain and sponsored label before opening a result. The local index includes a Photo Tools reference page with a free TXT guide. Sponsored entries are separate offers.','打开结果前核对来源域名与赞助标记。本地索引提供 图片工具参考页和免费 TXT 说明；赞助条目为独立推广。']
     };
     const sections=[
-      ['about',t('About','关于本站'),t(`${brands[scene]} is a practice website in the One Minute browsing activity. Its catalogue and demonstrations are for learning. Credits and source links remain beside the relevant content.`,`${brands[scene]} 是「一分钟」浏览活动的练习网站。内容与演示用于学习；相关署名和来源链接保留在各条内容旁。`)],
+      ['about',t('About','关于本站'),t(`${siteName} is a practice website in the One Minute browsing activity. Its catalogue and demonstrations are for learning. Credits and source links remain beside the relevant content.`,`${siteName} 是「一分钟」浏览活动的练习网站。内容与演示用于学习；相关署名和来源链接保留在各条内容旁。`)],
       ['privacy',t('Privacy','隐私说明'),t('Saved items and practice progress stay in this browser tab. This site has no account, payment or identity-verification service. Do not enter real personal details in practice forms.','收藏与练习进度保留在当前浏览器标签页。本网站不提供账户、支付或身份验证服务；请勿在练习表单填写真实个人资料。')],
       ['help',t('Help','使用帮助'),t(...(help[scene]||help.search))]
     ];
@@ -28,7 +27,7 @@
       let footer=root.querySelector('footer');
       if(!footer){footer=document.createElement('footer');root.append(footer);}
       const support=document.createElement('div');support.className='br-site-support';support.dataset.siteSupport='';
-      support.innerHTML=`<div class="br-site-footline"><span>© 2026 ${esc(brands[scene])}</span><nav aria-label="${t('Site information','网站信息')}">${sections.map(([id,title])=>`<a href="#br-site-${id}" data-site-info="${id}">${title}</a>`).join('')}</nav></div><div class="br-site-information">${sections.map(([id,title,body])=>`<details id="br-site-${id}"><summary>${title}</summary><p>${esc(body)}</p></details>`).join('')}</div>`;
+      support.innerHTML=`<div class="br-site-footline"><span>© 2026 ${esc(siteName)}</span><nav aria-label="${t('Site information','网站信息')}">${sections.map(([id,title])=>`<a href="#br-site-${id}" data-site-info="${id}">${title}</a>`).join('')}</nav></div><div class="br-site-information">${sections.map(([id,title,body])=>`<details id="br-site-${id}"><summary>${title}</summary><p>${esc(body)}</p></details>`).join('')}</div>`;
       footer.append(support);
     };
     const retries=new WeakMap();

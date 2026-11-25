@@ -16,7 +16,7 @@
     search: {
       brand: ['Software download desk', '软件下载台'],
       cards: [
-        ['software', ['Download shortcut','下载快捷入口'], ['Pixelpress high-speed download','Pixelpress 高速下载'], ['Get installer','获取安装器'], ['Use our download manager to get Pixelpress.','打开下载助手，获取 Pixelpress。']],
+        ['software', ['Download shortcut','下载快捷入口'], ['Photo Tools high-speed download','Photo Tools 高速下载'], ['Get installer','获取安装器'], ['Use our download manager to get Photo Tools.','打开下载助手，获取 Photo Tools。']],
         ['stock', ['Design resources','设计素材'], ['Images for your next club page','社团网页图片素材'], ['Browse images','浏览图片'], ['A separate collection of photos for your next project.','为下次项目浏览独立图片素材集。']],
         ['security', ['Security notice','安全通知'], ['Your download needs a security check','下载需要安全检查'], ['Verify now','立即验证'], ['Run a browser verification before continuing your download.','继续下载前先进行浏览器验证。']],
         ['software', ['Recommended update','推荐更新'], ['Install the download helper','安装下载辅助工具'], ['Continue download','继续下载'], ['Use the download assistant to unlock the file.','使用下载助手解锁文件。']]

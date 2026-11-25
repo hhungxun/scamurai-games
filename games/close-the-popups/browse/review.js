@@ -6,7 +6,7 @@
   const params=new URLSearchParams(location.search),lang=params.get('lang')==='zh'?'zh':'en';
   const t=(en,zh)=>lang==='zh'?zh:en;
   const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const scenes=window.BROWSE_SCENE_INDEX||[],sceneName=id=>scenes.find(s=>s.id===id)?.name||t('Website','网站');
+  const scenes=window.BROWSE_SCENE_INDEX||[],sceneName=id=>t(...(scenes.find(s=>s.id===id)?.name||['Website','网站']));
   const sponsors={corn:'Cornhub',desk:'Form & Field',stock:'Framekind',game:'Tiny Arcade',security:'SecureLane',player:'Orbit Player',software:'AppHarbor',prize:'Lucky Circle',coupon:'Perk Basket',parcel:'NorthPost',cleaner:'AdSweep'};
   const promptNames={robot:t('Robot confirmation','机器人确认'),captcha:t('Checkbox verification','复选框验证'),'player-error':t('Video playback error','视频播放错误'),bonus:t('Bonus balance','奖金余额')};
   const landingPages={trip:['Trip.com','https://www.trip.com/'],shop:['IKEA','https://www.ikea.com/my/en/'],games:['Steam','https://store.steampowered.com/']};

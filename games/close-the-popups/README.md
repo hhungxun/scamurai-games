@@ -1,6 +1,6 @@
 # close the popups — Station 2
 
-A desktop, bilingual 60-second web challenge by Gary. Complete one of 13 practical tasks while simulated ads compete for your attention. The game uses real document navigation, working local exports and native advertiser tabs. All game assets are self-hosted inside this directory.
+A desktop, bilingual 60-second web challenge by Gary. Complete one of 10 practical tasks while simulated ads compete for your attention. The game uses real document navigation, working local exports and native advertiser tabs. All game assets are self-hosted inside this directory.
 
 ## Run
 
@@ -55,7 +55,7 @@ The standalone Stillwall pages, scripts, styles, vendor copies and unused earlie
 
 Station 2 is included in the shared configuration, homepage, staff navigation, printed station QR labels, participant QR routing and exit survey. Its participant-facing station page directs phones to the desktop laptop instead of asking Participants for a staff PIN. The server serves the local audio/video with media content types.
 
-Scored Rounds draw from all 13 tasks. The host persists the assignment, prevents redraws from changing it, and rejects starting an unassigned task. Staff practice retains task choice. Existing shared server duration rules apply, including briefing/loading/save time in the event tie-break.
+Scored Rounds draw from the 10 active tasks. The host persists the assignment, prevents redraws from changing it, and rejects starting an unassigned task. Staff practice retains task choice. Previously started rounds and results for retired tasks remain accessible. If a retired task was drawn before a round started, the next draw assigns an active task. Existing shared server duration rules apply, including briefing/loading/save time in the event tie-break.
 
 Run `node server/test/popup-score.js` and `python3 server/test/e2e_popup.py` from the repo root for repeatable local checks. These tests use throwaway data. Local validation does not establish equal task difficulty or verify physical laptop audio/popup settings.
 
