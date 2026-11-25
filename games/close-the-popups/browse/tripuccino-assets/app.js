@@ -11,7 +11,7 @@
   ];
   const DEFAULT_DATE = '2027-01-23';
   const INITIAL_DATE = '2027-01-26';
-  const PROFILES = ['ALEX TAN','JAMIE LIM','ROBIN LEE','SAM WONG'];
+  const PROFILES = ['GayRay','JAMIE LIM','ROBIN LEE','SAM WONG'];
   const FARE_ROWS = [
     ['od698','Batik Air Malaysia','OD','OD698','10:00','15:00',300,0,467,'T1','Boeing 737 MAX 8',''],
     ['ak138','AirAsia','AK','AK138','09:20','14:25',305,0,541,'T2','Airbus A320neo',''],
@@ -85,8 +85,8 @@
     const storedDraft = read(draftKey,null);
     const profile=[0,1,2,3].includes(storedDraft?.profile)?storedDraft.profile:0;
     const draft = {confirmed:storedDraft?.confirmed===true,profile,extras:normalExtras(storedDraft?.extras),method:storedDraft?.method==='card'?'card':'wallet',
-      passengerName:typeof storedDraft?.passengerName==='string'?storedDraft.passengerName.slice(0,80):PROFILES[profile],
-      contactEmail:typeof storedDraft?.contactEmail==='string'?storedDraft.contactEmail.slice(0,120):'alex.tan@example.com',
+      passengerName:typeof storedDraft?.passengerName==='string'&&storedDraft.passengerName!=='ALEX TAN'?storedDraft.passengerName.slice(0,80):PROFILES[profile],
+      contactEmail:typeof storedDraft?.contactEmail==='string'&&storedDraft.contactEmail!=='alex.tan@example.com'?storedDraft.contactEmail.slice(0,120):'GayRay@gmail',
       contactPhone:typeof storedDraft?.contactPhone==='string'?storedDraft.contactPhone.slice(0,30):'+60 12 345 6789'};
     const saveDraft = () => storeBooking(draftKey,draft);
     const total = () => (farePrice(selected,search.date)+extraPrice(draft.extras))*search.adults;
