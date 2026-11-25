@@ -140,24 +140,27 @@ def run():
                 print('PASS: real 60-second timeout saves score, ending skips and never replays after reload')
 
                 select('POP004'); start('minute2-travel-interchange')
+                frame().locator('.br-interrupt:not([inert]) [data-br-close]:visible').first.click(timeout=8000)
                 frame().locator('select[name=from]').select_option('klcc')
                 frame().locator('select[name=to]').select_option('bukit-kg')
                 frame().locator('input[name=time]').fill('17:20')
                 frame().locator('select[name=pref]').select_option('walking')
-                frame().get_by_role('button', name='Find a route').click(force=True)
-                frame().locator('.jt-route-selected a').first.click(force=True)
-                frame().locator('[data-save-trip]').click(force=True)
+                frame().get_by_role('button', name='Find a route').click()
+                frame().locator('.jt-route-selected a').first.click()
+                frame().locator('[data-save-trip]').click()
                 assert frame().locator('[data-save-trip]').get_attribute('aria-pressed') == 'true'
-                frame().locator('.br-interrupt:not([inert]) [data-br-close]:visible').first.click(timeout=8000)
-                frame().locator('[data-booth-submit]').click(force=True)
+                frame().locator('[data-booth-submit]').click()
                 page.wait_for_function("JSON.parse(sessionStorage.getItem('close-popups:station2:v1')).status==='saved'")
                 score = frame().evaluate('BROWSE_BOOTH_SCORE_LAST')
                 assert (score['task']['score'], score['time']['score'], score['resilience']['score']) == (40, 40, 12), score
                 assert state()['score'] == score['total'] == 92, state()
                 print('PASS: actual task controls and one real popup close earn 92; assignment cannot be rerolled')
-                for n, points in [(1,100), (3,100), (4,100), (5,60)]:
-                    r = api.ok('POST', '/api/rounds', {'participantId':'POP004'}, pin=f'500{n}')
-                    api.ok('POST', f'/api/rounds/{r["roundId"]}/finish', {'score':points,'maxScore':100}, pin=f'500{n}')
+                for n, points, maximum in [(1, 100, 100), (3, 100, 100), (4, 100, 100), (5, 480, 800)]:
+                    r = api.ok('POST', '/api/rounds', {'participantId': 'POP004'}, pin=f'500{n}')
+                    round_path = f'/api/rounds/{r["roundId"]}'
+                    if n == 5:
+                        api.ok('POST', f'{round_path}/events', {'data': {'t': 'scan'}}, token=r['token'])
+                    api.ok('POST', f'{round_path}/finish', {'score': points, 'maxScore': maximum}, pin=f'500{n}')
                 profile = api.ok('GET', '/api/participant/me', participant=people['POP004']['participantToken'])
                 assert profile['total'] == 452 and len(profile['stationsDone']) == 5
                 leaderboard = api.ok('GET', '/api/leaderboard')
