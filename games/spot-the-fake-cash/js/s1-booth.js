@@ -406,13 +406,6 @@
   for (const a of document.querySelectorAll('.try-demo')) a.hidden = demo;
   syncModeUI();
 
-  window.addEventListener('beforeunload', () => {
-    if (activeSlotId && !demo) {
-      // Best-effort expire unclaimed slot when tab closes
-      try { navigator.sendBeacon?.(`/api/kiosk/slots/${encodeURIComponent(activeSlotId)}/cancel`); } catch {}
-    }
-  });
-
   Scamurai.onDashboard(() => {
     ready = true;
     try {

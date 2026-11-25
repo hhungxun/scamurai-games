@@ -27,7 +27,6 @@
 <script>
 const box = document.getElementById('box');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const slotId = location.hash.slice(1).trim();
 
 function renderState({ cls = '', eyebrow, pill = '', title, who = '', message, buttons = '' }) {
   box.className = 'card join-card ' + cls;
@@ -41,6 +40,7 @@ function renderState({ cls = '', eyebrow, pill = '', title, who = '', message, b
 }
 
 async function run() {
+  const slotId = location.hash.slice(1).trim();
   if (!slotId || !/^[A-Za-z0-9_-]{6,32}$/.test(slotId)) {
     renderState({
       cls: 'err-card',
@@ -147,6 +147,7 @@ async function run() {
   }
 }
 
+window.addEventListener('hashchange', run);
 run();
 </script>
 </body></html>
