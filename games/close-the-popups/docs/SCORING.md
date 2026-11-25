@@ -10,22 +10,22 @@ Let `p` be the fraction of automatic scoring checks passed. Only `met === true` 
 task = max(10, round(40 × p)) if scoring checks exist, otherwise 0
 t = elapsed milliseconds, capped at 60000
 curve = 1 through 30000 ms, then 1 − log₂(t / 30000)
-speed = 20 + round(20 × p × curve) with valid timing, otherwise 0
+speed = 30 + round(10 × p × curve) with valid timing, otherwise 0
 safeInteraction = clamp(10 + 2 × realCloses − fakeCloseClicks, 0, 20) with an ad log, otherwise 0
 total = task + speed + safeInteraction
 ```
 
-Each real close counts, including one made after the game reveals the close button. A fake-close click costs one point. Other ad clicks, close-button moves and reveals are recorded for review. With a recorded checklist, valid timing and an ad log, an untouched round earns 40 from the three starting scores.
+Each real close counts, including one made after the game reveals the close button. A fake-close click costs one point. Other ad clicks, close-button moves and reveals are recorded for review. With a recorded checklist, valid timing and an ad log, an untouched round earns 50 from the three starting scores.
 
-有自动计分项时，任务分最低 10 分。速度有 20 分基础分，另按完成比例和用时给奖励。安全操作有广告记录时从 10 分起算，每正确关闭一次加 2 分（包括辅助关闭按钮），每误点一次假关闭扣 1 分。其他广告点击和闪避记录供复盘参考。计分项、计时和广告记录齐全时，即使没动手，本轮也有 40 分基础分。
+有自动计分项时，任务分最低 10 分。速度有 30 分基础分，另按完成比例和用时最多再奖 10 分。安全操作有广告记录时从 10 分起算，每正确关闭一次加 2 分（包括辅助关闭按钮），每误点一次假关闭扣 1 分。其他广告点击和闪避记录供复盘参考。计分项、计时和广告记录齐全时，即使没动手，本轮也有 50 分基础分。
 
 | Scenario | Task | Speed | Safe interaction | Total |
 |---|---:|---:|---:|---:|
-| No task checks passed and no ad interactions | 10 | 20 | 10 | 40 |
-| Half the checks, submitted within 30 seconds, no ad interactions | 20 | 30 | 10 | 60 |
+| No task checks passed and no ad interactions | 10 | 30 | 10 | 50 |
+| Half the checks, submitted within 30 seconds, no ad interactions | 20 | 35 | 10 | 65 |
 | All checks, submitted within 30 seconds, one real close | 40 | 40 | 12 | 92 |
 | All checks, submitted within 30 seconds, five real closes | 40 | 40 | 20 | 100 |
-| All checks at timeout, five real closes | 40 | 20 | 20 | 80 |
+| All checks at timeout, five real closes | 40 | 30 | 20 | 90 |
 
 ## Warm-up / 热身保底
 

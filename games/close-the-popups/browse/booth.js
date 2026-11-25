@@ -276,7 +276,7 @@
         <details class="booth-score-rules">
           <summary>${t('How scoring works', '查看计分规则')}</summary>
           <p>${t('Open View task and pick the label shown in the top bar. You can try again while the clock is running. Completing the warm-up guarantees at least 20 points for the round.', '在「查看任务」里选出顶部栏显示的标签。倒计时结束前可以重试。做完热身，本轮总分至少 20 分。')}</p>
-          <p>${t('The task score starts at 10 when there are items to check and can reach 40. Speed starts at 20. You can earn up to 20 more based on how much you finish. The bonus starts to drop after 30 seconds and reaches zero at 60 seconds.', '有计分项时，任务分最低 10 分，最高 40 分。速度有 20 分基础分，按任务进度最多再奖 20 分。超过 30 秒后，奖励逐渐减少，到 60 秒时只剩基础分。')}</p>
+          <p>${t('The task score starts at 10 when there are items to check and can reach 40. Speed starts at 30. You can earn up to 10 more based on how much you finish. The bonus starts to drop after 30 seconds and reaches zero at 60 seconds.', '有计分项时，任务分最低 10 分，最高 40 分。速度有 30 分基础分，按任务进度最多再奖 10 分。超过 30 秒后，奖励逐渐减少，到 60 秒时只剩基础分。')}</p>
           <p>${t('With an ad log, you start with 10 safety points. Each real close adds 2. Each fake close you click costs 1. This part stays between 0 and 20. Staff practice does not count toward the event.', '有广告记录时，安全操作从 10 分起算。每正确关闭一次加 2 分，每误点一次假关闭扣 1 分，最低 0 分，最高 20 分。工作人员练习不计入活动成绩。')}</p>
         </details>
       </section>`;

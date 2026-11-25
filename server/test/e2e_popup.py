@@ -94,7 +94,7 @@ def run():
                 page.reload()
                 page.wait_for_function("JSON.parse(sessionStorage.getItem('close-popups:station2:v1')).status==='saved'")
                 saved = state()
-                assert saved['score'] == saved['result']['pct'] == calls[0]['score'] == 40
+                assert saved['score'] == saved['result']['pct'] == calls[0]['score'] == 50
                 profile = api.ok('GET', '/api/participant/me', participant=people['POP001']['participantToken'])
                 assert profile['stations'][1]['score'] == saved['score']
                 assert profile['stations'][1]['name'] == 'Close the Pop-ups'

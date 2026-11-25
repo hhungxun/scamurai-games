@@ -11,15 +11,15 @@ const ended = (ms, guaranteed = false) => ({status: 'ended', startedAt: 1000, en
 function score(met, ms, counts = {}, guaranteed = false) {
   return compute(assessment(met), {counts}, ended(ms, guaranteed));
 }
-assert.equal(score(0, 0).total, 40);
-assert.equal(score(0, 60000, {closed: 1000}).total, 50);
+assert.equal(score(0, 0).total, 50);
+assert.equal(score(0, 60000, {closed: 1000}).total, 60);
 assert.equal(score(1, 30000).task.score, 10);
 assert.equal(score(10, 30000).total, 90);
 assert.equal(score(10, 30000, {closed: 5}).total, 100);
-assert.equal(score(10, 45000, {closed: 5}).total, 88);
-assert.equal(score(10, 60000, {closed: 5}).total, 80);
-assert.equal(score(5, 30000).total, 60);
-assert.equal(score(5, 60000).total, 50);
+assert.equal(score(10, 45000, {closed: 5}).total, 94);
+assert.equal(score(10, 60000, {closed: 5}).total, 90);
+assert.equal(score(5, 30000).total, 65);
+assert.equal(score(5, 60000).total, 60);
 assert.equal(score(10, 30000, {closed: 1}).resilience.score, 12);
 assert.equal(score(10, 30000, {closed: 1, decoys: 1, opened: 1}).resilience.score, 11);
 assert.equal(score(10, 30000, {decoys: 1, blocked: 1}).resilience.score, 9);
@@ -40,7 +40,7 @@ for (let ms = 0; ms <= 60000; ms += 1000) {
   }
 }
 {
-  // A valid finished round already has 20 speed points. Exercise the floor
+  // A valid finished round already has 30 speed points. Exercise the floor
   // separately using missing timing and ad data, and verify it never stacks.
   const noTiming = {status: 'ended', guaranteed: true};
   const none = assessment(0);
@@ -49,12 +49,12 @@ for (let ms = 0; ms <= 60000; ms += 1000) {
   assert.equal(result.guaranteed.applied, true);
   assert.equal(compute(none, null, {...noTiming, guaranteed: false}).total, 10);
   assert.equal(compute(none, null, {...noTiming, status: 'void'}).guaranteed.applied, false);
-  const alreadyAtFloor = compute({checks: []}, null, ended(60000, true));
-  assert.equal(alreadyAtFloor.total, 20);
-  assert.equal(alreadyAtFloor.guaranteed.applied, false);
+  const alreadyAboveFloor = compute({checks: []}, null, ended(60000, true));
+  assert.equal(alreadyAboveFloor.total, 30);
+  assert.equal(alreadyAboveFloor.guaranteed.applied, false);
   const normal = score(10, 30000, {closed: 5}, true);
   assert.equal(normal.total, 100);
   assert.equal(normal.guaranteed.done, true);
   assert.equal(normal.guaranteed.applied, false);
 }
-console.log('PASS: Station 2 original 40/40/20 scoring, partial credit, popup scoring, and warm-up floor');
+console.log('PASS: Station 2 40/40/20 scoring with a 30-point speed base, partial credit, popup scoring, and warm-up floor');

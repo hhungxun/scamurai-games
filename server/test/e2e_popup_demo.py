@@ -47,7 +47,7 @@ def run():
     finish()
     score=game().evaluate('BROWSE_BOOTH_SCORE_LAST')
     assert score['guaranteed']=={'done':True,'floor':20,'applied':False}
-    assert score['total']==40,score
+    assert score['total']==50,score
     print('PASS: first demo round records the warm-up without resetting the clock or adding 20 points')
     assert page.evaluate("JSON.parse(sessionStorage.getItem('close-popups:demo:v1:practice')).status")=='ended'
     # A returning visitor can use the game brand to choose another task.
