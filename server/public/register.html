@@ -18,10 +18,10 @@
 <form class="card" id="form" hidden autocomplete="off">
   <p class="eyebrow">FRONT DESK / CHECK IN</p><h2>Register a participant</h2>
   <div class="chips" style="margin-top:8px">
-    <label><input type="radio" name="kind" value="student" checked><span>XMUM student</span></label>
-    <label><input type="radio" name="kind" value="guest"><span>Guest (no student ID)</span></label>
+    <label><input type="radio" name="kind" value="student" checked><span>XMUM student / staff</span></label>
+    <label><input type="radio" name="kind" value="guest"><span>Guest (no student / staff ID)</span></label>
   </div>
-  <div id="idRow"><label for="sid">Student ID</label><input id="sid" placeholder="e.g. PHY2209123" maxlength="20" style="text-transform:uppercase"></div>
+  <div id="idRow"><label for="sid">Student / Staff ID</label><input id="sid" placeholder="e.g. PHY2209123" maxlength="20" style="text-transform:uppercase"></div>
   <label for="name">Name</label><input id="name" maxlength="80" placeholder="As they want it on the leaderboard (first name shown)">
   <label>Age group</label>
   <div class="chips">
@@ -184,8 +184,8 @@ $('form').onsubmit = async e => {
     pbbAccount: val('pbb') == null ? null : val('pbb') === 'yes', scamExposure: val('exp'), consent: $('consent').checked };
   const errors = [];
   if (!guest) {
-    if (!rawId) errors.push('Enter the student ID (or choose Guest).');
-    else if (!/^[A-Z0-9]{4,20}$/.test(rawId) || /^G\d+$/.test(rawId)) errors.push('Student ID should be 4–20 letters/digits.');
+    if (!rawId) errors.push('Enter the student / staff ID (or choose Guest).');
+    else if (!/^[A-Z0-9]{4,20}$/.test(rawId) || /^G\d+$/.test(rawId)) errors.push('Student / Staff ID should be 4–20 letters/digits.');
   }
   if (body.name.length < 2) errors.push('Name is required (at least 2 characters).');
   if (!body.ageGroup) errors.push('Pick an age group.');

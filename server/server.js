@@ -265,7 +265,7 @@ function registerParticipant(b, registeredBy, dupMsg) {
       id = 'G' + String(n).padStart(3, '0');
     } else {
       id = cleanId(b.id);
-      need(validStudentId(id), 400, 'Student ID should be 4–20 letters/digits');
+      need(validStudentId(id), 400, 'Student / Staff ID should be 4–20 letters/digits');
       need(!q.getP.get(id), 409, dupMsg ? dupMsg(id) : `${id} is already registered`);
     }
     q.insP.run({ id, name, age_group: b.ageGroup, pbb_account: b.pbbAccount ? 1 : 0, scam_exposure: b.scamExposure,
@@ -318,7 +318,7 @@ route('GET', '/api/participant/me', req => {
   need(p, 401, 'This personal QR is no longer valid. Ask the registration desk for yours.');
   const rounds = q.roundsOf.all(p.id), s = summarise(p, rounds);
   return {
-    id: p.id, name: p.name, idKind: /^G\d+$/.test(p.id) ? 'Guest ID' : 'Student ID',
+    id: p.id, name: p.name, idKind: /^G\d+$/.test(p.id) ? 'Guest ID' : 'Student / Staff ID',
     total: s.total, maxTotal: STATION_COUNT * 100, stationsDone: s.stationsDone,
     roundsPlayed: s.roundsPlayed, surveyDone: s.surveyDone, eligible: s.eligible,
     checkedOut: !!p.checked_out_at, maxTries: MAX_TRIES,

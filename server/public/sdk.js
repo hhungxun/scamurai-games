@@ -196,7 +196,7 @@
   function showPicker(stationName, startMode = 'play') {
     let sel = null, mode = startMode, starting = false;
     const el = screen(`<h2 style="font:26px Anton,sans-serif;margin:6px 0">Station ${STATION}${stationName ? ' · ' + esc(stationName) : ''}</h2>
-      <label>Type a student ID or name</label>
+      <label>Type a student / staff ID or name</label>
       <input class="find" autocomplete="off" placeholder="e.g. PHY2209123 or Aisyah">
       <div class="list"></div>
       <p class="err"></p>

@@ -50,6 +50,12 @@ body[data-page=status] .wrap{max-width:1240px}
 .st-bars span:last-child{text-align:right;color:var(--grey)}
 .st-feed li span:first-child{color:var(--grey);font-variant-numeric:tabular-nums;flex:none}
 .st-err{color:var(--red);font-weight:600}
+.st-alerts{display:flex;flex-direction:column;gap:6px;margin:0 0 16px}
+.st-alert{display:flex;gap:10px;align-items:baseline;font-size:14px;padding:9px 12px;border-radius:3px;border:1px solid var(--line);border-left:4px solid var(--yellow);background:rgba(42,37,24,.92)}
+.st-alert.urgent{border-left-color:var(--red);background:rgba(70,20,18,.75)}
+.st-alert b{font:400 14px/1 Anton,Impact,sans-serif;letter-spacing:.8px;flex:none}
+.st-alert.urgent b{color:var(--red)}.st-alert.warn b{color:var(--yellow)}
+.st-ok{font-size:13px;color:var(--grey)}
 @media(max-width:620px){.st-games{grid-template-columns:1fr}.st-kpi b{font-size:28px}.st-bars div{grid-template-columns:100px 1fr 30px}}
 </style>
 <script src="/site.js" defer></script>
@@ -69,12 +75,14 @@ body[data-page=status] .wrap{max-width:1240px}
     <span id="clock"></span>
     <button class="ghost" id="lock">Lock</button>
   </div>
+  <div class="st-alerts" id="alerts" aria-live="polite"></div>
   <div class="st-kpis" id="kpis"></div>
   <div class="st-games" id="games"></div>
   <div class="st-panels">
     <div class="st-panel"><h2>Rounds per 15 minutes</h2><svg class="st-chart" id="chart" role="img" aria-label="Rounds started per 15 minutes, by station"></svg><div class="st-legend" id="legend"></div></div>
     <div class="st-panel"><h2>Latest rounds</h2><ul class="st-list st-feed" id="feed"></ul></div>
     <div class="st-panel"><h2>Exit survey</h2><div id="survey"></div></div>
+    <div class="st-panel"><h2>Player progress</h2><p class="st-sub" style="margin:-6px 0 8px">Stations finished, per registered player</p><div class="st-bars" id="progress"></div></div>
     <div class="st-panel"><h2>Top of the board</h2><ul class="st-list" id="board"></ul></div>
   </div>
 </div>
@@ -92,7 +100,7 @@ const GAMES = [
 ];
 const COLORS = ['#e52521','#edcf61','#79c97d','#6fa8dc','#c58fe0'];
 const LIVE_MS = 15 * 60e3;      // a round in the last 15 min = station in use
-const INPLAY_MS = 10 * 60e3;    // an open round younger than this is still being played
+const INPLAY_MS = 15 * 60e3;    // matches the server's IDLE_MS: older open rounds count as abandoned
 let PIN = '', timer = null, probeTimer = null, config = null;
 const probes = new Map();       // n -> {ok, ms, at, code}
 
@@ -173,7 +181,7 @@ function render({overview, rounds, people, board, now}) {
   // ---- per game ----
   const byStation = new Map(GAMES.map(g => [g.n, []]));
   for (const r of rounds) byStation.get(r.station)?.push(r);
-  let liveGames = 0, deadGames = 0, inPlayAll = 0;
+  let liveGames = 0, deadGames = 0, inPlayAll = 0; const stationInfo = [];
   $('games').innerHTML = GAMES.map((g, i) => {
     const rs = byStation.get(g.n) || [], done = rs.filter(r => r.end != null), open = rs.filter(r => r.end == null);
     const inPlay = open.filter(r => now - r.start < INPLAY_MS).length, stale = open.length - inPlay;
@@ -182,8 +190,13 @@ function render({overview, rounds, people, board, now}) {
     const last = rs.length ? Math.max(...rs.map(r => Math.max(r.start, r.end || 0))) : null;
     const recent = rs.filter(r => now - r.start < LIVE_MS).length, hour = rs.filter(r => now - r.start < 3600e3).length;
     const players = new Set(rs.map(r => r.pid)).size;
+    const stuck = open.filter(r => now - r.start >= INPLAY_MS).length;
+    const firstTry = new Set(), retries = rs.filter(r => r.end != null && (firstTry.has(r.pid) || !firstTry.add(r.pid))).length;
+    const toPlay = people.filter(p => !p.out && p.status !== 'abandoned' && !p.done.includes(g.n)).length;
+    const lastStart = rs.length ? Math.max(...rs.map(r => r.start)) : null;
     const pr = probes.get(g.n);
     const state = pr && !pr.ok ? 'dead' : (inPlay || (last && now - last < LIVE_MS)) ? 'live' : 'idle';
+    stationInfo.push({n: g.n, name: g.name, state, stuck, lastStart, recent, probe: probes.get(g.n), toPlay});
     if (state === 'live') liveGames++; if (state === 'dead') deadGames++; inPlayAll += inPlay;
     const label = state === 'dead' ? 'DEAD' : state === 'live' ? 'ALIVE · IN USE' : 'ALIVE · IDLE';
     const surveyQ = (config?.stations.find(s => s.n === g.n)?.questions || []).filter(q => q.type === 'scale');
@@ -201,6 +214,9 @@ function render({overview, rounds, people, board, now}) {
         <div><b>${recent}</b><span>rounds · last 15 min</span></div>
         <div><b>${hour}</b><span>rounds · last hour</span></div>
         <div><b>${fmt(completion, 0, '%')}</b><span>completion${stale ? ` · ${stale} left open` : ''}</span></div>
+        <div><b>${toPlay}</b><span>active players still to play here</span></div>
+        <div><b>${retries}</b><span>second tries used</span></div>
+        <div${stuck ? ' class="st-err"' : ''}><b>${stuck}</b><span>rounds left open &gt;15 min</span></div>
       </div>
       ${spark(rs.map(r => r.start), now, COLORS[i])}
       <div class="st-foot"><span>Last activity ${last ? ago(now - last) : 'none yet'}</span><span>${sv.length ? `Survey ${fmt(mean(sv), 1)}/5` : 'No survey yet'}</span><a href="${esc(g.path)}" target="_blank" rel="noopener">Open ↗</a></div>
@@ -208,6 +224,7 @@ function render({overview, rounds, people, board, now}) {
   }).join('');
 
   // ---- overall ----
+  const surveyPending = people.filter(p => p.done.length === 5 && !p.survey && !p.out).length;
   const done = rounds.filter(r => r.end != null), pcts = done.filter(r => r.max > 0 && r.score != null).map(r => 100 * r.score / r.max);
   const hour = rounds.filter(r => now - r.start < 3600e3).length;
   const firstT = rounds.length ? Math.min(...rounds.map(r => r.start)) : null;
@@ -224,8 +241,29 @@ function render({overview, rounds, people, board, now}) {
     kpi(hour, `rounds last hour${perHour ? ` · ${perHour.toFixed(0)}/h overall` : ''}`),
     kpi(fmt(mean(pcts), 0, '%'), 'average score, all games'),
     kpi(overview.participants ? (rounds.length / overview.participants).toFixed(1) : '—', 'rounds per participant'),
+    kpi(people.filter(p => now - p.registered < 3600e3).length, 'registered in the last hour'),
+    kpi(surveyPending, 'finished all five, survey not done', surveyPending >= 3),
+    kpi(people.filter(p => p.done.length === 5 && p.survey).length, 'prize-eligible (5/5 + survey)'),
+    kpi(fmt(median(people.filter(p => p.done.length && p.out).map(p => p.done.length)), 1), 'median stations done by leavers'),
   ].join('');
   chart(rounds, now);
+
+  // ---- player progress ----
+  const dist = [0,1,2,3,4,5].map(k => people.filter(p => p.done.length === k).length), distMax = Math.max(1, ...dist);
+  $('progress').innerHTML = dist.map((v, k) => `<div><span>${k} station${k === 1 ? '' : 's'}</span><em style="width:${100 * v / distMax}%;background:${k === 5 ? 'var(--yellow)' : 'var(--red)'}"></em><span>${v}</span></div>`).join('');
+
+  // ---- alerts (same rules as the WhatsApp monitor on the X1) ----
+  const alerts = [];
+  for (const st of stationInfo) {
+    if (st.state === 'dead') alerts.push(['urgent', `Station ${st.n} ${st.name} is DOWN: page ${st.probe?.code}`]);
+    else if (st.probe?.ms > 5000) alerts.push(['warn', `Station ${st.n} page is slow (${(st.probe.ms / 1000).toFixed(1)} s)`]);
+    if (st.stuck >= 3) alerts.push(['warn', `Station ${st.n}: ${st.stuck} rounds left open over 15 min (frozen laptop or players walked off?)`]);
+    const busyOthers = stationInfo.filter(o => o.n !== st.n && o.recent > 0).length;
+    if (st.state !== 'dead' && st.lastStart && now - st.lastStart > 20 * 60e3 && busyOthers >= 2 && st.toPlay >= 3)
+      alerts.push(['warn', `Station ${st.n} has had no new round for ${Math.round((now - st.lastStart) / 60e3)} min while ${st.toPlay} active players still need it`]);
+  }
+  if (surveyPending >= 3) alerts.push(['warn', `${surveyPending} players finished all five but haven't done the exit survey`]);
+  $('alerts').innerHTML = alerts.length ? alerts.map(([lvl, msg]) => `<div class="st-alert ${lvl}"><b>${lvl === 'urgent' ? 'URGENT' : 'CHECK'}</b><span>${esc(msg)}</span></div>`).join('') : '<p class="st-ok">No alerts · all five games reachable, nothing stuck.</p>';
 
   // ---- feed ----
   const names = new Map((overview.rows || []).map(p => [p.id, p.name]));
@@ -254,12 +292,13 @@ async function refresh() {
     const [overview, rcsv, pcsv, board] = await Promise.all([api('/api/admin/overview'), apiCSV('/api/export/rounds.csv'), apiCSV('/api/export/participants.csv'), fetch('/api/leaderboard', {cache: 'no-store'}).then(r => r.json()).catch(() => ({rows: []}))]);
     const rounds = rcsv.map(r => ({id: +r.round_id, pid: r.participant_id, station: +r.station, start: Date.parse(r.started_at), end: r.ended_at ? Date.parse(r.ended_at) : null,
       secs: r.secs === '' ? null : +r.secs, score: r.score === '' ? null : +r.score, max: r.max_score === '' ? null : +r.max_score})).filter(r => isFinite(r.start));
-    const people = pcsv.map(p => { let survey = null; try { survey = p.survey_answers_json ? JSON.parse(p.survey_answers_json) : null; } catch {} return {id: p.participant_id, survey}; });
+    const people = pcsv.map(p => { let survey = null; try { survey = p.survey_answers_json ? JSON.parse(p.survey_answers_json) : null; } catch {} return {id: p.participant_id, survey, status: p.status, registered: Date.parse(p.registered_at), out: !!p.checked_out_at, done: [1,2,3,4,5].filter(n => (p[`s${n}_best_pct`] ?? '') !== '')}; });
     render({overview, rounds, people, board, now});
     $('updated').textContent = `Updated ${hhmm(now)}`;
   } catch (e) {
     if (e.status === 401 || e.status === 403) { lock(e.message); return; }
     $('updated').innerHTML = `<span class="st-err">Update failed: ${esc(e.message)}</span> · retrying`;
+    $('alerts').innerHTML = `<div class="st-alert urgent"><b>URGENT</b><span>${healthOk ? 'Admin data unavailable: ' + esc(e.message) : 'Server not responding: every game is unreachable'}</span></div>`;
   }
 }
 

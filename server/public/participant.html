@@ -124,7 +124,7 @@ async function refresh() {
     const surveyNudge = canSelfSurvey && !allStationsDone && p.stationsDone.length >= 2 && !nudgeOff
       ? `<aside class="survey-nudge" aria-label="Exit survey reminder"><p>🏆 Finish all 5 games + the 1-minute exit survey for free drinks &amp; snacks and the prize ranking. Leaving early? <button type="button" class="nudge-go" data-nudge-go>Do the survey before you go</button>.</p><button type="button" data-nudge-off="${esc(p.id)}" aria-label="Hide this reminder">✕</button></aside>`
       : '';
-    const html = `${surveyNudge}<section class="card identity"><p class="muted">Registered name</p><h2 id="participant-name">${esc(p.name)}</h2><p>${esc(p.idKind)}: <strong id="participant-id">${esc(p.id)}</strong></p>
+    const html = `${surveyNudge}<section class="card identity"><p class="muted">Registered name</p><h2 id="participant-name">${esc(p.name)}</h2><p>${esc(p.idKind === 'Student ID' ? 'Student / Staff ID' : p.idKind)}: <strong id="participant-id">${esc(p.id)}</strong></p>
       <p class="muted">${p.checkedOut ? 'Checked out' : p.stations.some(s => s.status === 'playing') ? 'Playing now' : 'Registered · welcome to Scamurai'}</p>
       <a class="scores-jump" href="#my-scores">My scores · ${p.total} / ${p.maxTotal} ↓</a></section>
       <section class="card play-card">${playCardBody}</section>
