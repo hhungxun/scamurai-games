@@ -58,6 +58,26 @@ body[data-page=status] .wrap{max-width:1240px}
 .st-hist-key i{display:inline-block;width:14px;height:0;border-top:2px dashed var(--yellow);margin-right:5px;vertical-align:3px}
 .st-hist-key i.med{border-top:2px dotted var(--paper)}
 .st-board-panel{margin-top:14px}
+.st-diff-panel{margin:0 0 18px}
+.st-diff-row{display:grid;grid-template-columns:minmax(150px,210px) 1fr minmax(230px,300px);gap:6px 14px;align-items:center;padding:7px 0;border-bottom:1px solid rgba(70,65,60,.6)}
+.st-diff-row:last-child{border-bottom:0}
+.st-diff-name{font-size:14px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.st-diff-name b{font:400 18px/1 Anton,Impact,sans-serif;color:var(--red);margin-right:6px}
+.st-diff-track{position:relative;height:22px;background:repeating-linear-gradient(90deg,transparent 0 calc(25% - 1px),#3a3633 calc(25% - 1px) 25%);border-left:1px solid #46413c}
+.st-diff-track em{position:absolute;left:0;top:3px;bottom:3px;background:var(--red);border-radius:0 4px 4px 0;min-width:2px;transition:width .6s ease}
+.st-diff-track span{position:absolute;top:50%;transform:translate(6px,-50%);font:400 18px/1 Anton,Impact,sans-serif;color:var(--paper);white-space:nowrap}
+.st-diff-track span.in{transform:translate(calc(-100% - 6px),-50%);color:#fff}
+.st-diff-meta{font-size:12.5px;color:var(--grey);font-variant-numeric:tabular-nums}.st-diff-meta b{color:var(--paper);font-weight:600}
+.st-diff-axis{display:grid;grid-template-columns:minmax(150px,210px) 1fr minmax(230px,300px);gap:14px;font-size:11px;color:#8a847b}
+.st-diff-axis div{display:flex;justify-content:space-between}
+@media(max-width:760px){.st-diff-row{grid-template-columns:1fr}.st-diff-axis{display:none}}
+@media(prefers-reduced-motion:reduce){.st-diff-track em{transition:none}}
+.st-top{border-top:1px solid var(--line);padding-top:8px}
+.st-top h4{font:400 15px/1 Anton,Impact,sans-serif;letter-spacing:.6px;color:var(--grey);margin:0 0 6px;text-transform:uppercase}
+.st-top table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.st-top td{padding:3px 4px;border-bottom:1px solid rgba(70,65,60,.45)}.st-top tr:last-child td{border-bottom:0}
+.st-top td:first-child{width:28px;color:var(--grey);white-space:nowrap}.st-top tr:nth-child(-n+3) td:first-child{color:var(--yellow);font-weight:700}
+.st-top td.nm{max-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%}
+.st-top td.sc{text-align:right;color:var(--yellow);font-weight:600;white-space:nowrap}.st-top td.tm{text-align:right;color:var(--grey);white-space:nowrap}
 .st-board-wrap{max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:3px}
 .st-board{width:100%;border-collapse:collapse;font-size:14px}
 .st-board th{position:sticky;top:0;background:#1c1a19;text-align:left;font:400 14px/1 Anton,Impact,sans-serif;letter-spacing:.6px;color:var(--grey);padding:10px 10px;border-bottom:1px solid var(--line)}
@@ -94,6 +114,9 @@ body[data-page=status] .wrap{max-width:1240px}
   </div>
   <div class="st-alerts" id="alerts" aria-live="polite"></div>
   <div class="st-kpis" id="kpis"></div>
+  <div class="st-panel st-diff-panel"><h2>How hard is each game?</h2>
+    <p class="st-sub" style="margin:-6px 0 12px">Difficulty index = 100 − mean score % over every finished round (0 = everyone aces it, 100 = nobody scores). Hardest first.</p>
+    <div class="st-diff" id="difficulty" role="list"></div></div>
   <div class="st-games" id="games"></div>
   <div class="st-panels">
     <div class="st-panel"><h2>Rounds per 15 minutes</h2><svg class="st-chart" id="chart" role="img" aria-label="Rounds started per 15 minutes, by station"></svg><div class="st-legend" id="legend"></div></div>
@@ -212,8 +235,35 @@ function histogram(v, color) {
   return `<svg class="st-hist" viewBox="0 0 ${W} ${H}" role="img" aria-label="Score distribution">${v.length ? out : `<text x="${W / 2}" y="${H / 2}" fill="#6e6961" font-size="12" text-anchor="middle">No finished rounds yet</text>`}</svg>`;
 }
 
+const pctOf = r => r.max > 0 && r.score != null ? 100 * r.score / r.max : null;
+
+// Difficulty index per game = 100 − mean score % over all finished rounds; one measure, so one hue, every row named.
+function difficulty(byStation) {
+  const rows = GAMES.map(g => {
+    const v = (byStation.get(g.n) || []).filter(r => r.end != null).map(pctOf).filter(x => x != null);
+    const m = mean(v);
+    return {g, n: v.length, idx: m == null ? null : 100 - m, med: median(v), under: v.length ? 100 * v.filter(x => x < 50).length / v.length : null, zero: v.filter(x => x === 0).length};
+  }).sort((a, b) => (b.idx ?? -1) - (a.idx ?? -1));
+  $('difficulty').innerHTML = rows.map(d => {
+    const tip = d.n ? `${d.g.name}: difficulty ${d.idx.toFixed(0)} / 100 · mean score ${(100 - d.idx).toFixed(0)}% · median ${d.med.toFixed(0)}% · ${d.under.toFixed(0)}% of rounds under 50% · ${d.zero} zero score${d.zero === 1 ? '' : 's'} · ${d.n} rounds` : `${d.g.name}: no finished rounds yet`;
+    return `<div class="st-diff-row" role="listitem" title="${esc(tip)}" aria-label="${esc(tip)}">
+      <div class="st-diff-name"><b>${d.g.n}</b>${esc(d.g.name)}</div>
+      <div class="st-diff-track">${d.n ? `<em style="width:${d.idx.toFixed(1)}%"></em><span class="${d.idx > 85 ? 'in' : ''}" style="left:${d.idx.toFixed(1)}%">${d.idx.toFixed(0)}</span>` : '<span style="left:0;font:12px Lexend,system-ui,sans-serif;color:#8a847b">no rounds yet</span>'}</div>
+      <div class="st-diff-meta">${d.n ? `median <b>${d.med.toFixed(0)}%</b> · <b>${d.under.toFixed(0)}%</b> under 50 · n ${d.n}` : '—'}</div></div>`;
+  }).join('') + '<div class="st-diff-axis" aria-hidden="true"><span></span><div><span>0 · easy</span><span>25</span><span>50</span><span>75</span><span>100 · hard</span></div><span></span></div>';
+}
+
+// Top ten at one station: each player's best finished round, ties broken by the faster time.
+function topTen(done, names) {
+  const best = new Map();
+  for (const r of done) { const p = pctOf(r); if (p == null) continue; const b = best.get(r.pid);
+    if (!b || p > b.p || (p === b.p && (r.secs ?? 1e9) < (b.secs ?? 1e9))) best.set(r.pid, {pid: r.pid, p, secs: r.secs}); }
+  const top = [...best.values()].sort((a, b) => b.p - a.p || (a.secs ?? 1e9) - (b.secs ?? 1e9)).slice(0, 10);
+  return `<div class="st-top"><h4>Top 10 · best round</h4>${top.length ? `<table>${top.map((t, i) => `<tr><td>${i + 1}</td><td class="nm" title="${esc(t.pid)}">${esc(names.get(t.pid) || t.pid)}</td><td class="tm">${secs(t.secs)}</td><td class="sc">${Number.isInteger(t.p) ? t.p : t.p.toFixed(1)}%</td></tr>`).join('')}</table>` : '<p class="st-sub">No finished rounds yet</p>'}</div>`;
+}
+
 function render({overview, rounds, people, now}) {
-  const names = new Map((overview.rows || []).map(p => [p.id, p.name]));
+  const names = new Map([...people.map(p => [p.id, p.name]), ...(overview.rows || []).map(p => [p.id, p.name])].filter(([, n]) => n));
   // ---- per game ----
   const byStation = new Map(GAMES.map(g => [g.n, []]));
   for (const r of rounds) byStation.get(r.station)?.push(r);
@@ -243,8 +293,10 @@ function render({overview, rounds, people, now}) {
       </div>
       ${histogram(pcts, COLORS[i])}
       <div class="st-hist-key"><span><i></i>mean</span><span><i class="med"></i>median</span><span style="margin-left:auto"><a href="${esc(g.path)}" target="_blank" rel="noopener">Open ↗</a></span></div>
+      ${topTen(done, names)}
     </article>`;
   }).join('');
+  difficulty(byStation);
 
   // ---- overall: only the essentials ----
   const finishers = people.filter(p => p.done.length === 5), surveyPending = finishers.filter(p => !p.survey && !p.out).length;
