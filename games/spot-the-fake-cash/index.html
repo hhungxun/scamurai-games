@@ -24,7 +24,7 @@ if(/\.github\.io$/.test(location.hostname))location.replace("https://scamurai.ph
 </style>
 <script src="../../sdk.js" data-station="1" data-demo-param="demo"></script>
 <script src="/vendor/qrcode.js"></script>
-<script defer src="./js/s1-booth.js"></script>
+<script defer src="./js/s1-booth.js?v=modepick1"></script>
 <link rel="stylesheet" href="../shared/theme.css">
 <link rel="icon" href="/assets/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 </head><body>
@@ -53,13 +53,13 @@ if(/\.github\.io$/.test(location.hostname))location.replace("https://scamurai.ph
     <div>
       <p>SCAMURAI / CURRENCY AUTHENTICATION</p>
       <h1>SPOT THE<br>FAKE CASH.</h1>
-      <p id="slot-scan-hint">Scan this screen’s QR with your phone — the game starts automatically with your name.</p>
+      <p id="slot-scan-hint">Scan this screen’s QR with your phone, then choose Normal Mode or VR Mode on screen to start.</p>
       <p style="font-size:13px;color:#c2bdb5">Running 2 tabs on one laptop (Normal + Meta Quest 3 VR)? Each tab generates its own isolated QR so scanning one screen never triggers the other.</p>
       <button id="booth-select">Choose participant manually</button>
       <a class="try-demo" href="?demo=1">Try an unscored demo →</a>
     </div>
     <div class="slot-qr-panel" id="slot-qr-panel">
-      <span class="slot-mode-badge" id="slot-mode-badge" data-mode="normal">NORMAL SCREEN · AUTO-START</span>
+      <span class="slot-mode-badge" id="slot-mode-badge" data-mode="normal">NORMAL SCREEN · CHOOSE MODE</span>
       <div class="slot-code" id="slot-code">SCREEN</div>
       <div class="slot-qr" id="slot-qr"></div>
       <p class="slot-status" id="slot-status" role="status">Generating QR…</p>

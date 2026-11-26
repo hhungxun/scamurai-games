@@ -51,14 +51,14 @@
     }
     const badge = $('slot-mode-badge');
     if (badge) {
-      badge.textContent = tabMode === 'vr' ? 'VR HEADSET · META QUEST 3' : 'NORMAL SCREEN · AUTO-START';
+      badge.textContent = tabMode === 'vr' ? 'VR HEADSET · META QUEST 3' : 'NORMAL SCREEN · CHOOSE MODE';
       badge.dataset.mode = tabMode;
     }
     const hint = $('slot-scan-hint');
     if (hint) {
       hint.textContent = tabMode === 'vr'
-        ? 'Scan this screen’s QR with your phone. Your name loads here — then click Enter VR Mode.'
-        : 'Scan this screen’s QR with your phone — the game starts automatically with your name.';
+        ? 'Scan this screen’s QR with your phone, then choose Normal Mode or VR Mode on screen to start.'
+        : 'Scan this screen’s QR with your phone, then choose Normal Mode or VR Mode on screen to start.';
     }
   }
 
@@ -202,12 +202,9 @@
           viaQR: true
         };
         persist();
-        const autoStart = tabMode === 'normal';
-        frame.src = gameURL({ autostart: autoStart });
+        frame.src = gameURL({ autostart: false });
         status(
-          autoStart
-            ? `${s.participant.name} checked in via QR — starting inspection!`
-            : `${s.participant.name} checked in via QR — click Enter VR Mode on screen to begin!`
+          `${s.participant.name} checked in via QR — choose Normal Mode or VR Mode on screen to start!`
         );
         personal();
         controls();

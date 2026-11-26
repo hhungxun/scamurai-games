@@ -97,12 +97,18 @@ def run():
                 up.wait_for_selector('#box.ok', timeout=10000)
                 assert 'Nadia Ong' in up.text_content('.join-who')
 
-                # Normal tab auto-started for Nadia Ong; VR tab stayed untouched!
+                # Normal tab asks Normal vs VR Mode for Nadia Ong (not auto-starting); VR tab stayed untouched!
                 tab_norm.wait_for_function("document.getElementById('booth-identity').textContent.includes('Nadia Ong')", timeout=10000)
                 nf = tab_norm.locator('#booth-frame').element_handle().content_frame()
+                nf.wait_for_selector('#qr-player-banner:visible', timeout=15000)
+                assert 'Nadia Ong' in nf.inner_text('#qr-player-banner')
+                nf.wait_for_selector('#start-game-btn:not([disabled])', timeout=15000)
+                nf.wait_for_selector('#enter-vr-btn:not([disabled])', timeout=15000)
+                assert nf.locator('#action-bar').is_hidden(), 'Must show Normal/VR choice before starting!'
+                nf.click('#start-game-btn')
                 nf.wait_for_selector('#action-bar:visible', timeout=15000)
                 assert tab_vr.locator('#booth-idle').is_visible()
-                print('PASS: Edge 1 — unregistered phone scans Station 1 QR -> self-registers -> auto-returns & starts screen')
+                print('PASS: Edge 1 — unregistered phone scans Station 1 QR -> self-registers -> shows Normal/VR choice -> starts screen')
 
                 # =============================================================
                 # 2. ALREADY-PLAYING, MAX_TRIES=2 & CHECKED-OUT REJECTIONS PRESERVE WAITING QR

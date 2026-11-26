@@ -309,7 +309,7 @@
           <span class="eyebrow"><span class="tiny-line"></span> THE INBOX CHALLENGE</span>
           <h1 tabindex="-1">Phishing<br><span>Fishing</span><span class="title-dot">.</span></h1>
           <p class="hero-subtitle">Catch the scams.<br>Let safe mail swim.</p>
-          <p class="hero-description">Triage your XMUM Outlook inbox. Inspect the sender, hover or click links &amp; attachments safely, and use Check Yourself on the right whenever you’re unsure.</p>
+          <p class="hero-description">Triage your XMUM Outlook inbox. Inspect the sender, hover or click links &amp; attachments safely, then decide whether each email is legitimate or phishing.</p>
           <button class="button primary start-button" id="start-game" type="button">Start Game ${icon("arrow")}</button>
         </div>
         <div class="hero-art fishing-hero" aria-hidden="true">
@@ -521,8 +521,6 @@
     const remainingCount = round.questions.length - round.index;
     const reportedCount = round.answers.filter(a => a && a.classification === "phishing").length;
     const userInitials = initialsOf(playerFirstName());
-    const verified = round.verified[round.index];
-    let panelOpen = true;
     main.className = "game-screen";
     main.innerHTML = `
       <header class="ol-topbar" aria-label="Outlook mailbox bar">
@@ -555,8 +553,6 @@
         <span class="ol-sep" aria-hidden="true"></span>
         <button class="ol-cmd ol-cmd-safe" type="button" data-answer="legitimate" data-question="${esc(email.id)}">${icon("shield")} <span>Mark Safe</span> <kbd>L</kbd></button>
         <button class="ol-cmd ol-cmd-phish" type="button" data-answer="phishing" data-question="${esc(email.id)}">${icon("flag")} <span>Report Phishing</span> <kbd>P</kbd></button>
-        <span class="ol-sep" aria-hidden="true"></span>
-        <button class="ol-cmd ol-cmd-verify" id="verify-independent" type="button" aria-expanded="${verified}">${icon("eye")} <span>${verified ? "Checked ✓" : "Check Yourself"}</span> <kbd>V</kbd></button>
         <span class="ol-ribbon-hint">Timer pauses after each call for instant feedback</span>
       </div>
       <div class="ol-workspace">
@@ -593,19 +589,6 @@
             <button class="answer-button phishing-button" type="button" data-answer="phishing" data-question="${esc(email.id)}">${icon("flag")} <strong>Report Phishing</strong> <kbd>P</kbd></button>
           </div>
         </section>
-        <aside id="verification-record" class="ol-addin" aria-label="Check Yourself">
-          <div class="ol-addin-head"><strong>${icon("shield")} Check Yourself</strong><button class="ol-addin-close" id="close-verify" type="button" aria-label="Hide Check Yourself pane">×</button></div>
-          <div id="portal-launcher" class="ol-portal-launcher" ${verified ? "hidden" : ""}>
-            <span class="ol-portal-source">${esc(email.context.source)}</span>
-            <p>Not sure? Open your own app or portal directly to double-check this email.</p>
-            <button class="ol-portal-btn" id="portal-lookup-btn" type="button">${icon("eye")} Check It Yourself <kbd>V</kbd></button>
-            <p class="ol-addin-note">Free to check (no score penalty) · timer keeps running.</p>
-          </div>
-          <div id="portal-result" ${verified ? "" : "hidden"}>
-            ${caseContext(email)}
-            <p class="ol-addin-note">What shows up in your own app or portal — compare it against the sender, links, and request.</p>
-          </div>
-        </aside>
       </div>`;
 
     main.querySelectorAll("[data-answer]").forEach(button => button.addEventListener("click", () => submitAnswer(button.dataset.question, button.dataset.answer)));
@@ -615,39 +598,6 @@
       btn.innerHTML = icon(nowMuted ? "mute" : "sound");
       btn.setAttribute("aria-pressed", String(!nowMuted));
       btn.setAttribute("aria-label", nowMuted ? "Turn sound on" : "Turn sound off");
-    };
-
-    const recordPane = main.querySelector("#verification-record");
-    const ribbonVerify = main.querySelector("#verify-independent");
-    const launcher = main.querySelector("#portal-launcher");
-    const lookupBtn = main.querySelector("#portal-lookup-btn");
-    const resultEl = main.querySelector("#portal-result");
-
-    const openCheckYourself = () => {
-      if (!panelOpen) { panelOpen = true; recordPane.hidden = false; }
-      if (!round.verified[round.index]) {
-        if (!round.verify(email.id)) return;
-        try { save(); } catch (error) { storageFailure(error); return; }
-      }
-      if (launcher) launcher.hidden = true;
-      if (resultEl) resultEl.hidden = false;
-      ribbonVerify.setAttribute("aria-expanded", "true");
-      const sp = ribbonVerify.querySelector("span");
-      if (sp) sp.textContent = "Checked ✓";
-      announce("Your app or portal record loaded.");
-    };
-
-    if (lookupBtn) lookupBtn.onclick = openCheckYourself;
-    ribbonVerify.onclick = () => {
-      if (!round.verified[round.index]) { openCheckYourself(); return; }
-      panelOpen = !panelOpen;
-      recordPane.hidden = !panelOpen;
-      ribbonVerify.setAttribute("aria-expanded", String(panelOpen));
-    };
-    main.querySelector("#close-verify").onclick = () => {
-      panelOpen = false;
-      recordPane.hidden = true;
-      ribbonVerify.setAttribute("aria-expanded", "false");
     };
 
     bindLinkInspectors();
@@ -899,11 +849,6 @@
     if (page !== "playing" || referenceDialog.open || window.SitePopups?.isOpen() || locked || event.repeat || event.ctrlKey || event.altKey || event.metaKey) return;
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName)) return;
     const key = event.key.toLowerCase();
-    if (key === "v") {
-      event.preventDefault();
-      main.querySelector("#portal-lookup-btn:not([hidden])")?.click() || main.querySelector("#verify-independent")?.click();
-      return;
-    }
     if (key !== "l" && key !== "p") return;
     event.preventDefault();
     submitAnswer(round.questions[round.index]?.id, key === "l" ? "legitimate" : "phishing");

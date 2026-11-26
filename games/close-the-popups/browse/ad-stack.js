@@ -71,7 +71,7 @@
     const budget=()=>Math.max(0,UNCLOSED_MAX-(state.shown-state.closed));
     const burstActive=()=>state.pending.some(p=>p.burst===true);
     const phone=()=>matchMedia('(max-width: 640px)').matches;
-    const limit=()=>boothAds?(state.activeMs<rampAt?(phone()?4:5):(phone()?5:7)):burstActive()?(phone()?5:10):(phone()?2:4);
+    const limit=()=>boothAds?(state.activeMs<rampAt?(phone()?4:5):(phone()?5:8)):burstActive()?(phone()?5:8):(phone()?2:4);
     const pressure=window.BROWSE_AD_PRESSURE({root,lang:C.lang,t,esc,adURL,read,write,adOffer,campaignSite,campus:Boolean(boothAds)});
     const foreground=()=>!destroyed&&!suspended&&!externalModal&&!document.hidden&&document.hasFocus();
     const snapshot=()=>({activeMs:state.activeMs,quietUntil:state.quietUntil,active:foreground(),modalOpen:externalModal||modalId!==null,externalModal,suspended,restoring,shown:state.shown,pending:state.pending.length,burstUsed:state.burstUsed,burstActive:burstActive()});

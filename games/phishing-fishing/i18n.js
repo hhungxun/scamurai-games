@@ -35,8 +35,8 @@
     "XMUM Community Service": "XMUM 社区服务",
     "OPTIONAL REFERENCE": "参考资料（可选）",
     "Close reference": "关闭参考资料",
-    "These are the services' real reference domains. A message that claims to be from a service should lead to that domain — compare the actual destination against the one listed here. Use Check Yourself on the right to open your own service record when you need context; it does not reveal a classification. Check the requested action and the actual destination, then choose Legitimate or Phishing.":
-      "以下是各项服务的真实参考域名。声称来自某项服务的邮件，应该链接到该服务的域名——请把实际目的地与这里列出的域名对照。需要更多背景时，可以用右侧的“自行核实”打开你自己的服务记录；它不会透露答案。检查邮件要求的操作和实际目的地，然后选择“正常”或“钓鱼”。",
+    "These are the services' real reference domains. A message that claims to be from a service should lead to that domain — compare the actual destination against the one listed here. Check the requested action and the actual destination, then choose Legitimate or Phishing.":
+      "以下是各项服务的真实参考域名。声称来自某项服务的邮件，应该链接到该服务的域名——请把实际目的地与这里列出的域名对照。检查邮件要求的操作和实际目的地，然后选择“正常”或“钓鱼”。",
     "Sender addresses can be spoofed and legitimate accounts can be compromised. A matching domain, HTTPS or polished formatting does not prove authenticity. A deadline or payment amount does not prove phishing. Check the request and use a known app, bookmark or contact to verify it independently.":
       "发件人地址可以伪造，正规账户也可能被盗用。域名相符、有 HTTPS 或排版精美，都不能证明邮件是真的；有截止期限或付款金额，也不能证明它是钓鱼。请检查邮件提出的要求，并通过你熟悉的 App、书签或联系方式自行核实。",
     "During a round, the shared timer keeps running while this reference is open.": "游戏进行中，即使打开这份参考资料，共用计时器也会继续倒数。",
@@ -50,8 +50,8 @@
     "THE INBOX CHALLENGE": "收件箱挑战",
     "Catch the scams.": "揪出诈骗，",
     "Let safe mail swim.": "放走安全邮件。",
-    "Triage your XMUM Outlook inbox. Inspect the sender, hover or click links & attachments safely, and use Check Yourself on the right whenever you’re unsure.":
-      "整理你的 XMUM Outlook 收件箱。检查发件人，安全地悬停或点击链接和附件；拿不准时，就用右侧的“自行核实”。",
+    "Triage your XMUM Outlook inbox. Inspect the sender, hover or click links & attachments safely, then decide whether each email is legitimate or phishing.":
+      "整理你的 XMUM Outlook 收件箱。检查发件人，安全地悬停或点击链接和附件，然后判断每封邮件是正常邮件还是钓鱼邮件。",
     "Start Game": "开始游戏",
     "THE INBOX IS THE POND.": "收件箱就是池塘。",
     "TAKE": "你会",
