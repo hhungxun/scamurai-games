@@ -64,12 +64,12 @@
   const taskSites = new Map(window.BROWSE_SCENE_INDEX.map(site => [site.id, site]));
   const siteName = item => txt(taskSites.get(item.scene).name);
   const taskGroups = [
-    {title:['Search & tools','搜索·工具'],ids:['minute3-search-official','minute2-tool-webp','minute2-wall-earthrise']},
+    {title:['Search & tools','搜索·工具'],ids:['minute3-search-official','minute2-wall-earthrise']},
     {title:['Content & collections','内容·收藏'],ids:['minute2-nature-woodpeckers']},
-    {title:['Plan & compare','规划·比较'],ids:['minute5-taipei-flight','minute2-travel-interchange','minute2-market-lens','minute4-penang-indoor']},
-    {title:['Everyday services','生活服务'],ids:['minute4-shoppee-buy','minute2-recipe-budget','minute2-outing-craft','minute3-courier-redelivery']}
+    {title:['Plan & compare','规划·比较'],ids:['minute5-taipei-flight','minute2-travel-interchange','minute4-penang-indoor']},
+    {title:['Everyday services','生活服务'],ids:['minute4-shoppee-buy','minute2-outing-craft','minute3-courier-redelivery']}
   ];
-  const suggestedSeconds = id => ['minute3-search-official','minute3-courier-redelivery'].includes(id) ? 30 : id === 'minute2-tool-webp' ? 45 : 60;
+  const suggestedSeconds = id => ['minute3-search-official','minute3-courier-redelivery'].includes(id) ? 30 : 60;
   function taskCard(item) {
     return `<li><a class="booth-task-card" data-booth-task="${esc(item.id)}" href="${esc(url({view:'brief', task:item.id}))}">
       <span class="booth-task-thumb"><img src="${esc(item.cover)}" alt="" loading="lazy" width="76" height="58"${item.coverNote?` title="${esc(txt(item.coverNote))}"`:""}></span>
@@ -177,8 +177,8 @@
             <p class="booth-eyebrow">${esc(siteName(item))} · ${esc(txt(taskSites.get(item.scene).type))}</p>
             <h1 id="booth-title">${esc(txt(item.title))}</h1>
             <div class="booth-goals" id="booth-goals" tabindex="-1">
-              <h2>${t('What to do', '要做的事')}</h2>
-              <ol>${item.goals.map(goal => `<li>${taskText(goal, item)}</li>`).join('')}</ol>
+              <h2>${item.briefFormat === 'story' ? t('Your story', '你的故事') : t('What to do', '要做的事')}</h2>
+              ${item.briefFormat === 'story' ? `<p class="booth-story">${taskText(item.brief, item)}</p>` : `<ol>${item.goals.map(goal => `<li>${taskText(goal, item)}</li>`).join('')}</ol>`}
             </div>
             ${item.hint ? `<details class="booth-start-hint"><summary>${t('Hint', '提示')}</summary><p>${taskText(item.hint, item)}</p></details>` : ''}
             <p class="booth-play-note">

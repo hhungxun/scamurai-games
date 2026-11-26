@@ -53,7 +53,7 @@ def run():
                 page.locator('button.go').click()
                 frame = page.locator('#game').element_handle().content_frame()
                 expect(frame.locator('#booth-random')).to_be_visible()
-                frame.wait_for_function('window.BROWSE_BOOTH_TASKS?.length===12')
+                frame.wait_for_function('window.BROWSE_BOOTH_TASKS?.length===9')
                 task_index = frame.evaluate("BROWSE_BOOTH_TASKS.findIndex(t=>t.id==='minute5-taipei-flight')")
                 page.evaluate('index=>{window.savedRandom=crypto.getRandomValues.bind(crypto);crypto.getRandomValues=a=>{if(a instanceof Uint32Array&&a.length===1){a[0]=index;return a}return savedRandom(a)}}', task_index)
                 frame.locator('#booth-random').click()

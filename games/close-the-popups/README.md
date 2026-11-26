@@ -1,6 +1,6 @@
 # close the popups — Station 2
 
-A desktop, bilingual 60-second web challenge by Gary. Complete one of 12 practical tasks while simulated ads compete for your attention. The game uses real document navigation, working local exports and native advertiser tabs. All game assets are self-hosted inside this directory.
+A desktop, bilingual 60-second web challenge by Gary. Complete one of 9 practical tasks while simulated ads compete for your attention. The game uses real document navigation, working local exports and native advertiser tabs. All game assets are self-hosted inside this directory.
 
 ## Run
 
@@ -100,3 +100,7 @@ Tripuccino adds a desktop flight-booking website to the active task pool. The XM
 The airport directory supports continent/country browsing and search; the sample flight inventory covers KUL/SZB → TPE from December 2026 to March 2027. Other routes show an empty result. Prices and schedules are game data. Passenger drafts and orders stay in per-tab scene storage. Payment uses game funds and never requests card credentials. Only a valid order created in the current round before its deadline counts as paid.
 
 Run `python server/test/e2e_tripuccino.py` for the booking, grading, browser-state and timeout regression checks.
+
+The six-serving lentil soup, 800 px WebP export and RM700 camera-kit assignments are retired. They do not appear in the chooser or random draw, and their old brief links cannot start new rounds. Existing round records still resolve their original task details.
+
+Photo Library, Trip Guide, Bird Guide, Rail Planner, Parcel Tracker and Web Search use local glass materials while retaining their individual colour palettes. Shared styling and progressive interaction polish load only in those six websites. Search, comparison, saves, native downloads and the original round deadline remain owned by the existing scene runtime. Tripuccino and ShopPee retain their current UI.

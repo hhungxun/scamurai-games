@@ -172,7 +172,7 @@ window.BROWSE_BOOTH_LEGACY_TASKS = [
 
 /* Current booth briefs. Cover images illustrate each site without revealing its answer. */
 window.BROWSE_BOOTH_TASKS = [
-{"id": "minute5-taipei-flight", "scene": "tripuccino", "file": "tripuccino.html", "site": "Tripuccino", "title": ["Semester break in Taiwan", "Sembreak 去台湾玩"], "brief": ["You are an XMUM student planning a semester-break trip to Taiwan. Fly from Kuala Lumpur International Airport (KUL) to Taipei Taoyuan (TPE) on 23 January 2027. Find the cheapest one-way ticket for one adult and complete its simulated purchase. Keep optional extras at zero.", "你是 XMUM 学生，sem break 想去台湾玩！你要在 2027 年 1 月 23 日，从吉隆坡国际机场 KUL 飞到台北桃园 TPE。找到 1 位成人最便宜的单程机票，并完成模拟购买，保留零元附加服务。"], "hint": ["Check the airport codes and date, then compare the all-in fares.", "核对机场代码与日期，再比较含税总价。"], "goals": [["Search KUL → TPE for 23 January 2027, one adult.", "搜索 2027 年 1 月 23 日 KUL → TPE，1 位成人。"], ["Choose the lowest all-in fare.", "选择最低含税票价。"], ["Complete the simulated payment.", "完成模拟付款。"]], "route": [["Search KUL → TPE, 23 January 2027, one adult, then choose Cheapest.", "搜索 KUL → TPE，2027 年 1 月 23 日，1 人，再按最低价排序。"], ["Select Batik Air OD698 for MYR 467. Confirm the passenger details and keep the free baggage and seat options.", "选择 Batik Air OD698，MYR 467。确认乘客资料，保留免费行李与座位选项。"], ["Continue to payment, accept the fare rules and complete the game payment.", "进入付款页，同意票价规则，完成游戏付款。"]], "answer": ["OD698, KUL → TPE, 2027-01-23, one adult, MYR 467 total including taxes, no paid extras. A paid tc-orders record must belong to this round and be created before its deadline. A search or payment-page visit alone does not complete the purchase.", "OD698，KUL → TPE，2027-01-23，1 人，含税总价 MYR 467，无付费附加服务。tc-orders 已付款订单须属于本轮并在截止时间前生成。仅搜索或进入付款页无法完成购买。"], "cover": "tripuccino-assets/taipei.jpg", "advanced": false, "badge": ["KUL → TPE · 23 Jan", "KUL → TPE · 1月23日"], "steps": [["Set KUL → TPE, 23 Jan 2027, one adult", "选择 KUL → TPE，2027年1月23日，1人"], ["Select the cheapest all-in fare with no paid extras", "选择最低含税票价，保留零元附加服务"], ["Complete simulated payment", "完成模拟付款"]], "hint2": ["Cheapest sorts the total fare from low to high. Basic includes taxes and 7 kg cabin baggage.", "最低价按含税价由低到高排列。基础票价包含税费和 7 kg 手提行李。"]},
+{"id": "minute5-taipei-flight", "scene": "tripuccino", "file": "tripuccino.html", "site": "Tripuccino", "title": ["Semester break in Taiwan", "Sembreak 去台湾玩"], "brief": ["You're an XMUM student heading to Taiwan for sem break on 23 January 2027. Book the cheapest one-way flight from KUL to Taipei Taoyuan (TPE) for one adult, including taxes. Skip paid extras and complete the simulated payment.", "你是 XMUM 学生，打算在 2027 年 1 月 23 日趁 sem break 去台湾玩。预算有限，请订一张 KUL 飞台北桃园（TPE）、1 位成人的最低含税价单程机票，不加购付费服务，并完成模拟付款。"], "hint": ["Check the airport codes and date, then compare the all-in fares.", "核对机场代码与日期，再比较含税总价。"], "goals": [["Search KUL → TPE for 23 January 2027, one adult.", "搜索 2027 年 1 月 23 日 KUL → TPE，1 位成人。"], ["Choose the lowest all-in fare.", "选择最低含税票价。"], ["Complete the simulated payment.", "完成模拟付款。"]], "route": [["Search KUL → TPE, 23 January 2027, one adult, then choose Cheapest.", "搜索 KUL → TPE，2027 年 1 月 23 日，1 人，再按最低价排序。"], ["Select Batik Air OD698 for MYR 467. Confirm the passenger details and keep the free baggage and seat options.", "选择 Batik Air OD698，MYR 467。确认乘客资料，保留免费行李与座位选项。"], ["Continue to payment, accept the fare rules and complete the game payment.", "进入付款页，同意票价规则，完成游戏付款。"]], "answer": ["OD698, KUL → TPE, 2027-01-23, one adult, MYR 467 total including taxes, no paid extras. A paid tc-orders record must belong to this round and be created before its deadline. A search or payment-page visit alone does not complete the purchase.", "OD698，KUL → TPE，2027-01-23，1 人，含税总价 MYR 467，无付费附加服务。tc-orders 已付款订单须属于本轮并在截止时间前生成。仅搜索或进入付款页无法完成购买。"], "cover": "tripuccino-assets/taipei.jpg", "advanced": false, "badge": ["KUL → TPE · 23 Jan", "KUL → TPE · 1月23日"], "steps": [["Set KUL → TPE, 23 Jan 2027, one adult", "选择 KUL → TPE，2027年1月23日，1人"], ["Select the cheapest all-in fare with no paid extras", "选择最低含税票价，保留零元附加服务"], ["Complete simulated payment", "完成模拟付款"]], "hint2": ["Cheapest sorts the total fare from low to high. Basic includes taxes and 7 kg cabin baggage.", "最低价按含税价由低到高排列。基础票价包含税费和 7 kg 手提行李。"], "briefFormat": "story"},
   {
     "id": "minute4-shoppee-buy",
     "scene": "shoppee",
@@ -266,38 +266,6 @@ window.BROWSE_BOOTH_TASKS = [
     steps: [["Add both Earthrise photos", "加入两张「地出」照片"], ["Download the 1972 photo as a 3840 × 2160 JPG", "下载 1972 年照片的 3840 × 2160 JPG"]]
   },
   {
-    id: "minute2-recipe-budget",
-    scene: "recipes",
-    file: "recipe.html",
-    title: ["Save a lentil soup recipe for six","收藏六人份的红扁豆番茄汤"],
-    brief: ["In Recipe Book, find the RM5-per-serving red lentil and tomato soup. Set it to six servings, tick off the red lentils, then save the recipe.","在食谱大全找到每份 RM5 的红扁豆番茄汤。设为 6 人份，勾选红扁豆，再收藏食谱。"],
-    hint: ["Jump to recipe takes you to the serving selector and the ingredient list.","点「直接看食谱」就能找到份量选项和食材清单。"],
-    goals: [["In Recipe Book, search for lentil and open Red lentil & tomato soup (RM5 per serving).","在食谱大全搜索「扁豆」，打开每份 RM5 的红扁豆番茄汤。"],["Click Jump to recipe, set Servings to 6, and tick Red lentils under Ingredients.","点「直接看食谱」，把「份量」设为 6，在「食材」里勾选红扁豆。"],["Click Save recipe.","点「收藏食谱」。"]],
-    route: [["Search for lentil and open the red lentil and tomato soup.","搜索「扁豆」，打开红扁豆番茄汤。"],["Jump to recipe, set six servings, tick the red lentils, and save the recipe.","点「直接看食谱」，选 6 人份，勾选红扁豆并收藏食谱。"]],
-    answer: ["red-lentil-soup · RM5 per serving, 35 minutes, vegan, one pot. At six servings the checklist shows 420 g of red lentils.","red-lentil-soup · 每份 RM5，35 分钟，纯素，一口锅。六人份的食材清单显示 420 g 红扁豆。"],
-    cover: "assets/real-food-red-lentil-soup-thumb.webp",
-    advanced: false,
-    badge: ["6 servings·RM5","红扁豆汤·6人·RM5/份"],
-    steps: [["Open the RM5-per-serving red lentil and tomato soup","打开每份 RM5 的红扁豆番茄汤"],["Set it to six servings","改成 6 人份"],["Tick Red lentils in Ingredients","在食材清单勾上红扁豆"],["Save the recipe","收藏食谱"]],
-    hint2: ["Search “lentil” and use Jump to recipe on the soup page.", "搜「扁豆」。打开汤的详情后，点「直接看食谱」。"]
-  },
-  {
-    id: "minute2-tool-webp",
-    scene: "tools",
-    file: "tools.html",
-    title: ["Download an 800 px WebP from Photo Tools","用图片工具下载宽 800 px 的 WebP"],
-    brief: ["Open the La Trobe reading room example in Photo Tools. Download it as a WebP, 800 px wide at 70% quality.","在图片工具打开「拉筹伯阅览室」示例图，下载为宽 800 px、画质 70% 的 WebP。"],
-    hint: ["Pick the photo from the example image library. The preview updates as you change the settings.", "从「示例图片库」选图。改完设置，预览会自动更新。"],
-    goals: [["In Photo Tools, scroll to Example image library. Find La Trobe reading room and click Open example.","在图片工具下滑到「示例图片库」，找到「拉筹伯阅览室」，点「打开示例」。"],["In Compression settings, choose WebP. Set Maximum width to 800 px and Image quality to 70%.","在「压缩设置」里选 WebP，把「最大宽度」设为 800 px，把「画质」设为 70%。"],["Click Download image. The WebP appears in the game’s downloads at the top right.","点「下载图片」。WebP 会出现在游戏右上角的下载列表里。"]],
-    route: [["Look through the example photos and load the La Trobe Reading Room.","浏览示例照片，载入拉筹伯阅览室。"],["Select WebP, width 800 and quality 70%. The settings update the preview automatically.","设为 WebP、宽 800、画质 70%，预览会自动更新。"],["Check the result and download it.","核对结果后下载。"]],
-    answer: ["sunroom (sunroom-study). The 1558 × 2048 source scales to 800 × 1052. Use custom settings.","sunroom（拉筹伯阅览室）。原图 1558 × 2048，按比例生成 800 × 1052。使用自定义设置。"],
-    cover: "assets/real-wall-sunroom-study-thumb.webp",
-    advanced: false,
-    badge: ["WebP·800px·70%","WebP·800px·70%"],
-    steps: [["Download the La Trobe reading room example","下载「拉筹伯阅览室」示例图"],["Download it as an 800 px WebP at 70% quality","下载宽 800 px、画质 70% 的 WebP"]],
-    hint2: ["Find the photo below the upload box and click Open example.", "在上传区下方找到那张照片，点「打开示例」。"]
-  },
-  {
     id: "minute2-outing-craft",
     scene: "events",
     file: "events.html",
@@ -345,22 +313,6 @@ window.BROWSE_BOOTH_TASKS = [
     badge: ["17:20","17:20·较少步行·保存行程"],
     steps: [["Plan from KLCC (KJ) to Bukit Bintang (KG)","选择 KLCC（KJ）到武吉免登（KG）"],["Set departure to 17:20","出发时间设为 17:20"],["Choose Less walking","选「较少步行」"],["Save the trip","保存行程"]],
     hint2: ["There are two Bukit Bintang stops in the planner. Pick the one marked KG.", "规划器里有两个武吉免登站，选标着 KG 的那个。"]
-  },
-  {
-    id: "minute2-market-lens",
-    scene: "market",
-    file: "market.html",
-    title: ["Save an EOS 550D with a lens for up to RM700","收藏 RM700 以内带镜头的 EOS 550D"],
-    brief: ["In Used Cameras, check the two EOS 550D listings. Save the one that includes both a camera body and a lens for RM700 or less.","在二手相机网站看两条 EOS 550D 商品，收藏含机身和镜头、总价不超过 RM700 的那套。"],
-    hint: ["Look under Included to see what comes with each camera.", "想知道有没有镜头，看详情里的「附带配件」。"],
-    goals: [["In Used Cameras, search for EOS 550D. Click Compare + on the Good and Excellent listings to put both on one page.","在二手相机网站搜索 EOS 550D。分别点成色「良好」和「极佳」商品上的「对比 +」，把两条商品放在一起看。"],["Open Compare gear. Look at the price and the Included row to find the body and lens kit for RM700 or less.","打开「相机对比」。看价格和「附带配件」，找出含机身和镜头、总价不超过 RM700 的那套。"],["Click that kit’s name, then click ♡ Save on its detail page.","点那套相机的商品名称，再在详情页点「♡ 收藏」。"]],
-    route: [["Search for EOS 550D and click Compare + on the Good and Excellent listings.","搜索 EOS 550D，在成色「良好」和「极佳」商品上分别点「对比 +」。"],["Open Compare gear. Find the kit by price and the Included row, open its listing, and click Save.","打开「相机对比」。看价格和「附带配件」，打开符合条件的商品并点「收藏」。"]],
-    answer: ["canon-good: RM420, body only. canon-excellent: RM680, with EF-S 18–55mm, battery and charger. Save canon-excellent.","canon-good：RM420，仅机身。canon-excellent：RM680，附 EF-S 18–55mm 镜头、电池和充电器。收藏 canon-excellent。"],
-    cover: "assets/market-canon-eos-550d.webp",
-    advanced: true,
-    badge: ["EOS 550D·RM700","EOS 550D·RM700"],
-    steps: [["Put both EOS 550D listings in the side-by-side view","把两条 EOS 550D 商品加入对比"],["Save the kit with a lens for RM700 or less","收藏 RM700 以内带镜头的那套"]],
-    hint2: ["Search EOS 550D. One listing is body only.", "搜 EOS 550D，其中一条只卖机身。"]
   },
   {
     id: "minute3-courier-redelivery",
@@ -414,6 +366,57 @@ window.BROWSE_BOOTH_TASKS = [
 
 // Previously started rounds and results still resolve these tasks.
 window.BROWSE_BOOTH_LEGACY_TASKS.push(
+  {
+    id: "minute2-recipe-budget",
+    retired: true,
+    scene: "recipes",
+    file: "recipe.html",
+    title: ["Save a lentil soup recipe for six","收藏六人份的红扁豆番茄汤"],
+    brief: ["In Recipe Book, find the RM5-per-serving red lentil and tomato soup. Set it to six servings, tick off the red lentils, then save the recipe.","在食谱大全找到每份 RM5 的红扁豆番茄汤。设为 6 人份，勾选红扁豆，再收藏食谱。"],
+    hint: ["Jump to recipe takes you to the serving selector and the ingredient list.","点「直接看食谱」就能找到份量选项和食材清单。"],
+    goals: [["In Recipe Book, search for lentil and open Red lentil & tomato soup (RM5 per serving).","在食谱大全搜索「扁豆」，打开每份 RM5 的红扁豆番茄汤。"],["Click Jump to recipe, set Servings to 6, and tick Red lentils under Ingredients.","点「直接看食谱」，把「份量」设为 6，在「食材」里勾选红扁豆。"],["Click Save recipe.","点「收藏食谱」。"]],
+    route: [["Search for lentil and open the red lentil and tomato soup.","搜索「扁豆」，打开红扁豆番茄汤。"],["Jump to recipe, set six servings, tick the red lentils, and save the recipe.","点「直接看食谱」，选 6 人份，勾选红扁豆并收藏食谱。"]],
+    answer: ["red-lentil-soup · RM5 per serving, 35 minutes, vegan, one pot. At six servings the checklist shows 420 g of red lentils.","red-lentil-soup · 每份 RM5，35 分钟，纯素，一口锅。六人份的食材清单显示 420 g 红扁豆。"],
+    cover: "assets/real-food-red-lentil-soup-thumb.webp",
+    advanced: false,
+    badge: ["6 servings·RM5","红扁豆汤·6人·RM5/份"],
+    steps: [["Open the RM5-per-serving red lentil and tomato soup","打开每份 RM5 的红扁豆番茄汤"],["Set it to six servings","改成 6 人份"],["Tick Red lentils in Ingredients","在食材清单勾上红扁豆"],["Save the recipe","收藏食谱"]],
+    hint2: ["Search “lentil” and use Jump to recipe on the soup page.", "搜「扁豆」。打开汤的详情后，点「直接看食谱」。"]
+  },
+  {
+    id: "minute2-tool-webp",
+    retired: true,
+    scene: "tools",
+    file: "tools.html",
+    title: ["Download an 800 px WebP from Photo Tools","用图片工具下载宽 800 px 的 WebP"],
+    brief: ["Open the La Trobe reading room example in Photo Tools. Download it as a WebP, 800 px wide at 70% quality.","在图片工具打开「拉筹伯阅览室」示例图，下载为宽 800 px、画质 70% 的 WebP。"],
+    hint: ["Pick the photo from the example image library. The preview updates as you change the settings.", "从「示例图片库」选图。改完设置，预览会自动更新。"],
+    goals: [["In Photo Tools, scroll to Example image library. Find La Trobe reading room and click Open example.","在图片工具下滑到「示例图片库」，找到「拉筹伯阅览室」，点「打开示例」。"],["In Compression settings, choose WebP. Set Maximum width to 800 px and Image quality to 70%.","在「压缩设置」里选 WebP，把「最大宽度」设为 800 px，把「画质」设为 70%。"],["Click Download image. The WebP appears in the game’s downloads at the top right.","点「下载图片」。WebP 会出现在游戏右上角的下载列表里。"]],
+    route: [["Look through the example photos and load the La Trobe Reading Room.","浏览示例照片，载入拉筹伯阅览室。"],["Select WebP, width 800 and quality 70%. The settings update the preview automatically.","设为 WebP、宽 800、画质 70%，预览会自动更新。"],["Check the result and download it.","核对结果后下载。"]],
+    answer: ["sunroom (sunroom-study). The 1558 × 2048 source scales to 800 × 1052. Use custom settings.","sunroom（拉筹伯阅览室）。原图 1558 × 2048，按比例生成 800 × 1052。使用自定义设置。"],
+    cover: "assets/real-wall-sunroom-study-thumb.webp",
+    advanced: false,
+    badge: ["WebP·800px·70%","WebP·800px·70%"],
+    steps: [["Download the La Trobe reading room example","下载「拉筹伯阅览室」示例图"],["Download it as an 800 px WebP at 70% quality","下载宽 800 px、画质 70% 的 WebP"]],
+    hint2: ["Find the photo below the upload box and click Open example.", "在上传区下方找到那张照片，点「打开示例」。"]
+  },
+  {
+    id: "minute2-market-lens",
+    retired: true,
+    scene: "market",
+    file: "market.html",
+    title: ["Save an EOS 550D with a lens for up to RM700","收藏 RM700 以内带镜头的 EOS 550D"],
+    brief: ["In Used Cameras, check the two EOS 550D listings. Save the one that includes both a camera body and a lens for RM700 or less.","在二手相机网站看两条 EOS 550D 商品，收藏含机身和镜头、总价不超过 RM700 的那套。"],
+    hint: ["Look under Included to see what comes with each camera.", "想知道有没有镜头，看详情里的「附带配件」。"],
+    goals: [["In Used Cameras, search for EOS 550D. Click Compare + on the Good and Excellent listings to put both on one page.","在二手相机网站搜索 EOS 550D。分别点成色「良好」和「极佳」商品上的「对比 +」，把两条商品放在一起看。"],["Open Compare gear. Look at the price and the Included row to find the body and lens kit for RM700 or less.","打开「相机对比」。看价格和「附带配件」，找出含机身和镜头、总价不超过 RM700 的那套。"],["Click that kit’s name, then click ♡ Save on its detail page.","点那套相机的商品名称，再在详情页点「♡ 收藏」。"]],
+    route: [["Search for EOS 550D and click Compare + on the Good and Excellent listings.","搜索 EOS 550D，在成色「良好」和「极佳」商品上分别点「对比 +」。"],["Open Compare gear. Find the kit by price and the Included row, open its listing, and click Save.","打开「相机对比」。看价格和「附带配件」，打开符合条件的商品并点「收藏」。"]],
+    answer: ["canon-good: RM420, body only. canon-excellent: RM680, with EF-S 18–55mm, battery and charger. Save canon-excellent.","canon-good：RM420，仅机身。canon-excellent：RM680，附 EF-S 18–55mm 镜头、电池和充电器。收藏 canon-excellent。"],
+    cover: "assets/market-canon-eos-550d.webp",
+    advanced: true,
+    badge: ["EOS 550D·RM700","EOS 550D·RM700"],
+    steps: [["Put both EOS 550D listings in the side-by-side view","把两条 EOS 550D 商品加入对比"],["Save the kit with a lens for RM700 or less","收藏 RM700 以内带镜头的那套"]],
+    hint2: ["Search EOS 550D. One listing is body only.", "搜 EOS 550D，其中一条只卖机身。"]
+  },
   {
     id: "minute2-movie-animation",
     retired: true,

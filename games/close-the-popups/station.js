@@ -294,7 +294,7 @@
     async draw(win, ids) {
       verifyChild(win);
       const pool = [...new Set(ids)].filter(id => typeof id === 'string' && /^minute[2345]-[a-z-]+$/.test(id));
-      if (pool.length !== 12) throw new Error('The complete task pool is unavailable.');
+      if (pool.length !== 9) throw new Error('The complete task pool is unavailable.');
       if (!state) await prepare(win, 'ads');
       if (state?.status !== 'open' || state.localId || !state.readyToStart) throw new Error('Finish or cancel the current round first.');
       const retired = win.BROWSE_BOOTH_LEGACY_TASKS?.some(task => task.retired && task.id === state.taskId);

@@ -424,3 +424,6 @@ strong.br-task-key { display:inline; margin:0; padding:0; color:#111; font-size:
   .booth-welcome { grid-template-columns: 1fr; }
   .booth-welcome-art { min-height: 300px; border-left: 0; border-top: 1px solid var(--line); }
 }
+
+/* Narrative briefs keep the task context in a comfortable reading measure. */
+.booth-goals .booth-story{font-size:clamp(17px,1.5vw,21px);line-height:1.75;margin:12px 0 0;max-width:68ch}
