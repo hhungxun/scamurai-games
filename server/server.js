@@ -797,7 +797,7 @@ const server = http.createServer(async (req, res) => {
       if (!m) continue;
       const out = await r.fn(req, m.groups || {});
       if (out && out.csv !== undefined) {
-        res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="${out.name}"` });
+        res.writeHead(200, { 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="${out.name}"`, 'Cache-Control': 'no-store, private' });
         return res.end('﻿' + out.csv);
       }
       return send(res, 200, out);

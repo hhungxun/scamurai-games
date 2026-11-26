@@ -37,7 +37,8 @@ async function load() {
   // Downloaded with the PIN in a header, so it never lands in browser history or the tunnel's access logs.
   const csv = name => async e => {
     e.preventDefault();
-    const res = await fetch('/api/export/' + name, { headers: { 'X-Pin': PIN } });
+    // *.csv is edge-cached by Cloudflare: an unguessable query keeps every download live and never fills the shared cache.
+    const res = await fetch(`/api/export/${name}?live=${crypto.getRandomValues(new Uint32Array(4)).join('')}`, { headers: { 'X-Pin': PIN }, cache: 'no-store' });
     if (!res.ok) return alert('Download failed: ' + res.status);
     const a = document.createElement('a'); a.href = URL.createObjectURL(await res.blob()); a.download = name; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 10000);
