@@ -148,8 +148,8 @@ function play() {
       <div class="box" style="text-align:center">
         <div class="big" style="color:${correct ? 'var(--game-green)' : 'var(--red)'}">${correct ? '✓ +' + pts : v === 'timeout' ? "Time's up · 0" : '✗ ' + pts}</div>
         ${card ? `<p>It was <b style="color:${card.real ? 'var(--game-green)' : 'var(--red)'}">${card.real ? 'REAL' : 'FAKE'}</b> · ${esc(card.brand)}</p><p class="muted" style="word-break:break-all">${esc(card.url)}</p>` : '<p>The site did not load before time ran out.</p>'}</div>
-      ${next ? '<div id="scanner"></div>' : '<div class="box">All done! Tap <b>My scores</b> to see your total and each QR result.</div>'}
-      ${card ? `<div class="box"><b>${card.real ? 'Why it is genuine' : !correct ? 'What you missed' : 'The tells'}</b><ul class="tells">${(card.tells || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>` : ''}
+      ${card ? `<div class="box" id="why"><b>${card.real ? 'Why it is genuine' : !correct ? 'What you missed' : 'The tells'}</b><ul class="tells">${(card.tells || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>` : ''}
+      ${next ? '<p class="muted" style="text-align:center;margin:4px 0">Read why above, then scan your next QR ↓</p><div id="scanner"></div>' : '<div class="box">All done! Tap <b>My scores</b> to see your total and each QR result.</div>'}
       <p class="muted" id="sent" style="text-align:center">Saving…</p></main>`;
     document.body.appendChild(res);
     if (next) { S5.warm(cur); scanner = S5Scanner.mount(document.getElementById('scanner')); }
