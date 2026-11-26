@@ -64,11 +64,10 @@ def run():
     assert len(api.ok('GET','/api/rounds/open',pin='5003'))==2
     assert state(a)['participant']['id']=='MAIL001' and state(b)['participant']['id']=='MAIL002'
     print('PASS: two email laptops play independently; the same participant cannot start twice')
-    af=frame(a);af.click('#verify-independent');saved=state(a)['snapshot']
-    a.reload();frame(a).wait_for_selector('[data-question]');assert state(a)['snapshot']['verified']==saved['verified'] and state(a)['snapshot']['startedAt']==saved['startedAt']
-    assert frame(a).locator('.case-context').is_visible()
-    assert frame(a).locator('[data-evidence],#submit-judgement').count()==0
-    print('PASS: optional verification survives reload; classification has no evidence step')
+    saved=state(a)['snapshot']
+    a.reload();frame(a).wait_for_selector('[data-question]');assert state(a)['snapshot']['startedAt']==saved['startedAt']
+    assert frame(a).locator('#verification-record,#verify-independent,[data-evidence],#submit-judgement').count()==0
+    print('PASS: round survives reload; Check Yourself pane and evidence step are absent')
     for _ in range(4):answer(a)
     before=state(a)['snapshot'];a.reload();frame(a).wait_for_selector('[data-question]')
     after=state(a)['snapshot'];assert before['startedAt']==after['startedAt'] and before['questionIds']==after['questionIds'] and before['answers']==after['answers']

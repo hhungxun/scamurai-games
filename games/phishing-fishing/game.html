@@ -20,8 +20,8 @@
   <script defer src="site-popups.js"></script>
   <script defer src="sfx.js"></script>
   <script defer src="emails.zh.js"></script>
-  <script defer src="i18n.js"></script>
-  <script defer src="app.js"></script>
+  <script defer src="i18n.js?v=noselfcheck1"></script>
+  <script defer src="app.js?v=noselfcheck1"></script>
 <link rel="stylesheet" href="../shared/theme.css"><link rel="stylesheet" href="fishing.css"><link rel="stylesheet" href="outlook.css"><link rel="icon" href="/assets/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/assets/apple-touch-icon.png"></head>
 <body data-game="email">
   <a class="skip-link" href="#main">Skip to game</a>
@@ -40,7 +40,7 @@
   </div>
   <dialog id="reference-dialog" aria-labelledby="reference-title" aria-describedby="reference-intro">
     <div class="reference-header"><div><span class="eyebrow">OPTIONAL REFERENCE</span><h2 id="reference-title">How to verify</h2></div><button id="close-reference" class="icon-button" type="button" aria-label="Close reference">✕</button></div>
-    <p id="reference-intro">These are the services' real reference domains. A message that claims to be from a service should lead to that domain — compare the actual destination against the one listed here. Use Check Yourself on the right to open your own service record when you need context; it does not reveal a classification. Check the requested action and the actual destination, then choose Legitimate or Phishing.</p>
+    <p id="reference-intro">These are the services' real reference domains. A message that claims to be from a service should lead to that domain — compare the actual destination against the one listed here. Check the requested action and the actual destination, then choose Legitimate or Phishing.</p>
     <div id="domain-reference" class="domain-reference"></div>
     <p class="reference-advice"><strong>Check the whole destination.</strong> A subdomain such as <code>portal.xmum.edu.my</code> belongs under <code>xmum.edu.my</code>. A name such as <code>xmum.edu.my.verify.com</code> belongs under <code>verify.com</code>, not the university. Watch for lookalikes such as <code>maybank2u-verify.com</code> instead of <code>maybank2u.com.my</code>.</p>
     <p class="reference-advice">Sender addresses can be spoofed and legitimate accounts can be compromised. A matching domain, HTTPS or polished formatting does not prove authenticity. A deadline or payment amount does not prove phishing. Check the request and use a known app, bookmark or contact to verify it independently.</p>
