@@ -631,7 +631,8 @@ route('GET', '/api/rounds/:id/events', async (req, { id }) => {
 // Exit Survey validation: only known questions, valid values, every scale/choice question answered.
 function validateSurvey(answers, stationsDone) {
   need(answers && typeof answers === 'object' && !Array.isArray(answers), 400, 'Survey answers are required');
-  const qs = [...CONFIG.stations.filter(s => stationsDone.includes(s.n)).flatMap(s => s.questions), ...CONFIG.general];
+  // A player who leaves before playing anything skips "which station did you like best?".
+  const qs = [...CONFIG.stations.filter(s => stationsDone.includes(s.n)).flatMap(s => s.questions), ...CONFIG.general.filter(x => x.type !== 'station' || stationsDone.length)];
   const byId = new Map(qs.map(x => [x.id, x]));
   for (const k of Object.keys(answers)) need(byId.has(k), 400, `Unknown survey question: ${clip(k, 20)}`);
   const stationLabels = CONFIG.stations.filter(s => stationsDone.includes(s.n)).map(s => `${s.n}. ${s.name}`);
@@ -679,7 +680,6 @@ route('POST', '/api/participant/checkout', async req => {
   need(p, 401, 'This personal QR is no longer valid. Ask the registration desk for yours.');
   const s = summaryOf(p.id);
   need(!p.checked_out_at && !s.surveyDone, 409, 'Exit survey already submitted');
-  need(s.stationsDone.length > 0, 400, 'Complete at least one station before submitting the exit survey');
   const b = await readJson(req);
   const clean = validateSurvey(b.answers, s.stationsDone);
   q.checkout.run(Date.now(), null, JSON.stringify({ stationsDone: s.stationsDone, answers: clean, at: Date.now() }), p.id);

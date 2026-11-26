@@ -120,7 +120,7 @@ async function refresh() {
     const allStationsDone = p.stations.every(s => s.status === 'completed');
     const nextStation = p.stations.find(s => s.status !== 'completed' && s.status !== 'playing');
     const todo = `<ol class="todo" aria-label="Station progress">${p.stations.map(s => `<li class="${s === nextStation ? 'next' : s.status}"><b>${s.n}</b>${s.status === 'completed' ? '✓ Done' : s.status === 'playing' ? 'Playing' : s === nextStation ? 'Next' : 'To play'}</li>`).join('')}</ol>`;
-    const canSelfSurvey = !p.checkedOut && !p.surveyDone && p.stationsDone.length > 0;
+    const canSelfSurvey = !p.checkedOut && !p.surveyDone;
     const playCardBody = p.checkedOut || p.surveyDone
       ? `<p class="eyebrow">ALL DONE</p>${p.eligible ? rewardPassHtml(p) : ''}<a class="btn wide" href="/leaderboard.html">View leaderboard ↗</a><p class="muted">Thanks for playing! Check the <a href="/leaderboard.html">leaderboard</a> for the live rankings.</p>`
       : allStationsDone
@@ -128,7 +128,7 @@ async function refresh() {
         : `<p class="eyebrow">YOUR NEXT CHALLENGE</p>${nextStation ? `<p class="next-up">Up next: <strong>Station ${nextStation.n} · ${esc(nextStation.name)}</strong></p>` : ''}${!p.stationsDone.length ? '<p class="muted" style="margin:4px 0 0">Tip: start at <strong>Station 1 or 2</strong>. Most players start at Station 5, so its queue is longest.</p>' : ''}<button class="btn wide" id="start-scamming">Start Scamming ↗</button>${todo}<p class="muted">${p.stations.filter(s => s.status === 'completed').length} of ${p.stations.length} stations done. Scan station codes and Game Master Join QRs here. Everything stays in this browser.</p><p class="reward-hint"><strong>Free drinks &amp; snacks:</strong> Finish all 5 games and the exit survey, then show your phone at the registration desk to claim!</p>`;
     // The exit-survey card now sits at the top of the page, so the old reminder banners are gone.
     const html = `<section class="card visit-panel${canSelfSurvey ? ' survey-hot' : ''}" id="exit-survey">${canSelfSurvey ? `<p class="eyebrow">⏱ 1 MINUTE · ${allStationsDone ? 'UNLOCKS YOUR PRIZE' : 'BEFORE YOU LEAVE'}</p>` : ''}<h2>Exit survey &amp; check-out</h2><p>Exit survey: <strong>${p.surveyDone ? 'Completed' : 'Not completed yet'}</strong></p><p>${p.eligible ? 'All five stations and the exit survey are complete. You qualify for the prize ranking.' : canSelfSurvey && allStationsDone ? '<strong>Just the survey left!</strong> All five stations done — fill it in to qualify for the prize ranking.' : 'Complete all five stations and the exit survey to qualify for the prize ranking.'}</p>
-      ${canSelfSurvey ? (allStationsDone ? `<button class="btn wide survey-cta" id="open-survey-visit">Fill in exit survey ↗</button><p class="muted">When you are ready to leave, fill in the exit survey right here on your phone — no need to wait for a Game Master.</p>` : `<button class="btn ghost wide" id="open-survey-visit">Leaving early? Fill in exit survey</button><p class="muted">Only submit now if you are leaving the event early. Checking out ends play — finish all 5 games first for free drinks &amp; snacks and the prize ranking.</p>`) : !p.surveyDone && !p.checkedOut ? '<p class="muted">Play at least one station, then fill in the exit survey right here on your phone before you leave.</p>' : ''}</section>
+      ${canSelfSurvey ? (allStationsDone ? `<button class="btn wide survey-cta" id="open-survey-visit">Fill in exit survey ↗</button><p class="muted">When you are ready to leave, fill in the exit survey right here on your phone — no need to wait for a Game Master.</p>` : `<button class="btn ghost wide" id="open-survey-visit">Leaving early? Fill in exit survey</button><p class="muted">Only submit now if you are leaving the event early. Checking out ends play — finish all 5 games first for free drinks &amp; snacks and the prize ranking.</p>`) : ''}</section>
       <section class="card identity"><p class="muted">Registered name</p><h2 id="participant-name">${esc(p.name)}</h2><p>${esc(p.idKind === 'Student ID' ? 'Student / Staff ID' : p.idKind)}: <strong id="participant-id">${esc(p.id)}</strong></p>
       <p class="muted">${p.checkedOut ? 'Checked out' : p.stations.some(s => s.status === 'playing') ? 'Playing now' : 'Registered · welcome to Scamurai'}</p>
       <a class="scores-jump" href="#my-scores">My scores · ${p.total} / ${p.maxTotal} ↓</a></section>
@@ -172,7 +172,7 @@ function closeSurvey() {
   refresh();
 }
 async function openSurvey() {
-  if (!profile || profile.checkedOut || profile.surveyDone || !profile.stationsDone.length) return;
+  if (!profile || profile.checkedOut || profile.surveyDone) return;
   scanner?.stop(); scanner = null;
   document.getElementById('scan-panel').hidden = true;
   root.hidden = true;
@@ -191,7 +191,7 @@ async function openSurvey() {
     return;
   }
   const done = profile.stationsDone;
-  const qs = [...surveyConfig.stations.filter(s => done.includes(s.n)).flatMap(s => s.questions.map(q => ({ ...q, station: s }))), ...surveyConfig.general];
+  const qs = [...surveyConfig.stations.filter(s => done.includes(s.n)).flatMap(s => s.questions.map(q => ({ ...q, station: s }))), ...surveyConfig.general.filter(q => q.type !== 'station' || done.length)];
   const ans = {};
   const field = q => {
     if (q.type === 'scale') return `<div class="scale" data-q="${esc(q.id)}">${[1, 2, 3, 4, 5].map(v => `<button type="button" data-v="${v}">${v}</button>`).join('')}</div>`;

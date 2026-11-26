@@ -306,7 +306,7 @@
   // ---------- 4. Exit Survey ----------
   async function survey(p, stationsDone, fromFinish) {
     try { config = config || await api('/api/config'); } catch (e) { return screen(`<p class="err">${esc(e.message)}</p>`); }
-    const qs = [...config.stations.filter(s => stationsDone.includes(s.n)).flatMap(s => s.questions.map(q => ({ ...q, station: s }))), ...config.general];
+    const qs = [...config.stations.filter(s => stationsDone.includes(s.n)).flatMap(s => s.questions.map(q => ({ ...q, station: s }))), ...config.general.filter(q => q.type !== 'station' || stationsDone.length)];
     const ans = {};
     const field = q => {
       if (q.type === 'scale') return `<div class="scale" data-q="${q.id}">${[1, 2, 3, 4, 5].map(v => `<button type="button" data-v="${v}">${v}</button>`).join('')}</div>`;
