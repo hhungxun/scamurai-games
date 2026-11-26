@@ -1,7 +1,7 @@
 /* A durable, explicit 60-second booth round. Ordinary website visits stay untimed. */
 (() => {
   'use strict';
-  const VERSION = 'ending3', PREFIX = 'br-booth-v1:', INDEX = 'br-booth-index-v1', LIMIT = 12, DURATION = 60000;
+  const VERSION = 'ending3', PREFIX = 'br-booth-v1:', INDEX = 'br-booth-index-v1', LIMIT = 12, DURATION = 90000, OLD_DURATION = 60000;
   const RULES = {
     'minute4-shoppee-buy':{scene:'shoppee',file:'shoppee.html',target:'pmax'},
     'minute5-taipei-flight':{scene:'tripuccino',file:'tripuccino.html',target:'od698'},
@@ -108,7 +108,7 @@
     if (v.status === 'armed') {
       if (v.startedAt !== 0 || v.deadline !== 0 || v.endedAt !== 0 || v.reason !== null) return null;
     } else {
-      if (!time(v.startedAt) || v.startedAt < v.createdAt || v.deadline !== v.startedAt + DURATION) return null;
+      if (!time(v.startedAt) || v.startedAt < v.createdAt || (v.deadline !== v.startedAt + DURATION && v.deadline !== v.startedAt + OLD_DURATION)) return null; // rounds started before the 90-second change keep 60 s
       if (v.status === 'running' && (v.endedAt !== 0 || v.reason !== null)) return null;
       if (v.status === 'ended' && (!time(v.endedAt) || v.endedAt < v.startedAt || v.endedAt > v.deadline || !['timeout','submitted'].includes(v.reason) || v.reason === 'timeout' && v.endedAt !== v.deadline)) return null;
       if (v.status === 'void' && (!time(v.endedAt) || v.endedAt < v.startedAt || v.endedAt > v.deadline || v.reason !== 'void')) return null;
@@ -442,7 +442,7 @@
     if (bar) return;
     const task=taskData(record.taskId),text=v=>Array.isArray(v)?v[record.lang==='zh'?1:0]:v;
     const taskText=value=>window.BROWSE_BOOTH_TASK_TEXT(text(value),task,record.lang);
-    bar=document.createElement('aside');bar.id='br-booth-bar';bar.setAttribute('aria-label',translate('60-second challenge','60秒挑战'));
+    bar=document.createElement('aside');bar.id='br-booth-bar';bar.setAttribute('aria-label',translate('90-second challenge','90秒挑战'));
     bar.innerHTML=`<div class="br-booth-time"><small>${translate('TIME LEFT','剩余时间')}</small><strong data-booth-clock role="timer" aria-live="off">1:00</strong></div><div class="br-booth-current"><span>${record.mode==='clean'?translate('CLEAN ROUND','无广告挑战'):translate('AD CHALLENGE','广告挑战')}</span><b>${escape(text(task.title))}</b>${task.badge?`<strong class="br-booth-badge">${escape(text(task.badge))}</strong>`:""}</div><div class="br-booth-actions"><button type="button" data-booth-task>${translate('View task','查看任务')}</button><button type="button" data-booth-submit>${translate('Submit','交卷')}</button><button type="button" data-booth-void aria-label="${translate('Staff: void this round','工作人员：作废本轮')}">${translate('Staff','工作人员')}</button></div>`;
     dialog=document.createElement('dialog');dialog.id='br-booth-task-dialog';dialog.setAttribute('aria-labelledby','br-booth-dialog-title');
     const goals=task.goals || task.steps || [];

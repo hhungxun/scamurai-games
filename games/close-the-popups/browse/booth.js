@@ -110,7 +110,7 @@
             ${mode === 'clean'
               ? `<p>${t('Try a task without interruptions to check its difficulty.', '先关掉广告，试一试题目难不难。')}</p>`
               : `<div class="booth-welcome-intro">
-                  <p>${t('You have <strong>60 seconds</strong> to do a task on a simulated site, like planning a train trip or finding a photo.', '你有 <strong>60 秒</strong>在模拟网站上完成一项任务，比如规划列车路线或查找照片。')}</p>
+                  <p>${t('You have <strong>90 seconds</strong> to do a task on a simulated site, like planning a train trip or finding a photo.', '你有 <strong>90 秒</strong>在模拟网站上完成一项任务，比如规划列车路线或查找照片。')}</p>
                   <p>${t('When an ad pops up, <strong>find the real close button</strong> and get back to your task.', '遇到弹窗广告，<strong>找准真正的关闭按钮</strong>，关掉后继续做任务。')}</p>
                 </div>`}
             <button id="booth-random" class="booth-button booth-button-inverse" type="button">${t('Draw a task', '随机抽题')} <span aria-hidden="true">→</span></button>
@@ -139,7 +139,7 @@
             <h2 id="booth-task-heading">${t('Or pick your own', '也可以自己选题')}</h2>
             <span>${tasks.length} ${t('tasks', '题')}</span>
           </div>
-          <p class="booth-note booth-duration-note">${t('The times on the cards are estimates. Every round gives you 60 seconds.', '卡片上是预计用时。每轮都给你 60 秒。')}</p><div class="booth-task-groups">${taskGroups.map((group,i)=>`<section class="booth-task-group" aria-labelledby="booth-group-${i}"><h3 id="booth-group-${i}">${esc(txt(group.title))}</h3><ul class="booth-task-grid">${group.ids.map(id=>tasks.find(x=>x.id===id)).filter(Boolean).map(taskCard).join('')}</ul></section>`).join('')}</div>
+          <p class="booth-note booth-duration-note">${t('The times on the cards are estimates. Every round gives you 90 seconds.', '卡片上是预计用时。每轮都给你 90 秒。')}</p><div class="booth-task-groups">${taskGroups.map((group,i)=>`<section class="booth-task-group" aria-labelledby="booth-group-${i}"><h3 id="booth-group-${i}">${esc(txt(group.title))}</h3><ul class="booth-task-grid">${group.ids.map(id=>tasks.find(x=>x.id===id)).filter(Boolean).map(taskCard).join('')}</ul></section>`).join('')}</div>
         </section>
         ${staffHistory()}
       </main>`;
@@ -184,7 +184,7 @@
             </div>
             ${item.hint ? `<details class="booth-start-hint"><summary>${t('Hint', '提示')}</summary><p>${taskText(item.hint, item)}</p></details>` : ''}
             <p class="booth-play-note">
-              <strong>${t('You have 60 seconds once the site is ready.', '网站就绪后，你有 60 秒。')}</strong>
+              <strong>${t('You have 90 seconds once the site is ready.', '网站就绪后，你有 90 秒。')}</strong>
               ${mode === 'ads' ? t('When an ad pops up, find its real close button, close it, and get back to your task.', '广告弹出时，认准真正的关闭按钮，关掉后接着做任务。') : ''}
               ${t('Click Submit when you’re done.', '做完后点「交卷」。')}
             </p>
@@ -314,7 +314,7 @@
   }
   function renderPending(round, item) {
     const armed = round.status === 'armed';
-    document.title = t('This round is not finished · close the popups', '本轮尚未结束 · 60秒任务挑战');
+    document.title = t('This round is not finished · close the popups', '本轮尚未结束 · 90秒任务挑战');
     app.innerHTML = `${header(t('ROUND STATUS', '轮次状态'), round)}<main id="booth-main" data-booth-view="${armed ? 'armed' : 'running'}" class="booth-main booth-recovery"><p class="booth-eyebrow">${esc(siteName(item))} / ${esc(modeName(round.mode))}</p><h1 id="booth-title">${armed ? t('Ready to start', '可以开始了') : t('Your timer is still running', '倒计时还在继续')}</h1><p>${armed ? t('Go to the task site. The timer starts when the page loads.', '打开任务网站。网页就绪后开始计时。') : t('Go back to the task site to finish or submit. Opening this page keeps the timer running.', '回到任务网站继续做题或交卷。打开这个页面时，倒计时还在继续。')}</p><div class="booth-recovery-task"><strong>${esc(txt(item.title))}</strong><span>${esc(txt(item.brief))}</span></div><a class="booth-button booth-button-primary" id="booth-resume" href="${esc(localisedURL(api.entryURL(round)))}">${armed ? t('Continue to the website', '继续前往网站') : t('Return to this round', '返回本轮任务')}<span aria-hidden="true">↗</span></a><a class="booth-text-link" href="${esc(chooseURL())}">${t('Back to task selection', '返回选题')}</a></main>`;
     mountFullscreen();
   }
@@ -324,7 +324,7 @@
     const score = scoreData(round);
     window.BROWSE_BOOTH_SCORE_LAST = score;
     window.CLOSE_POPUPS_BRIDGE.result(round, score);
-    document.title = `${reasonText(round)} · ${t('close the popups', '60秒任务挑战')}`;
+    document.title = `${reasonText(round)} · ${t('close the popups', '90秒任务挑战')}`;
     app.innerHTML = `${header(t('03 / Results', '03 / 结果'), round)}
       <main id="booth-main" data-booth-view="result" class="booth-main booth-result-main">
         <section class="booth-result-hero" aria-labelledby="booth-title">
@@ -348,7 +348,7 @@
   function renderError(kind) {
     const unavailable = kind === 'runtime';
     const retired = kind === 'retired';
-    document.title = t('Round unavailable · close the popups', '轮次不可用 · 60秒任务挑战');
+    document.title = t('Round unavailable · close the popups', '轮次不可用 · 90秒任务挑战');
     app.innerHTML = `${header(t('LET’S RESET THE ENTRY', '重新找到入口'))}<main id="booth-main" data-booth-view="error" class="booth-main booth-recovery"><p class="booth-eyebrow">${t('NOT A RESULT', '这不是本轮结果')}</p><h1 id="booth-title">${unavailable ? t('The activity could not load.', '活动未能加载。') : retired ? t('This task is no longer available.', '这道题已停用。') : t('We can’t find that round.', '找不到这轮记录。')}</h1><p>${unavailable ? t('The activity runtime is unavailable. Reload the page before starting. No challenge has started here.', '活动组件暂时不可用。请重新加载后再开始，这里尚未启动挑战。') : retired ? t('Return to the task selection to start a new round.', '请返回选题页开始新一轮。') : t('The link is missing, invalid or no longer stored in this tab. We will not guess a previous participant’s result or add more time to an old round.', '链接缺失、无效，或记录已不在此标签页中。这里不会猜测上一位的结果，也不会为旧轮次重开计时。')}</p><a class="booth-button booth-button-primary" href="${esc(chooseURL())}">${t('Return to task selection', '返回选题')}<span aria-hidden="true">↗</span></a>${unavailable ? `<button class="booth-text-link" type="button" id="booth-reload">${t('Reload page', '重新加载')}</button>` : ''}</main>`;
     mountFullscreen();
     document.getElementById('booth-reload')?.addEventListener('click', () => location.reload());

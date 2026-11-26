@@ -127,10 +127,10 @@ def run():
 
                 # The real timeout path, including ending animation and durable save.
                 select('POP003'); start()
-                page.wait_for_function("JSON.parse(sessionStorage.getItem('close-popups:station2:v1')).status==='saved'", timeout=75000)
+                page.wait_for_function("JSON.parse(sessionStorage.getItem('close-popups:station2:v1')).status==='saved'", timeout=115000)
                 result = frame().evaluate('BROWSE_BOOTH.list()[0]')
                 assert result['reason'] == 'timeout'
-                assert result['endedAt'] - result['startedAt'] == 60000
+                assert result['endedAt'] - result['startedAt'] == 90000
                 assert state()['score'] == frame().evaluate('BROWSE_BOOTH_SCORE_LAST.total')
                 ending = frame().locator('dialog[aria-label="Round ending"]')
                 ending.wait_for(state='visible')
@@ -138,7 +138,7 @@ def run():
                 frame().goto(frame().url)
                 frame().wait_for_selector('.booth-score')
                 assert frame().locator('dialog[aria-label="Round ending"]').count() == 0
-                print('PASS: real 60-second timeout saves score, ending skips and never replays after reload')
+                print('PASS: real 90-second timeout saves score, ending skips and never replays after reload')
 
                 select('POP004'); start('minute2-travel-interchange')
                 frame().locator('.br-interrupt:not([inert]) [data-br-close]:visible').first.click(timeout=8000)

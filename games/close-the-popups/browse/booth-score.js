@@ -3,7 +3,7 @@
   'use strict';
   const CONFIG = Object.freeze({
     TASK_MAX: 40, TASK_BASE: 10, TIME_MAX: 40, TIME_BASE: 30,
-    ROUND_MS: 60000, TIME_FULL_MS: 30000,
+    ROUND_MS: 90000, TIME_FULL_MS: 30000, SPEED_ZERO_MS: 60000,
     RESILIENCE_MAX: 20, RESILIENCE_BASE: 10,
     CLEAN_CLOSE: 2, DECOY: -1, GUARANTEED_FLOOR: 20
   });
@@ -19,9 +19,11 @@
     const elapsedMs = Math.min(CONFIG.ROUND_MS, round.endedAt - round.startedAt);
     const task = taskScore(assessment), completion = task.total ? task.met / task.total : 0;
     // Full speed credit through 30s, then a normalized logarithmic decline to
-    // the base score at 60s. Only the bonus is weighted by task progress.
-    const curve = elapsedMs <= CONFIG.TIME_FULL_MS ? 1
-      : 1 - Math.log(elapsedMs / CONFIG.TIME_FULL_MS) / Math.log(CONFIG.ROUND_MS / CONFIG.TIME_FULL_MS);
+    // the base score at 60s (unchanged when rounds grew to 90 s, so scores stay comparable).
+    // Only the bonus is weighted by task progress.
+    const speedMs = Math.min(CONFIG.SPEED_ZERO_MS, elapsedMs);
+    const curve = speedMs <= CONFIG.TIME_FULL_MS ? 1
+      : 1 - Math.log(speedMs / CONFIG.TIME_FULL_MS) / Math.log(CONFIG.SPEED_ZERO_MS / CONFIG.TIME_FULL_MS);
     const bonus = Math.round((CONFIG.TIME_MAX - CONFIG.TIME_BASE) * completion * curve);
     return {score: CONFIG.TIME_BASE + bonus, base: CONFIG.TIME_BASE, bonus, elapsedMs, completion};
   };
