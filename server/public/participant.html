@@ -29,6 +29,10 @@
   #survey-panel .opts button.on{background:var(--yellow);color:#171616;border-color:var(--yellow)}
   .reward-hint{font-size:13px;line-height:1.5;color:var(--paper);background:#2a2518;border:1px solid rgba(237,207,97,.4);border-left:3px solid var(--yellow);border-radius:3px;padding:10px 12px;margin:12px 0 0}
   .reward-hint strong{color:var(--yellow)}
+  .survey-nudge{display:flex;align-items:center;gap:10px;font-size:13.5px;line-height:1.45;background:#2a2518;border:1px solid rgba(237,207,97,.35);border-left:3px solid var(--yellow);border-radius:3px;padding:9px 8px 9px 12px;margin:0 0 14px}
+  .survey-nudge p{margin:0;flex:1}
+  .survey-nudge .nudge-go{display:inline;background:none;border:0;padding:0;min-height:0;color:var(--yellow);font:inherit;text-transform:none;letter-spacing:0;text-decoration:underline;text-underline-offset:4px;cursor:pointer}
+  .survey-nudge [data-nudge-off]{background:none;border:0;color:var(--grey);font:18px/1 Lexend,system-ui,sans-serif;padding:6px 8px;min-height:0;cursor:pointer}
   .reward-pass{background:#16261a;border:2px solid #7CFC8A;border-radius:4px;padding:16px 14px;margin:14px 0 4px;text-align:center}
   .reward-pass .eyebrow{color:#7CFC8A;margin:0 0 6px}
   .reward-pass .pass-title{font:400 23px/1.15 Anton,Impact,sans-serif;letter-spacing:.4px;text-transform:uppercase;color:var(--yellow);margin:0 0 8px}
@@ -115,7 +119,12 @@ async function refresh() {
       : allStationsDone
         ? `<p class="eyebrow">NEXT: EXIT SURVEY</p><button class="btn wide" id="open-survey">Fill in exit survey ↗</button><button class="btn ghost wide" id="start-scamming" style="margin-top:10px">Scan a station QR</button><p class="muted">All five stations done! Fill in the quick exit survey right here on your phone to qualify for the prize ranking.</p><p class="reward-hint"><strong>Free drinks &amp; snacks:</strong> Finish the exit survey now, then show your phone at the registration desk to claim!</p>`
         : `<p class="eyebrow">YOUR NEXT CHALLENGE</p>${nextStation ? `<p class="next-up">Up next: <strong>Station ${nextStation.n} · ${esc(nextStation.name)}</strong></p>` : ''}<button class="btn wide" id="start-scamming">Start Scamming ↗</button>${todo}<p class="muted">${p.stations.filter(s => s.status === 'completed').length} of ${p.stations.length} stations done. Scan station codes and Game Master Join QRs here. Everything stays in this browser.</p><p class="reward-hint"><strong>Free drinks &amp; snacks:</strong> Finish all 5 games and the exit survey, then show your phone at the registration desk to claim!</p>`;
-    const html = `<section class="card identity"><p class="muted">Registered name</p><h2 id="participant-name">${esc(p.name)}</h2><p>${esc(p.idKind)}: <strong id="participant-id">${esc(p.id)}</strong></p>
+    // Gentle exit-survey reminder for players part-way through; dismissible, remembered per participant on this device.
+    let nudgeOff = false; try { nudgeOff = localStorage.getItem('survey-nudge-off:' + p.id) === '1'; } catch {}
+    const surveyNudge = canSelfSurvey && !allStationsDone && p.stationsDone.length >= 2 && !nudgeOff
+      ? `<aside class="survey-nudge" aria-label="Exit survey reminder"><p>🏆 Finish all 5 games + the 1-minute exit survey for free drinks &amp; snacks and the prize ranking. Leaving early? <button type="button" class="nudge-go" data-nudge-go>Do the survey before you go</button>.</p><button type="button" data-nudge-off="${esc(p.id)}" aria-label="Hide this reminder">✕</button></aside>`
+      : '';
+    const html = `${surveyNudge}<section class="card identity"><p class="muted">Registered name</p><h2 id="participant-name">${esc(p.name)}</h2><p>${esc(p.idKind)}: <strong id="participant-id">${esc(p.id)}</strong></p>
       <p class="muted">${p.checkedOut ? 'Checked out' : p.stations.some(s => s.status === 'playing') ? 'Playing now' : 'Registered · welcome to Scamurai'}</p>
       <a class="scores-jump" href="#my-scores">My scores · ${p.total} / ${p.maxTotal} ↓</a></section>
       <section class="card play-card">${playCardBody}</section>
@@ -124,7 +133,7 @@ async function refresh() {
       <section class="card total" id="my-scores"><p class="eyebrow">MY SCORES</p><h2>Total score</h2><div class="number" id="event-total">${p.total}<span style="font-size:30px;color:var(--grey)"> / ${p.maxTotal}</span></div>
       <p>${p.stationsDone.length} of ${p.stations.length} stations completed</p><progress value="${p.stationsDone.length}" max="${p.stations.length}" aria-label="Stations completed"></progress><p class="muted"><strong>You get ${p.maxTries || 2} tries per game.</strong> Your best finished round at each station counts.</p></section>
       <section class="card station-panel"><p class="eyebrow">MY SCORES BY STATION</p><h2>Your stations</h2>${p.stations.map(s => `<div class="station" data-station="${s.n}"><div><strong>${s.n}. ${esc(s.name)}</strong><p class="muted ${s.status}">${s.status === 'playing' ? 'Playing now · score updates when the round finishes' : s.status === 'completed' ? 'Completed' : 'Not played yet'} · ${Math.max(0, (p.maxTries || 2) - (s.tries || 0))} of ${p.maxTries || 2} tries left</p>${s.score !== null ? `<div class="bar"><i style="width:${Math.max(0, Math.min(100, s.score))}%"></i></div>` : ''}</div>${s.status === 'playing' && s.score === null ? '<span class="score is-playing">Playing</span>' : `<span class="score${s.score !== null ? ' has-score' : ''}">${s.score === null ? '—' : s.score + ' / 100'}</span>`}</div>`).join('')}</section>
-      <section class="card visit-panel"><h2>Exit survey &amp; check-out</h2><p>Exit survey: <strong>${p.surveyDone ? 'Completed' : 'Not completed yet'}</strong></p><p>${p.eligible ? 'All five stations and the exit survey are complete. You qualify for the prize ranking.' : 'Complete all five stations and the exit survey to qualify for the prize ranking.'}</p>
+      <section class="card visit-panel" id="exit-survey"><h2>Exit survey &amp; check-out</h2><p>Exit survey: <strong>${p.surveyDone ? 'Completed' : 'Not completed yet'}</strong></p><p>${p.eligible ? 'All five stations and the exit survey are complete. You qualify for the prize ranking.' : 'Complete all five stations and the exit survey to qualify for the prize ranking.'}</p>
       ${canSelfSurvey ? (allStationsDone ? `<button class="btn wide" id="open-survey-visit">Fill in exit survey</button><p class="muted">When you are ready to leave, fill in the exit survey right here on your phone — no need to wait for a Game Master.</p>` : `<button class="btn ghost wide" id="open-survey-visit">Leaving early? Fill in exit survey</button><p class="muted">Only submit now if you are leaving the event early. Checking out ends play — finish all 5 games first for free drinks &amp; snacks and the prize ranking.</p>`) : !p.surveyDone && !p.checkedOut ? '<p class="muted">Play at least one station, then fill in the exit survey right here on your phone before you leave.</p>' : ''}</section>
       ${!next ? roundActions : ''}`;
     if (html !== lastHtml || !root.firstElementChild) { root.innerHTML = html; lastHtml = html; }
@@ -145,6 +154,9 @@ async function refresh() {
 }
 document.getElementById('refresh').onclick = refresh;
 root.addEventListener('click', e => {
+  const nudgeOff = e.target.closest('[data-nudge-off]');
+  if (e.target.closest('[data-nudge-go]')) { document.getElementById('exit-survey')?.scrollIntoView({behavior: 'smooth', block: 'start'}); return; }
+  if (nudgeOff) { try { localStorage.setItem('survey-nudge-off:' + nudgeOff.dataset.nudgeOff, '1'); } catch {} nudgeOff.closest('.survey-nudge')?.remove(); return; }
   if (e.target.closest('#start-scamming')) openScanner();
   if (e.target.closest('#open-survey, #open-survey-visit')) openSurvey();
 });
