@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Scamurai · Participants</title>
+<link rel="stylesheet" href="style.css">
+<style>
+/* Registered participants with their details. Read-only: admin PIN, polls the participants CSV export. */
+body[data-page=participants] .wrap{max-width:1400px}
+.pt-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;margin:0 0 14px;color:var(--grey);font-size:14px}
+.pt-bar .grow{flex:1}
+.pt-bar input{max-width:320px;min-height:42px;margin:0}
+.pt-bar select{min-height:42px;margin:0;width:auto}
+.pt-wrap{overflow:auto;max-height:calc(100vh - 230px);border:1px solid var(--line);border-radius:3px;background:rgba(36,34,33,.94)}
+.pt{width:100%;border-collapse:collapse;font-size:14px;min-width:1100px}
+.pt th{position:sticky;top:0;z-index:1;background:#1c1a19;padding:10px;cursor:pointer;user-select:none;white-space:nowrap}
+.pt th[aria-sort=ascending]::after{content:' ▲'}.pt th[aria-sort=descending]::after{content:' ▼'}
+.pt td{padding:7px 10px;border-bottom:1px solid rgba(70,65,60,.6);font-variant-numeric:tabular-nums;overflow-wrap:normal;vertical-align:top}
+.pt td.num{text-align:right}
+.pt .tag{display:inline-block;padding:2px 7px;border-radius:2px;font-size:12px;background:#333;color:var(--paper)}
+.pt .tag.active{background:#79c97d;color:#111}.pt .tag.left{background:var(--dim)}.pt .tag.abandoned{background:var(--yellow);color:#111}
+.pt .st{display:inline-block;width:18px;text-align:center;margin-right:2px;border-radius:2px;background:#2b2927;color:var(--dim);font-size:12px}
+.pt .st.on{background:var(--red);color:#fff}
+.pt-err{color:var(--red);font-weight:600}
+a.back{color:var(--yellow)}
+</style>
+<script src="/site.js" defer></script>
+<link rel="icon" href="/assets/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/assets/apple-touch-icon.png"></head>
+<body data-site-nav data-page="participants"><div class="wrap">
+<div class="top"><img src="assets/logo.jpg" alt=""><div><h1>REGISTERED <em>PLAYERS.</em></h1><p class="tag">Everyone registered · details · updated every 15 s · <a class="back" href="/status.html">← Live status</a></p></div></div>
+
+<div class="card" id="pinCard">
+  <label for="pin">Admin PIN</label><input id="pin" type="password" autocomplete="off">
+  <p class="err" id="err" role="alert"></p><button class="wide" id="go">Open</button>
+</div>
+
+<div id="main" hidden>
+  <div class="pt-bar" role="status" aria-live="polite">
+    <input id="q" type="search" placeholder="Search name or ID" aria-label="Search name or ID">
+    <select id="filter" aria-label="Filter by status">
+      <option value="">All</option><option value="active">Active</option><option value="abandoned">Abandoned</option>
+      <option value="left">Left</option><option value="finished">Finished all five</option><option value="nosurvey">Finished, no survey</option>
+    </select>
+    <span id="count">—</span><span class="grow"></span><span id="updated">—</span>
+    <button class="ghost" id="csv">Download CSV</button><button class="ghost" id="lock">Lock</button>
+  </div>
+  <div class="pt-wrap"><table class="pt"><thead><tr id="head"></tr></thead><tbody id="rows"></tbody></table></div>
+</div>
+</div>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const parseCSV = text => {
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i+1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i+1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; }
+    else f += c;
+  }
+  if (f || row.length) { row.push(f); rows.push(row); }
+  const [head, ...body] = rows.filter(r => r.length > 1 || r[0]);
+  return (body || []).map(r => Object.fromEntries((head || []).map((h, i) => [h, r[i] ?? ''])));
+};
+let PIN = '', timer = null, people = [], rawCSV = '', sortKey = 'registered', sortDir = -1;
+
+const fetchCSV = async () => {
+  // Cloudflare caches *.csv URLs at the edge: a fresh query string forces a live read.
+  const r = await fetch(`/api/export/participants.csv?live=${crypto.getRandomValues(new Uint32Array(4)).join('')}`, {headers: {'X-Pin': PIN}, cache: 'no-store'});
+  if (!r.ok) { const b = await r.json().catch(() => ({})); const e = new Error(b.error || `HTTP ${r.status}`); e.status = r.status; throw e; }
+  rawCSV = (await r.text()).replace(/^﻿/, '');
+  return parseCSV(rawCSV);
+};
+const when = t => isFinite(t) ? new Date(t).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'}) : '—';
+
+const COLS = [
+  ['n', '#'], ['id', 'ID'], ['name', 'Name'], ['age', 'Age group'], ['pbb', 'Public Bank a/c'], ['exposure', 'Scam exposure'],
+  ['registered', 'Registered'], ['status', 'Status'], ['done', 'Stations'], ['total', 'Total /500'], ['rounds', 'Rounds'],
+  ['survey', 'Survey'], ['out', 'Checked out'],
+];
+function toPerson(p, i) {
+  let survey = null; try { survey = p.survey_answers_json ? JSON.parse(p.survey_answers_json) : null; } catch {}
+  const done = [1,2,3,4,5].filter(n => (p[`s${n}_best_pct`] ?? '') !== '');
+  return { n: i + 1, id: p.participant_id, name: p.name, age: p.age_group, pbb: p.public_bank_account, exposure: p.scam_exposure,
+    registered: Date.parse(p.registered_at), status: p.status, doneList: done, done: done.length, total: +p.total_500 || 0,
+    rounds: +p.rounds_played || 0, survey: !!survey, out: Date.parse(p.checked_out_at), outStation: p.checkout_station };
+}
+function render() {
+  const q = $('q').value.trim().toLowerCase(), f = $('filter').value;
+  let list = people.filter(p => !q || `${p.name} ${p.id}`.toLowerCase().includes(q));
+  if (f === 'finished') list = list.filter(p => p.done === 5);
+  else if (f === 'nosurvey') list = list.filter(p => p.done === 5 && !p.survey);
+  else if (f) list = list.filter(p => p.status === f);
+  list.sort((a, b) => { const x = a[sortKey], y = b[sortKey];
+    const c = typeof x === 'string' || typeof y === 'string' ? String(x ?? '').localeCompare(String(y ?? '')) : (isFinite(x) ? x : -Infinity) - (isFinite(y) ? y : -Infinity);
+    return c * sortDir || a.n - b.n; });
+  $('head').innerHTML = COLS.map(([k, l]) => `<th data-k="${k}"${k === sortKey ? ` aria-sort="${sortDir > 0 ? 'ascending' : 'descending'}"` : ''}>${l}</th>`).join('');
+  $('rows').innerHTML = list.map(p => `<tr>
+    <td class="num">${p.n}</td><td>${esc(p.id)}</td><td>${esc(p.name)}</td><td>${esc(p.age) || '—'}</td><td>${esc(p.pbb) || '—'}</td>
+    <td>${esc(p.exposure) || '—'}</td><td>${when(p.registered)}</td><td><span class="tag ${esc(p.status)}">${esc(p.status)}</span></td>
+    <td>${[1,2,3,4,5].map(n => `<span class="st${p.doneList.includes(n) ? ' on' : ''}">${n}</span>`).join('')}</td>
+    <td class="num">${p.total}</td><td class="num">${p.rounds}</td><td>${p.survey ? '✓' : '—'}</td>
+    <td>${isFinite(p.out) ? when(p.out) + (p.outStation ? ` · S${esc(p.outStation)}` : '') : '—'}</td></tr>`).join('')
+    || `<tr><td colspan="${COLS.length}" style="color:var(--grey)">No participants match.</td></tr>`;
+  $('count').textContent = `${list.length} shown · ${people.length} registered`;
+}
+$('head').addEventListener('click', e => { const k = e.target.closest('th')?.dataset.k; if (!k) return;
+  sortDir = k === sortKey ? -sortDir : (k === 'name' || k === 'id' ? 1 : -1); sortKey = k; render(); });
+$('q').addEventListener('input', render); $('filter').addEventListener('change', render);
+
+async function refresh() {
+  try {
+    people = (await fetchCSV()).map(toPerson); render();
+    $('updated').textContent = `Updated ${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})}`;
+  } catch (e) {
+    if (e.status === 401 || e.status === 403) { lock(e.message); return; }
+    $('updated').innerHTML = `<span class="pt-err">Update failed: ${esc(e.message)}</span> · retrying`;
+  }
+}
+// Shares the status board's remembered PIN, so a click from there opens straight in.
+const SAVED = 'scamurai-status-pin';
+const savePin = v => { try { v ? localStorage.setItem(SAVED, v) : localStorage.removeItem(SAVED); } catch {} };
+function lock(msg) {
+  clearInterval(timer); PIN = ''; savePin('');
+  $('main').hidden = true; $('pinCard').hidden = false; $('pin').value = ''; $('err').textContent = msg || ''; $('pin').focus();
+}
+async function open() {
+  $('go').disabled = true; $('err').textContent = ''; PIN = $('pin').value.trim();
+  try {
+    people = (await fetchCSV()).map(toPerson);
+    savePin(PIN); $('pinCard').hidden = true; $('main').hidden = false; render();
+    $('updated').textContent = `Updated ${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})}`;
+    clearInterval(timer); timer = setInterval(refresh, 15e3);
+  } catch (e) { PIN = ''; if (e.status === 401 || e.status === 403) savePin(''); $('err').textContent = e.message; }
+  finally { $('go').disabled = false; }
+}
+$('go').onclick = open;
+$('pin').addEventListener('keydown', e => { if (e.key === 'Enter') open(); });
+$('lock').onclick = () => lock('');
+$('csv').onclick = () => { const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + rawCSV], {type: 'text/csv'})); a.download = 'scamurai-participants.csv'; a.click(); };
+try { const saved = localStorage.getItem(SAVED); if (saved) { $('pin').value = saved; open(); } } catch {}
+})();
+</script>
+</body></html>

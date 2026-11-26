@@ -18,6 +18,7 @@ body[data-page=status] .wrap{max-width:1240px}
 .st-kpi{background:rgba(36,34,33,.92);border:1px solid var(--line);border-radius:3px;padding:14px 16px;min-width:0}
 .st-kpi b{display:block;font:400 34px/1.05 Anton,Impact,sans-serif;color:var(--yellow);letter-spacing:.5px}
 .st-kpi span{display:block;font-size:13px;color:var(--grey);margin-top:4px}
+.st-kpi-link{text-decoration:none;color:inherit;transition:border-color .15s,background .15s}.st-kpi-link:hover,.st-kpi-link:focus-visible{border-color:var(--yellow);background:rgba(52,48,45,.96)}
 .st-kpi.hot b{color:var(--paper)}.st-kpi.hot{border-color:var(--red)}
 .st-games{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;margin:0 0 18px}
 .st-game{background:rgba(36,34,33,.94);border:1px solid var(--line);border-top:4px solid var(--dim);border-radius:3px;padding:16px 18px 14px;min-width:0;display:flex;flex-direction:column;gap:12px}
@@ -301,11 +302,13 @@ function render({overview, rounds, people, now}) {
   // ---- overall: only the essentials ----
   const finishers = people.filter(p => p.done.length === 5), surveyPending = finishers.filter(p => !p.survey && !p.out).length;
   const done = rounds.filter(r => r.end != null), pcts = done.filter(r => r.max > 0 && r.score != null).map(r => 100 * r.score / r.max);
-  const kpi = (v, l, hot) => `<div class="st-kpi${hot ? ' hot' : ''}"><b>${v}</b><span>${l}</span></div>`;
+  const kpi = (v, l, hot, href) => href
+    ? `<a class="st-kpi st-kpi-link${hot ? ' hot' : ''}" href="${href}" title="See every registered participant"><b>${v}</b><span>${l} ›</span></a>`
+    : `<div class="st-kpi${hot ? ' hot' : ''}"><b>${v}</b><span>${l}</span></div>`;
   $('kpis').innerHTML = [
     kpi(`${GAMES.length - deadGames}/${GAMES.length}`, deadGames ? `games alive · ${deadGames} DOWN` : 'games alive', deadGames > 0),
     kpi(inPlayAll, 'playing now'),
-    kpi(overview.participants, 'registered'),
+    kpi(overview.participants, 'registered', false, '/participants.html'),
     kpi(finishers.length, 'finished all five'),
     kpi(`${finishers.filter(p => p.survey).length}/${finishers.length}`, `finishers surveyed${surveyPending ? ` · ${surveyPending} pending` : ''}`, surveyPending >= 3),
     kpi(`${fmt(mean(pcts), 0, '%')}`, `mean score · ${done.length} rounds`),
