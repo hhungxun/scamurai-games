@@ -470,3 +470,23 @@ window.BROWSE_BOOTH_LEGACY_TASKS.push(
     hint2: ["Dimensions are listed height first, then width.", "尺寸先写高度，后写宽度。"]
   }
 );
+
+/* Hot-deploy guard (26 Nov 2026). A Station 2 tab opened before the nine-task release still runs a
+   station.js that requires exactly 12 tasks. Until that outer tab is refreshed, keep its old pool and
+   brief so a mid-event deploy never breaks Draw a task. Refreshed tabs advertise taskPool: 9. */
+window.BROWSE_BOOTH_LEGACY_HOST = (() => {
+  try { const host = window.parent !== window ? window.parent.CLOSE_POPUPS_HOST : null; return Boolean(host) && host.taskPool !== 9; }
+  catch { return false; }
+})();
+if (window.BROWSE_BOOTH_LEGACY_HOST) {
+  const restored = ['minute2-recipe-budget', 'minute2-tool-webp', 'minute2-market-lens'];
+  for (const id of restored) {
+    const index = window.BROWSE_BOOTH_LEGACY_TASKS.findIndex(task => task.id === id);
+    if (index < 0) continue;
+    const [task] = window.BROWSE_BOOTH_LEGACY_TASKS.splice(index, 1);
+    delete task.retired;
+    window.BROWSE_BOOTH_TASKS.push(task);
+  }
+  const taipei = window.BROWSE_BOOTH_TASKS.find(task => task.id === 'minute5-taipei-flight');
+  if (taipei) { delete taipei.briefFormat; taipei.brief = ["You are an XMUM student planning a semester-break trip to Taiwan. Fly from Kuala Lumpur International Airport (KUL) to Taipei Taoyuan (TPE) on 23 January 2027. Find the cheapest one-way ticket for one adult and complete its simulated purchase. Keep optional extras at zero.", "你是 XMUM 学生，sem break 想去台湾玩！你要在 2027 年 1 月 23 日，从吉隆坡国际机场 KUL 飞到台北桃园 TPE。找到 1 位成人最便宜的单程机票，并完成模拟购买，保留零元附加服务。"]; }
+}

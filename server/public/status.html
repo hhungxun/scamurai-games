@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Scamurai · Live Status</title>
+<link rel="stylesheet" href="style.css">
+<style>
+/* Live status board. Read-only: it polls existing admin endpoints and GETs each game's entry page, nothing else. */
+body[data-page=status] .wrap{max-width:1240px}
+.st-live{--ok:#79c97d;--warn:var(--yellow);--bad:var(--red)}
+.st-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;margin:0 0 18px;color:var(--grey);font-size:14px}
+.st-bar .grow{flex:1}
+.st-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--dim);margin-right:6px;vertical-align:1px}
+.st-dot.ok{background:var(--ok);box-shadow:0 0 0 0 rgba(121,201,125,.6);animation:st-pulse 2s infinite}
+.st-dot.warn{background:var(--warn)}.st-dot.bad{background:var(--bad)}
+@keyframes st-pulse{70%{box-shadow:0 0 0 8px rgba(121,201,125,0)}100%{box-shadow:0 0 0 0 rgba(121,201,125,0)}}
+@media(prefers-reduced-motion:reduce){.st-dot.ok{animation:none}}
+.st-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0 0 18px}
+.st-kpi{background:rgba(36,34,33,.92);border:1px solid var(--line);border-radius:3px;padding:14px 16px;min-width:0}
+.st-kpi b{display:block;font:400 34px/1.05 Anton,Impact,sans-serif;color:var(--yellow);letter-spacing:.5px}
+.st-kpi span{display:block;font-size:13px;color:var(--grey);margin-top:4px}
+.st-kpi.hot b{color:var(--paper)}.st-kpi.hot{border-color:var(--red)}
+.st-games{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;margin:0 0 18px}
+.st-game{background:rgba(36,34,33,.94);border:1px solid var(--line);border-top:4px solid var(--dim);border-radius:3px;padding:16px 18px 14px;min-width:0;display:flex;flex-direction:column;gap:12px}
+.st-game[data-state=live]{border-top-color:var(--ok)}.st-game[data-state=idle]{border-top-color:var(--warn)}.st-game[data-state=dead]{border-top-color:var(--bad);background:rgba(70,20,18,.55)}
+.st-game header{display:flex;align-items:flex-start;gap:12px}
+.st-num{font:400 40px/0.9 Anton,Impact,sans-serif;color:var(--red)}
+.st-game h3{font-size:22px;margin:0;line-height:1.05}
+.st-sub{font-size:12.5px;color:var(--grey);margin:3px 0 0}
+.st-pill{margin-left:auto;flex:none;font:400 15px/1 Anton,Impact,sans-serif;letter-spacing:.8px;padding:6px 9px;border-radius:2px;background:#333;color:var(--paper);white-space:nowrap}
+.st-pill.live{background:var(--ok);color:#111}.st-pill.idle{background:var(--warn);color:#111}.st-pill.dead{background:var(--red);color:#fff}
+.st-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px 10px}
+.st-grid div{min-width:0}.st-grid b{display:block;font:400 24px/1.1 Anton,Impact,sans-serif;color:var(--paper)}
+.st-grid span{display:block;font-size:11.5px;color:var(--grey);line-height:1.3}
+.st-grid .now b{color:var(--ok)}
+.st-spark{display:block;width:100%;height:46px}
+.st-foot{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--grey);border-top:1px solid var(--line);padding-top:9px}
+.st-foot a{color:var(--yellow)}
+.st-panels{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+@media(max-width:900px){.st-panels{grid-template-columns:1fr}}
+.st-panel{background:rgba(36,34,33,.94);border:1px solid var(--line);border-radius:3px;padding:18px 20px;min-width:0}
+.st-panel h2{font-size:22px;margin:0 0 12px}
+.st-chart{display:block;width:100%;height:190px}
+.st-legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--grey);margin-top:8px}
+.st-legend i{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px;border-radius:2px}
+.st-list{list-style:none;margin:0;padding:0;font-size:14px}
+.st-list li{display:flex;gap:10px;justify-content:space-between;border-bottom:1px solid var(--line);padding:7px 0}
+.st-list li:last-child{border-bottom:0}.st-list b{font-weight:600;color:var(--yellow)}
+.st-bars div{display:grid;grid-template-columns:130px 1fr 34px;gap:8px;align-items:center;font-size:13px;margin:5px 0}
+.st-bars em{font-style:normal;height:10px;background:var(--red);border-radius:2px;display:block}
+.st-bars span:last-child{text-align:right;color:var(--grey)}
+.st-feed li span:first-child{color:var(--grey);font-variant-numeric:tabular-nums;flex:none}
+.st-err{color:var(--red);font-weight:600}
+@media(max-width:620px){.st-games{grid-template-columns:1fr}.st-kpi b{font-size:28px}.st-bars div{grid-template-columns:100px 1fr 30px}}
+</style>
+<script src="/site.js" defer></script>
+<link rel="icon" href="/assets/favicon.png" type="image/png"><link rel="apple-touch-icon" href="/assets/apple-touch-icon.png"></head>
+<body data-site-nav data-page="status"><div class="wrap st-live">
+<div class="top"><img src="assets/logo.jpg" alt=""><div><h1>LIVE <em>STATUS.</em></h1><p class="tag">Five games · alive or dead · updated every 10 s</p></div></div>
+
+<div class="card" id="pinCard">
+  <label for="pin">Admin PIN</label><input id="pin" type="password" autocomplete="off">
+  <p class="err" id="err" role="alert"></p><button class="wide" id="go">Open</button>
+</div>
+
+<div id="main" hidden>
+  <div class="st-bar" role="status" aria-live="polite">
+    <span><i class="st-dot" id="apiDot"></i><span id="apiText">Server …</span></span>
+    <span id="updated">—</span><span class="grow"></span>
+    <span id="clock"></span>
+    <button class="ghost" id="lock">Lock</button>
+  </div>
+  <div class="st-kpis" id="kpis"></div>
+  <div class="st-games" id="games"></div>
+  <div class="st-panels">
+    <div class="st-panel"><h2>Rounds per 15 minutes</h2><svg class="st-chart" id="chart" role="img" aria-label="Rounds started per 15 minutes, by station"></svg><div class="st-legend" id="legend"></div></div>
+    <div class="st-panel"><h2>Latest rounds</h2><ul class="st-list st-feed" id="feed"></ul></div>
+    <div class="st-panel"><h2>Exit survey</h2><div id="survey"></div></div>
+    <div class="st-panel"><h2>Top of the board</h2><ul class="st-list" id="board"></ul></div>
+  </div>
+</div>
+</div>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const GAMES = [
+  {n:1, path:'/games/spot-the-fake-cash/index.html'},
+  {n:2, path:'/games/close-the-popups/index.html'},
+  {n:3, path:'/games/phishing-fishing/index.html'},
+  {n:4, path:'/games/real-or-ai/index.html'},
+  {n:5, path:'/games/scan-me-if-you-can/board.html'},
+];
+const COLORS = ['#e52521','#edcf61','#79c97d','#6fa8dc','#c58fe0'];
+const LIVE_MS = 15 * 60e3;      // a round in the last 15 min = station in use
+const INPLAY_MS = 10 * 60e3;    // an open round younger than this is still being played
+let PIN = '', timer = null, probeTimer = null, config = null;
+const probes = new Map();       // n -> {ok, ms, at, code}
+
+const parseCSV = text => {
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i+1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i+1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; }
+    else f += c;
+  }
+  if (f || row.length) { row.push(f); rows.push(row); }
+  const [head, ...body] = rows.filter(r => r.length > 1 || r[0]);
+  return (body || []).map(r => Object.fromEntries((head || []).map((h, i) => [h, r[i] ?? ''])));
+};
+const api = async path => {
+  const r = await fetch(path, {headers: {'X-Pin': PIN}, cache: 'no-store'});
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(body.error || `HTTP ${r.status}`); e.status = r.status; throw e; }
+  return body;
+};
+// CSV exports come back as text/csv with a BOM, not JSON.
+const apiCSV = async path => {
+  const r = await fetch(path, {headers: {'X-Pin': PIN}, cache: 'no-store'});
+  if (!r.ok) { const body = await r.json().catch(() => ({})); const e = new Error(body.error || `HTTP ${r.status}`); e.status = r.status; throw e; }
+  return parseCSV((await r.text()).replace(/^﻿/, ''));
+};
+const ago = ms => { if (ms == null || !isFinite(ms)) return '—'; const s = Math.max(0, Math.round(ms / 1000));
+  return s < 60 ? `${s}s ago` : s < 3600 ? `${Math.floor(s/60)}m ago` : `${Math.floor(s/3600)}h ${Math.floor(s%3600/60)}m ago`; };
+const hhmm = t => new Date(t).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+const median = a => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m-1] + s[m]) / 2; };
+const fmt = (v, d = 0, suf = '') => v == null || !isFinite(v) ? '—' : v.toFixed(d) + suf;
+const secs = v => v == null ? '—' : v >= 90 ? `${Math.floor(v/60)}m${String(Math.round(v%60)).padStart(2,'0')}` : `${Math.round(v)}s`;
+
+async function probe(g) {
+  const t0 = performance.now();
+  try {
+    const r = await fetch(`${g.path}?probe=${Date.now()}`, {cache: 'no-store', credentials: 'omit'});
+    const text = await r.text();
+    probes.set(g.n, {ok: r.ok && /<html/i.test(text), ms: performance.now() - t0, at: Date.now(), code: r.status});
+  } catch (e) { probes.set(g.n, {ok: false, ms: null, at: Date.now(), code: 'network'}); }
+}
+const probeAll = () => Promise.all(GAMES.map(probe));
+
+function spark(times, now, color) {
+  const B = 18, W = 15 * 60e3, start = now - B * W, counts = Array(B).fill(0);
+  for (const t of times) { const i = Math.floor((t - start) / W); if (i >= 0 && i < B) counts[i]++; }
+  const max = Math.max(1, ...counts), bw = 100 / B;
+  return `<svg class="st-spark" viewBox="0 0 100 46" preserveAspectRatio="none" aria-label="Rounds per 15 min, last 4.5 h">` +
+    counts.map((c, i) => `<rect x="${(i*bw+.4).toFixed(2)}" y="${(44 - 40*c/max).toFixed(2)}" width="${(bw-.8).toFixed(2)}" height="${(40*c/max + (c?0:1.2)).toFixed(2)}" fill="${c ? color : '#46413c'}" opacity="${i === B-1 ? 1 : .8}"><title>${c} round${c===1?'':'s'} · ${hhmm(start+i*W)}</title></rect>`).join('') + '</svg>';
+}
+
+function chart(rounds, now) {
+  const svg = $('chart');
+  if (!rounds.length) { svg.innerHTML = `<text x="10" y="30" fill="#c2bdb5" font-size="14">No rounds yet</text>`; $('legend').innerHTML = ''; return; }
+  const W = 15 * 60e3, first = Math.floor(Math.min(...rounds.map(r => r.start)) / W) * W, B = Math.max(1, Math.ceil((now - first) / W));
+  const per = GAMES.map(() => Array(B).fill(0));
+  for (const r of rounds) { const i = Math.min(B - 1, Math.floor((r.start - first) / W)); if (per[r.station-1]) per[r.station-1][i]++; }
+  const tot = per[0].map((_, i) => per.reduce((s, a) => s + a[i], 0)), max = Math.max(1, ...tot);
+  const w = svg.clientWidth || 700, h = 190, padL = 30, padB = 22, cw = (w - padL - 4) / B;
+  let out = '';
+  for (let k = 0; k <= 4; k++) { const y = h - padB - (h - padB - 8) * k / 4, v = Math.round(max * k / 4);
+    out += `<line x1="${padL}" x2="${w}" y1="${y}" y2="${y}" stroke="#46413c" stroke-width="1"/><text x="${padL-6}" y="${y+4}" fill="#6e6961" font-size="11" text-anchor="end">${v}</text>`; }
+  for (let i = 0; i < B; i++) {
+    let y = h - padB;
+    per.forEach((a, s) => { if (!a[i]) return; const bh = (h - padB - 8) * a[i] / max; y -= bh;
+      out += `<rect x="${(padL + i*cw + 1).toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, cw - 2).toFixed(1)}" height="${bh.toFixed(1)}" fill="${COLORS[s]}"><title>${hhmm(first+i*W)} · Station ${s+1}: ${a[i]}</title></rect>`; });
+    if (B <= 16 || i % Math.ceil(B / 12) === 0) out += `<text x="${(padL + i*cw + cw/2).toFixed(1)}" y="${h-6}" fill="#6e6961" font-size="11" text-anchor="middle">${hhmm(first+i*W)}</text>`;
+  }
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`); svg.innerHTML = out;
+  $('legend').innerHTML = GAMES.map((g, i) => `<span><i style="background:${COLORS[i]}"></i>${g.n}. ${esc(g.name)}</span>`).join('');
+}
+
+function render({overview, rounds, people, board, now}) {
+  // ---- per game ----
+  const byStation = new Map(GAMES.map(g => [g.n, []]));
+  for (const r of rounds) byStation.get(r.station)?.push(r);
+  let liveGames = 0, deadGames = 0, inPlayAll = 0;
+  $('games').innerHTML = GAMES.map((g, i) => {
+    const rs = byStation.get(g.n) || [], done = rs.filter(r => r.end != null), open = rs.filter(r => r.end == null);
+    const inPlay = open.filter(r => now - r.start < INPLAY_MS).length, stale = open.length - inPlay;
+    const pcts = done.filter(r => r.max > 0 && r.score != null).map(r => 100 * r.score / r.max);
+    const durs = done.filter(r => r.secs != null).map(r => r.secs);
+    const last = rs.length ? Math.max(...rs.map(r => Math.max(r.start, r.end || 0))) : null;
+    const recent = rs.filter(r => now - r.start < LIVE_MS).length, hour = rs.filter(r => now - r.start < 3600e3).length;
+    const players = new Set(rs.map(r => r.pid)).size;
+    const pr = probes.get(g.n);
+    const state = pr && !pr.ok ? 'dead' : (inPlay || (last && now - last < LIVE_MS)) ? 'live' : 'idle';
+    if (state === 'live') liveGames++; if (state === 'dead') deadGames++; inPlayAll += inPlay;
+    const label = state === 'dead' ? 'DEAD' : state === 'live' ? 'ALIVE · IN USE' : 'ALIVE · IDLE';
+    const surveyQ = (config?.stations.find(s => s.n === g.n)?.questions || []).filter(q => q.type === 'scale');
+    const sv = surveyQ.map(q => mean(people.map(p => +p.survey?.[q.id]).filter(v => v >= 1 && v <= 5))).filter(v => v != null);
+    const completion = done.length + stale ? 100 * done.length / (done.length + stale) : null;
+    return `<article class="st-game" data-state="${state}" aria-label="Station ${g.n} ${esc(g.name)}: ${label}">
+      <header><span class="st-num">${g.n}</span><div><h3>${esc(g.name)}</h3><p class="st-sub">${pr ? (pr.ok ? `Page ${pr.code} · ${Math.round(pr.ms)} ms` : `<span class="st-err">Page ${esc(pr.code)}</span>`) + ` · checked ${ago(now - pr.at)}` : 'Checking page…'}</p></div><span class="st-pill ${state}">${label}</span></header>
+      <div class="st-grid">
+        <div class="now"><b>${inPlay}</b><span>playing now</span></div>
+        <div><b>${done.length}</b><span>rounds finished</span></div>
+        <div><b>${players}</b><span>unique players</span></div>
+        <div><b>${fmt(mean(pcts), 0, '%')}</b><span>average score</span></div>
+        <div><b>${fmt(median(pcts), 0, '%')}</b><span>median · best ${fmt(pcts.length ? Math.max(...pcts) : null, 0, '%')}</span></div>
+        <div><b>${secs(median(durs))}</b><span>median round time</span></div>
+        <div><b>${recent}</b><span>rounds · last 15 min</span></div>
+        <div><b>${hour}</b><span>rounds · last hour</span></div>
+        <div><b>${fmt(completion, 0, '%')}</b><span>completion${stale ? ` · ${stale} left open` : ''}</span></div>
+      </div>
+      ${spark(rs.map(r => r.start), now, COLORS[i])}
+      <div class="st-foot"><span>Last activity ${last ? ago(now - last) : 'none yet'}</span><span>${sv.length ? `Survey ${fmt(mean(sv), 1)}/5` : 'No survey yet'}</span><a href="${esc(g.path)}" target="_blank" rel="noopener">Open ↗</a></div>
+    </article>`;
+  }).join('');
+
+  // ---- overall ----
+  const done = rounds.filter(r => r.end != null), pcts = done.filter(r => r.max > 0 && r.score != null).map(r => 100 * r.score / r.max);
+  const hour = rounds.filter(r => now - r.start < 3600e3).length;
+  const firstT = rounds.length ? Math.min(...rounds.map(r => r.start)) : null;
+  const perHour = firstT && now - firstT > 10 * 60e3 ? rounds.length / ((now - firstT) / 3600e3) : null;
+  const kpi = (v, l, hot) => `<div class="st-kpi${hot ? ' hot' : ''}"><b>${v}</b><span>${l}</span></div>`;
+  $('kpis').innerHTML = [
+    kpi(`${GAMES.length - deadGames}/${GAMES.length}`, deadGames ? `games alive · ${deadGames} DOWN` : 'games alive', deadGames > 0),
+    kpi(inPlayAll, `playing now · ${liveGames} station${liveGames === 1 ? '' : 's'} in use`),
+    kpi(overview.participants, 'registered'),
+    kpi(overview.active, 'still playing (not checked out)'),
+    kpi(overview.finishedAll, 'finished all five'),
+    kpi(overview.left, 'checked out'),
+    kpi(done.length, `rounds finished · ${rounds.length - done.length} open`),
+    kpi(hour, `rounds last hour${perHour ? ` · ${perHour.toFixed(0)}/h overall` : ''}`),
+    kpi(fmt(mean(pcts), 0, '%'), 'average score, all games'),
+    kpi(overview.participants ? (rounds.length / overview.participants).toFixed(1) : '—', 'rounds per participant'),
+  ].join('');
+  chart(rounds, now);
+
+  // ---- feed ----
+  const names = new Map((overview.rows || []).map(p => [p.id, p.name]));
+  const latest = [...rounds].sort((a, b) => Math.max(b.start, b.end || 0) - Math.max(a.start, a.end || 0)).slice(0, 9);
+  $('feed').innerHTML = latest.length ? latest.map(r => `<li><span>${hhmm(r.end || r.start)}</span><span style="flex:1">${esc(names.get(r.pid) || r.pid)} · S${r.station}</span><b>${r.end == null ? (now - r.start < INPLAY_MS ? 'playing' : 'left open') : r.max > 0 ? Math.round(100 * r.score / r.max) + '%' : '—'}</b></li>`).join('') : '<li>No rounds yet</li>';
+
+  // ---- survey ----
+  const surveyed = people.filter(p => p.survey);
+  const conf = mean(surveyed.map(p => +p.survey.g1).filter(v => v >= 1 && v <= 5));
+  const fav = new Map(); for (const p of surveyed) if (p.survey.g3) fav.set(p.survey.g3, (fav.get(p.survey.g3) || 0) + 1);
+  const favMax = Math.max(1, ...fav.values());
+  $('survey').innerHTML = `<ul class="st-list"><li><span>Responses</span><b>${surveyed.length}</b></li><li><span>Confidence spotting scams</span><b>${fmt(conf, 1, ' / 5')}</b></li></ul>
+    <p class="st-sub" style="margin:12px 0 4px">Favourite station</p><div class="st-bars">${[...fav].sort((a, b) => b[1] - a[1]).map(([k, v]) => `<div><span>${esc(k)}</span><em style="width:${100 * v / favMax}%"></em><span>${v}</span></div>`).join('') || '<p class="st-sub">No answers yet</p>'}</div>`;
+
+  // ---- leaderboard ----
+  $('board').innerHTML = (board.rows || []).slice(0, 8).map(r => `<li><span>${r.rank}. ${esc(r.who)}</span><b>${r.total}</b></li>`).join('') || '<li>Nobody has finished all five yet</li>';
+}
+
+async function refresh() {
+  const now = Date.now();
+  let healthOk = false;
+  try { const h = await fetch('/api/health', {cache: 'no-store'}).then(r => r.json()); healthOk = !!h.ok; } catch {}
+  $('apiDot').className = 'st-dot ' + (healthOk ? 'ok' : 'bad');
+  $('apiText').textContent = healthOk ? 'Server alive' : 'Server not responding';
+  try {
+    const [overview, rcsv, pcsv, board] = await Promise.all([api('/api/admin/overview'), apiCSV('/api/export/rounds.csv'), apiCSV('/api/export/participants.csv'), fetch('/api/leaderboard', {cache: 'no-store'}).then(r => r.json()).catch(() => ({rows: []}))]);
+    const rounds = rcsv.map(r => ({id: +r.round_id, pid: r.participant_id, station: +r.station, start: Date.parse(r.started_at), end: r.ended_at ? Date.parse(r.ended_at) : null,
+      secs: r.secs === '' ? null : +r.secs, score: r.score === '' ? null : +r.score, max: r.max_score === '' ? null : +r.max_score})).filter(r => isFinite(r.start));
+    const people = pcsv.map(p => { let survey = null; try { survey = p.survey_answers_json ? JSON.parse(p.survey_answers_json) : null; } catch {} return {id: p.participant_id, survey}; });
+    render({overview, rounds, people, board, now});
+    $('updated').textContent = `Updated ${hhmm(now)}`;
+  } catch (e) {
+    if (e.status === 401 || e.status === 403) { lock(e.message); return; }
+    $('updated').innerHTML = `<span class="st-err">Update failed: ${esc(e.message)}</span> · retrying`;
+  }
+}
+
+function lock(msg) {
+  clearInterval(timer); clearInterval(probeTimer); PIN = '';
+  $('main').hidden = true; $('pinCard').hidden = false; $('pin').value = ''; $('err').textContent = msg || ''; $('pin').focus();
+}
+async function open() {
+  $('go').disabled = true; $('err').textContent = ''; PIN = $('pin').value.trim();
+  try {
+    await api('/api/admin/overview');
+    config = await fetch('/api/config').then(r => r.json()).catch(() => null);
+    GAMES.forEach(g => { g.name = config?.stations.find(s => s.n === g.n)?.name || `Station ${g.n}`; });
+    $('pinCard').hidden = true; $('main').hidden = false;
+    await probeAll(); await refresh();
+    timer = setInterval(refresh, 10e3); probeTimer = setInterval(probeAll, 30e3);
+  } catch (e) { PIN = ''; $('err').textContent = e.message; }
+  finally { $('go').disabled = false; }
+}
+$('go').onclick = open;
+$('pin').addEventListener('keydown', e => { if (e.key === 'Enter') open(); });
+$('lock').onclick = () => lock('');
+setInterval(() => { $('clock').textContent = new Date().toLocaleTimeString(); }, 1000);
+addEventListener('resize', () => { if (!$('main').hidden) refresh(); });
+})();
+</script>
+</body></html>

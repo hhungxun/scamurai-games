@@ -250,8 +250,6 @@ body.task-glass[data-scene="search"] {
 .task-glass .jt-header .glass-selection-indicator { background: rgb(255 255 255 / .12); border-color: rgb(255 255 255 / .13); }
 .task-glass #site-root .glass-pressed { animation: glass-feedback .3s var(--glass-ease); }
 @keyframes glass-feedback { 0% { filter: brightness(1); } 40% { filter: brightness(1.12); } 100% { filter: brightness(1); } }
-@view-transition { navigation: auto; }
-::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; }
 @media (hover: hover) and (pointer: fine) {
   .task-glass #site-root :where(.swb-card, .ot-card, .jg-bird, .jt-route-card):hover {
     transform: translateY(-3px);
@@ -280,7 +278,6 @@ body.task-glass[data-scene="search"] {
   .task-glass .tm-result, .task-glass .tm-reschedule { padding: 20px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
   .task-glass #site-root *, .task-glass #site-root *::before, .task-glass #site-root *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   .task-glass #site-root :where(.swb-card, .ot-card, .jg-bird, .jt-route-card, button, .swb-button, .ot-button, .jg-primary, .jt-primary, .fl-download) { transform: none !important; }
 }

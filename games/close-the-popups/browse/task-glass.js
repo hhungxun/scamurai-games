@@ -2,7 +2,11 @@
 (() => {
   'use strict';
   const root = document.getElementById('site-root');
-  if (!root || !document.body.classList.contains('task-glass')) return;
+  // Glass applies only once the Station 2 tab has been refreshed onto the nine-task release (see booth-tasks.js).
+  let legacyHost = false;
+  try { const host = window.parent !== window ? window.parent.CLOSE_POPUPS_HOST : null; legacyHost = Boolean(host) && host.taskPool !== 9; } catch {}
+  if (!root || legacyHost) return;
+  document.body.classList.add('task-glass');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const segments = '.swb-header nav, .swb-filter, .jg-nav, .jt-header nav, .tm-header nav, .fl-tabs';
   const popovers = '.swb-facets details[open], .jg-more-filters[open]';

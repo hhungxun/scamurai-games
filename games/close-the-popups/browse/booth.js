@@ -63,13 +63,15 @@
   const modeName = value => value === 'ads' ? t('Ad challenge', '广告挑战') : t('Difficulty test · no ads', '难度测试 · 无广告');
   const taskSites = new Map(window.BROWSE_SCENE_INDEX.map(site => [site.id, site]));
   const siteName = item => txt(taskSites.get(item.scene).name);
+  // Group lists name every task a pre-refresh station may still serve (see BROWSE_BOOTH_LEGACY_HOST);
+  // ids not in the active pool are skipped when the menu renders.
   const taskGroups = [
-    {title:['Search & tools','搜索·工具'],ids:['minute3-search-official','minute2-wall-earthrise']},
+    {title:['Search & tools','搜索·工具'],ids:['minute3-search-official','minute2-tool-webp','minute2-wall-earthrise']},
     {title:['Content & collections','内容·收藏'],ids:['minute2-nature-woodpeckers']},
-    {title:['Plan & compare','规划·比较'],ids:['minute5-taipei-flight','minute2-travel-interchange','minute4-penang-indoor']},
-    {title:['Everyday services','生活服务'],ids:['minute4-shoppee-buy','minute2-outing-craft','minute3-courier-redelivery']}
+    {title:['Plan & compare','规划·比较'],ids:['minute5-taipei-flight','minute2-travel-interchange','minute2-market-lens','minute4-penang-indoor']},
+    {title:['Everyday services','生活服务'],ids:['minute4-shoppee-buy','minute2-recipe-budget','minute2-outing-craft','minute3-courier-redelivery']}
   ];
-  const suggestedSeconds = id => ['minute3-search-official','minute3-courier-redelivery'].includes(id) ? 30 : 60;
+  const suggestedSeconds = id => ['minute3-search-official','minute3-courier-redelivery'].includes(id) ? 30 : id === 'minute2-tool-webp' ? 45 : 60;
   function taskCard(item) {
     return `<li><a class="booth-task-card" data-booth-task="${esc(item.id)}" href="${esc(url({view:'brief', task:item.id}))}">
       <span class="booth-task-thumb"><img src="${esc(item.cover)}" alt="" loading="lazy" width="76" height="58"${item.coverNote?` title="${esc(txt(item.coverNote))}"`:""}></span>
