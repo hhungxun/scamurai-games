@@ -126,7 +126,9 @@ const api = async path => {
 };
 // CSV exports come back as text/csv with a BOM, not JSON.
 const apiCSV = async path => {
-  const r = await fetch(path, {headers: {'X-Pin': PIN}, cache: 'no-store'});
+  // Cloudflare caches *.csv URLs at the edge: a fresh unguessable query string forces a live read every time.
+  const fresh = `${path}?live=${crypto.getRandomValues(new Uint32Array(4)).join('')}`;
+  const r = await fetch(fresh, {headers: {'X-Pin': PIN}, cache: 'no-store'});
   if (!r.ok) { const body = await r.json().catch(() => ({})); const e = new Error(body.error || `HTTP ${r.status}`); e.status = r.status; throw e; }
   return parseCSV((await r.text()).replace(/^﻿/, ''));
 };
