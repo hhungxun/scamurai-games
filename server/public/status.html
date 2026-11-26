@@ -82,6 +82,7 @@ body[data-page=status] .wrap{max-width:1240px}
     <div class="st-panel"><h2>Rounds per 15 minutes</h2><svg class="st-chart" id="chart" role="img" aria-label="Rounds started per 15 minutes, by station"></svg><div class="st-legend" id="legend"></div></div>
     <div class="st-panel"><h2>Latest rounds</h2><ul class="st-list st-feed" id="feed"></ul></div>
     <div class="st-panel"><h2>Exit survey</h2><div id="survey"></div></div>
+    <div class="st-panel"><h2>Survey chase list</h2><p class="st-sub" style="margin:-6px 0 8px">Finished all five, no survey yet: find them or call their names. They need it for the prize.</p><ul class="st-list" id="chase"></ul></div>
     <div class="st-panel"><h2>Player progress</h2><p class="st-sub" style="margin:-6px 0 8px">Stations finished, per registered player</p><div class="st-bars" id="progress"></div></div>
     <div class="st-panel"><h2>Top of the board</h2><ul class="st-list" id="board"></ul></div>
   </div>
@@ -280,6 +281,12 @@ function render({overview, rounds, people, board, now}) {
   $('survey').innerHTML = `<ul class="st-list"><li><span>Responses</span><b>${surveyed.length}</b></li><li><span>Confidence spotting scams</span><b>${fmt(conf, 1, ' / 5')}</b></li></ul>
     <p class="st-sub" style="margin:12px 0 4px">Favourite station</p><div class="st-bars">${[...fav].sort((a, b) => b[1] - a[1]).map(([k, v]) => `<div><span>${esc(k)}</span><em style="width:${100 * v / favMax}%"></em><span>${v}</span></div>`).join('') || '<p class="st-sub">No answers yet</p>'}</div>`;
 
+  // ---- survey chase list ----
+  const lastOf = new Map();
+  for (const r of rounds) { const t = Math.max(r.start, r.end || 0), cur = lastOf.get(r.pid); if (!cur || t > cur.t) lastOf.set(r.pid, {t, st: r.station}); }
+  const chase = people.filter(p => p.done.length === 5 && !p.survey && !p.out).map(p => ({...p, last: lastOf.get(p.id)})).sort((a, b) => (b.last?.t || 0) - (a.last?.t || 0));
+  $('chase').innerHTML = chase.length ? chase.map(p => `<li><span><b style="color:var(--paper)">${esc(names.get(p.id) || p.id)}</b> · ${esc(p.id)}</span><span>last at S${p.last?.st ?? '?'} · ${p.last ? ago(now - p.last.t) : '—'}</span></li>`).join('') : '<li>Nobody waiting: every finisher has done the survey 🎉</li>';
+
   // ---- leaderboard ----
   $('board').innerHTML = (board.rows || []).slice(0, 8).map(r => `<li><span>${r.rank}. ${esc(r.who)}</span><b>${r.total}</b></li>`).join('') || '<li>Nobody has finished all five yet</li>';
 }
@@ -304,8 +311,11 @@ async function refresh() {
   }
 }
 
+// The PIN is remembered on this device until Lock is pressed (or the server rejects it).
+const SAVED = 'scamurai-status-pin';
+const savePin = v => { try { v ? localStorage.setItem(SAVED, v) : localStorage.removeItem(SAVED); } catch {} };
 function lock(msg) {
-  clearInterval(timer); clearInterval(probeTimer); PIN = '';
+  clearInterval(timer); clearInterval(probeTimer); PIN = ''; savePin('');
   $('main').hidden = true; $('pinCard').hidden = false; $('pin').value = ''; $('err').textContent = msg || ''; $('pin').focus();
 }
 async function open() {
@@ -314,13 +324,14 @@ async function open() {
     await api('/api/admin/overview');
     config = await fetch('/api/config').then(r => r.json()).catch(() => null);
     GAMES.forEach(g => { g.name = config?.stations.find(s => s.n === g.n)?.name || `Station ${g.n}`; });
-    $('pinCard').hidden = true; $('main').hidden = false;
+    savePin(PIN); $('pinCard').hidden = true; $('main').hidden = false;
     await probeAll(); await refresh();
     timer = setInterval(refresh, 10e3); probeTimer = setInterval(probeAll, 30e3);
-  } catch (e) { PIN = ''; $('err').textContent = e.message; }
+  } catch (e) { PIN = ''; if (e.status === 401 || e.status === 403) savePin(''); $('err').textContent = e.message; }
   finally { $('go').disabled = false; }
 }
 $('go').onclick = open;
+try { const saved = localStorage.getItem(SAVED); if (saved) { $('pin').value = saved; open(); } } catch {}
 $('pin').addEventListener('keydown', e => { if (e.key === 'Enter') open(); });
 $('lock').onclick = () => lock('');
 setInterval(() => { $('clock').textContent = new Date().toLocaleTimeString(); }, 1000);
