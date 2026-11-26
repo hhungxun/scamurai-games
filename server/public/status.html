@@ -50,6 +50,23 @@ body[data-page=status] .wrap{max-width:1240px}
 .st-bars span:last-child{text-align:right;color:var(--grey)}
 .st-feed li span:first-child{color:var(--grey);font-variant-numeric:tabular-nums;flex:none}
 .st-err{color:var(--red);font-weight:600}
+.st-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 10px}
+.st-stats div{min-width:0}.st-stats b{display:block;font:400 26px/1.05 Anton,Impact,sans-serif;color:var(--paper)}
+.st-stats span{display:block;font-size:11.5px;color:var(--grey)}.st-stats .now b{color:var(--ok)}.st-stats .score b{color:var(--yellow)}
+.st-hist{display:block;width:100%;height:auto}
+.st-hist-key{display:flex;gap:12px;font-size:11.5px;color:var(--grey);margin-top:-4px}
+.st-hist-key i{display:inline-block;width:14px;height:0;border-top:2px dashed var(--yellow);margin-right:5px;vertical-align:3px}
+.st-hist-key i.med{border-top:2px dotted var(--paper)}
+.st-board-panel{margin-top:14px}
+.st-board-wrap{max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:3px}
+.st-board{width:100%;border-collapse:collapse;font-size:14px}
+.st-board th{position:sticky;top:0;background:#1c1a19;text-align:left;font:400 14px/1 Anton,Impact,sans-serif;letter-spacing:.6px;color:var(--grey);padding:10px 10px;border-bottom:1px solid var(--line)}
+.st-board td{padding:7px 10px;border-bottom:1px solid rgba(70,65,60,.6);font-variant-numeric:tabular-nums}
+.st-board tr.podium td:first-child{color:var(--yellow);font-weight:700}
+.st-board td:nth-child(5){font-weight:600;color:var(--yellow)}
+.st-board tr.unranked td{color:var(--grey)}
+.st-tag{font-size:11.5px;padding:2px 6px;border-radius:2px;background:#2a2518;color:var(--yellow);white-space:nowrap}
+.st-tag.no{background:#2b1514;color:#f08a86}
 .st-alerts{display:flex;flex-direction:column;gap:6px;margin:0 0 16px}
 .st-alert{display:flex;gap:10px;align-items:baseline;font-size:14px;padding:9px 12px;border-radius:3px;border:1px solid var(--line);border-left:4px solid var(--yellow);background:rgba(42,37,24,.92)}
 .st-alert.urgent{border-left-color:var(--red);background:rgba(70,20,18,.75)}
@@ -80,12 +97,11 @@ body[data-page=status] .wrap{max-width:1240px}
   <div class="st-games" id="games"></div>
   <div class="st-panels">
     <div class="st-panel"><h2>Rounds per 15 minutes</h2><svg class="st-chart" id="chart" role="img" aria-label="Rounds started per 15 minutes, by station"></svg><div class="st-legend" id="legend"></div></div>
-    <div class="st-panel"><h2>Latest rounds</h2><ul class="st-list st-feed" id="feed"></ul></div>
     <div class="st-panel"><h2>Exit survey</h2><div id="survey"></div></div>
-    <div class="st-panel"><h2>Survey chase list</h2><p class="st-sub" style="margin:-6px 0 8px">Finished all five, no survey yet: find them or call their names. They need it for the prize.</p><ul class="st-list" id="chase"></ul></div>
-    <div class="st-panel"><h2>Player progress</h2><p class="st-sub" style="margin:-6px 0 8px">Stations finished, per registered player</p><div class="st-bars" id="progress"></div></div>
-    <div class="st-panel"><h2>Top of the board</h2><ul class="st-list" id="board"></ul></div>
+    <div class="st-panel"><h2>Survey chase list</h2><p class="st-sub" style="margin:-6px 0 8px">Finished all five, no survey yet. They need it for the prize.</p><ul class="st-list" id="chase"></ul></div>
   </div>
+  <div class="st-panel st-board-panel"><h2>Leaderboard · everyone</h2><p class="st-sub" style="margin:-6px 0 10px" id="boardNote"></p>
+    <div class="st-board-wrap"><table class="st-board"><thead><tr><th>#</th><th>Player</th><th>ID</th><th>Stations</th><th>Total</th><th></th></tr></thead><tbody id="board"></tbody></table></div></div>
 </div>
 </div>
 <script>
@@ -151,14 +167,6 @@ async function probe(g) {
 }
 const probeAll = () => Promise.all(GAMES.map(probe));
 
-function spark(times, now, color) {
-  const B = 18, W = 15 * 60e3, start = now - B * W, counts = Array(B).fill(0);
-  for (const t of times) { const i = Math.floor((t - start) / W); if (i >= 0 && i < B) counts[i]++; }
-  const max = Math.max(1, ...counts), bw = 100 / B;
-  return `<svg class="st-spark" viewBox="0 0 100 46" preserveAspectRatio="none" aria-label="Rounds per 15 min, last 4.5 h">` +
-    counts.map((c, i) => `<rect x="${(i*bw+.4).toFixed(2)}" y="${(44 - 40*c/max).toFixed(2)}" width="${(bw-.8).toFixed(2)}" height="${(40*c/max + (c?0:1.2)).toFixed(2)}" fill="${c ? color : '#46413c'}" opacity="${i === B-1 ? 1 : .8}"><title>${c} round${c===1?'':'s'} · ${hhmm(start+i*W)}</title></rect>`).join('') + '</svg>';
-}
-
 function chart(rounds, now) {
   const svg = $('chart');
   if (!rounds.length) { svg.innerHTML = `<text x="10" y="30" fill="#c2bdb5" font-size="14">No rounds yet</text>`; $('legend').innerHTML = ''; return; }
@@ -180,80 +188,77 @@ function chart(rounds, now) {
   $('legend').innerHTML = GAMES.map((g, i) => `<span><i style="background:${COLORS[i]}"></i>${g.n}. ${esc(g.name)}</span>`).join('');
 }
 
-function render({overview, rounds, people, board, now}) {
+const sd = a => { if (a.length < 2) return null; const m = mean(a); return Math.sqrt(a.reduce((t, x) => t + (x - m) ** 2, 0) / (a.length - 1)); };
+
+// Score histogram (10 bins of 10 points) with a Gaussian-kernel curve scaled to the bar counts, plus mean and median markers.
+function histogram(v, color) {
+  const W = 300, H = 120, L = 22, B = 18, T = 6, pw = W - L - 4, ph = H - B - T, bins = Array(10).fill(0);
+  for (const x of v) bins[Math.min(9, Math.max(0, Math.floor(x / 10)))]++;
+  const s = sd(v), h = Math.max(4, s ? 1.06 * s * v.length ** -0.2 : 8);
+  const kde = x => v.reduce((t, xi) => t + Math.exp(-0.5 * ((x - xi) / h) ** 2), 0) / (v.length * h * Math.sqrt(2 * Math.PI)) * v.length * 10;
+  const curve = []; for (let x = 0; x <= 100; x += 2) curve.push([x, v.length ? kde(x) : 0]);
+  const max = Math.max(1, ...bins, ...curve.map(c => c[1]));
+  const X = x => L + pw * x / 100, Y = y => T + ph - ph * y / max;
+  let out = `<line x1="${L}" x2="${W - 4}" y1="${T + ph}" y2="${T + ph}" stroke="#46413c"/>`;
+  bins.forEach((c, i) => { if (c) out += `<rect x="${(X(i * 10) + 1).toFixed(1)}" y="${Y(c).toFixed(1)}" width="${(pw / 10 - 2).toFixed(1)}" height="${(T + ph - Y(c)).toFixed(1)}" fill="${color}" opacity=".45"><title>${i * 10}–${i === 9 ? 100 : i * 10 + 9}%: ${c} round${c === 1 ? '' : 's'}</title></rect>`; });
+  if (v.length > 1) out += `<path d="${curve.map((c, i) => (i ? 'L' : 'M') + X(c[0]).toFixed(1) + ' ' + Y(c[1]).toFixed(1)).join(' ')}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linejoin="round"/>`;
+  if (v.length) {
+    const m = mean(v), md = median(v);
+    out += `<line x1="${X(m)}" x2="${X(m)}" y1="${T}" y2="${T + ph}" stroke="#edcf61" stroke-width="1.6" stroke-dasharray="4 3"/>`;
+    out += `<line x1="${X(md)}" x2="${X(md)}" y1="${T}" y2="${T + ph}" stroke="#f2eee6" stroke-width="1.6" stroke-dasharray="1.5 3"/>`;
+  }
+  for (const t of [0, 50, 100]) out += `<text x="${X(t)}" y="${H - 4}" fill="#6e6961" font-size="10" text-anchor="middle">${t}%</text>`;
+  out += `<text x="${L - 5}" y="${T + 8}" fill="#6e6961" font-size="10" text-anchor="end">${Math.max(...bins)}</text>`;
+  return `<svg class="st-hist" viewBox="0 0 ${W} ${H}" role="img" aria-label="Score distribution">${v.length ? out : `<text x="${W / 2}" y="${H / 2}" fill="#6e6961" font-size="12" text-anchor="middle">No finished rounds yet</text>`}</svg>`;
+}
+
+function render({overview, rounds, people, now}) {
+  const names = new Map((overview.rows || []).map(p => [p.id, p.name]));
   // ---- per game ----
   const byStation = new Map(GAMES.map(g => [g.n, []]));
   for (const r of rounds) byStation.get(r.station)?.push(r);
-  let liveGames = 0, deadGames = 0, inPlayAll = 0; const stationInfo = [];
+  let deadGames = 0, inPlayAll = 0; const stationInfo = [];
   $('games').innerHTML = GAMES.map((g, i) => {
     const rs = byStation.get(g.n) || [], done = rs.filter(r => r.end != null), open = rs.filter(r => r.end == null);
-    const inPlay = open.filter(r => now - r.start < INPLAY_MS).length, stale = open.length - inPlay;
+    const inPlay = open.filter(r => now - r.start < INPLAY_MS).length, stuck = open.length - inPlay;
     const pcts = done.filter(r => r.max > 0 && r.score != null).map(r => 100 * r.score / r.max);
-    const durs = done.filter(r => r.secs != null).map(r => r.secs);
     const last = rs.length ? Math.max(...rs.map(r => Math.max(r.start, r.end || 0))) : null;
-    const recent = rs.filter(r => now - r.start < LIVE_MS).length, hour = rs.filter(r => now - r.start < 3600e3).length;
-    const players = new Set(rs.map(r => r.pid)).size;
-    const stuck = open.filter(r => now - r.start >= INPLAY_MS).length;
-    const firstTry = new Set(), retries = rs.filter(r => r.end != null && (firstTry.has(r.pid) || !firstTry.add(r.pid))).length;
-    const toPlay = people.filter(p => !p.out && p.status !== 'abandoned' && !p.done.includes(g.n)).length;
     const lastStart = rs.length ? Math.max(...rs.map(r => r.start)) : null;
+    const recent = rs.filter(r => now - r.start < LIVE_MS).length;
+    const toPlay = people.filter(p => !p.out && p.status !== 'abandoned' && !p.done.includes(g.n)).length;
     const pr = probes.get(g.n);
     const state = pr && !pr.ok ? 'dead' : (inPlay || (last && now - last < LIVE_MS)) ? 'live' : 'idle';
-    stationInfo.push({n: g.n, name: g.name, state, stuck, lastStart, recent, probe: probes.get(g.n), toPlay});
-    if (state === 'live') liveGames++; if (state === 'dead') deadGames++; inPlayAll += inPlay;
+    stationInfo.push({n: g.n, name: g.name, state, stuck, lastStart, recent, probe: pr, toPlay});
+    if (state === 'dead') deadGames++; inPlayAll += inPlay;
     const label = state === 'dead' ? 'DEAD' : state === 'live' ? 'ALIVE · IN USE' : 'ALIVE · IDLE';
-    const surveyQ = (config?.stations.find(s => s.n === g.n)?.questions || []).filter(q => q.type === 'scale');
-    const sv = surveyQ.map(q => mean(people.map(p => +p.survey?.[q.id]).filter(v => v >= 1 && v <= 5))).filter(v => v != null);
-    const completion = done.length + stale ? 100 * done.length / (done.length + stale) : null;
     return `<article class="st-game" data-state="${state}" aria-label="Station ${g.n} ${esc(g.name)}: ${label}">
-      <header><span class="st-num">${g.n}</span><div><h3>${esc(g.name)}</h3><p class="st-sub">${pr ? (pr.ok ? `Page ${pr.code} · ${Math.round(pr.ms)} ms` : `<span class="st-err">Page ${esc(pr.code)}</span>`) + ` · checked ${ago(now - pr.at)}` : 'Checking page…'}</p></div><span class="st-pill ${state}">${label}</span></header>
-      <div class="st-grid">
+      <header><span class="st-num">${g.n}</span><div><h3>${esc(g.name)}</h3><p class="st-sub">${pr ? (pr.ok ? `Page ${pr.code} · ${Math.round(pr.ms)} ms` : `<span class="st-err">Page ${esc(pr.code)}</span>`) : 'Checking page…'} · last activity ${last ? ago(now - last) : '—'}</p></div><span class="st-pill ${state}">${label}</span></header>
+      <div class="st-stats">
         <div class="now"><b>${inPlay}</b><span>playing now</span></div>
-        <div><b>${done.length}</b><span>rounds finished</span></div>
-        <div><b>${players}</b><span>unique players</span></div>
-        <div><b>${fmt(mean(pcts), 0, '%')}</b><span>average score</span></div>
-        <div><b>${fmt(median(pcts), 0, '%')}</b><span>median · best ${fmt(pcts.length ? Math.max(...pcts) : null, 0, '%')}</span></div>
-        <div><b>${secs(median(durs))}</b><span>median round time</span></div>
-        <div><b>${recent}</b><span>rounds · last 15 min</span></div>
-        <div><b>${hour}</b><span>rounds · last hour</span></div>
-        <div><b>${fmt(completion, 0, '%')}</b><span>completion${stale ? ` · ${stale} left open` : ''}</span></div>
-        <div><b>${toPlay}</b><span>active players still to play here</span></div>
-        <div><b>${retries}</b><span>second tries used</span></div>
-        <div${stuck ? ' class="st-err"' : ''}><b>${stuck}</b><span>rounds left open &gt;15 min</span></div>
+        <div><b>${done.length}</b><span>rounds</span></div>
+        <div><b>${new Set(rs.map(r => r.pid)).size}</b><span>players</span></div>
+        <div class="score"><b>${fmt(mean(pcts), 0, '%')}</b><span>mean</span></div>
+        <div class="score"><b>${fmt(median(pcts), 0, '%')}</b><span>median</span></div>
+        <div class="score"><b>${fmt(sd(pcts), 0)}</b><span>std dev (pts)</span></div>
       </div>
-      ${spark(rs.map(r => r.start), now, COLORS[i])}
-      <div class="st-foot"><span>Last activity ${last ? ago(now - last) : 'none yet'}</span><span>${sv.length ? `Survey ${fmt(mean(sv), 1)}/5` : 'No survey yet'}</span><a href="${esc(g.path)}" target="_blank" rel="noopener">Open ↗</a></div>
+      ${histogram(pcts, COLORS[i])}
+      <div class="st-hist-key"><span><i></i>mean</span><span><i class="med"></i>median</span><span style="margin-left:auto"><a href="${esc(g.path)}" target="_blank" rel="noopener">Open ↗</a></span></div>
     </article>`;
   }).join('');
 
-  // ---- overall ----
-  const surveyPending = people.filter(p => p.done.length === 5 && !p.survey && !p.out).length;
+  // ---- overall: only the essentials ----
+  const finishers = people.filter(p => p.done.length === 5), surveyPending = finishers.filter(p => !p.survey && !p.out).length;
   const done = rounds.filter(r => r.end != null), pcts = done.filter(r => r.max > 0 && r.score != null).map(r => 100 * r.score / r.max);
-  const hour = rounds.filter(r => now - r.start < 3600e3).length;
-  const firstT = rounds.length ? Math.min(...rounds.map(r => r.start)) : null;
-  const perHour = firstT && now - firstT > 10 * 60e3 ? rounds.length / ((now - firstT) / 3600e3) : null;
   const kpi = (v, l, hot) => `<div class="st-kpi${hot ? ' hot' : ''}"><b>${v}</b><span>${l}</span></div>`;
   $('kpis').innerHTML = [
     kpi(`${GAMES.length - deadGames}/${GAMES.length}`, deadGames ? `games alive · ${deadGames} DOWN` : 'games alive', deadGames > 0),
-    kpi(inPlayAll, `playing now · ${liveGames} station${liveGames === 1 ? '' : 's'} in use`),
+    kpi(inPlayAll, 'playing now'),
     kpi(overview.participants, 'registered'),
-    kpi(overview.active, 'still playing (not checked out)'),
-    kpi(overview.finishedAll, 'finished all five'),
-    kpi(overview.left, 'checked out'),
-    kpi(done.length, `rounds finished · ${rounds.length - done.length} open`),
-    kpi(hour, `rounds last hour${perHour ? ` · ${perHour.toFixed(0)}/h overall` : ''}`),
-    kpi(fmt(mean(pcts), 0, '%'), 'average score, all games'),
-    kpi(overview.participants ? (rounds.length / overview.participants).toFixed(1) : '—', 'rounds per participant'),
-    kpi(people.filter(p => now - p.registered < 3600e3).length, 'registered in the last hour'),
-    kpi(surveyPending, 'finished all five, survey not done', surveyPending >= 3),
-    kpi(people.filter(p => p.done.length === 5 && p.survey).length, 'prize-eligible (5/5 + survey)'),
-    kpi(fmt(median(people.filter(p => p.done.length && p.out).map(p => p.done.length)), 1), 'median stations done by leavers'),
+    kpi(finishers.length, 'finished all five'),
+    kpi(`${finishers.filter(p => p.survey).length}/${finishers.length}`, `finishers surveyed${surveyPending ? ` · ${surveyPending} pending` : ''}`, surveyPending >= 3),
+    kpi(`${fmt(mean(pcts), 0, '%')}`, `mean score · ${done.length} rounds`),
   ].join('');
   chart(rounds, now);
-
-  // ---- player progress ----
-  const dist = [0,1,2,3,4,5].map(k => people.filter(p => p.done.length === k).length), distMax = Math.max(1, ...dist);
-  $('progress').innerHTML = dist.map((v, k) => `<div><span>${k} station${k === 1 ? '' : 's'}</span><em style="width:${100 * v / distMax}%;background:${k === 5 ? 'var(--yellow)' : 'var(--red)'}"></em><span>${v}</span></div>`).join('');
 
   // ---- alerts (same rules as the WhatsApp monitor on the X1) ----
   const alerts = [];
@@ -268,11 +273,6 @@ function render({overview, rounds, people, board, now}) {
   if (surveyPending >= 3) alerts.push(['warn', `${surveyPending} players finished all five but haven't done the exit survey`]);
   $('alerts').innerHTML = alerts.length ? alerts.map(([lvl, msg]) => `<div class="st-alert ${lvl}"><b>${lvl === 'urgent' ? 'URGENT' : 'CHECK'}</b><span>${esc(msg)}</span></div>`).join('') : '<p class="st-ok">No alerts · all five games reachable, nothing stuck.</p>';
 
-  // ---- feed ----
-  const names = new Map((overview.rows || []).map(p => [p.id, p.name]));
-  const latest = [...rounds].sort((a, b) => Math.max(b.start, b.end || 0) - Math.max(a.start, a.end || 0)).slice(0, 9);
-  $('feed').innerHTML = latest.length ? latest.map(r => `<li><span>${hhmm(r.end || r.start)}</span><span style="flex:1">${esc(names.get(r.pid) || r.pid)} · S${r.station}</span><b>${r.end == null ? (now - r.start < INPLAY_MS ? 'playing' : 'left open') : r.max > 0 ? Math.round(100 * r.score / r.max) + '%' : '—'}</b></li>`).join('') : '<li>No rounds yet</li>';
-
   // ---- survey ----
   const surveyed = people.filter(p => p.survey);
   const conf = mean(surveyed.map(p => +p.survey.g1).filter(v => v >= 1 && v <= 5));
@@ -284,11 +284,19 @@ function render({overview, rounds, people, board, now}) {
   // ---- survey chase list ----
   const lastOf = new Map();
   for (const r of rounds) { const t = Math.max(r.start, r.end || 0), cur = lastOf.get(r.pid); if (!cur || t > cur.t) lastOf.set(r.pid, {t, st: r.station}); }
-  const chase = people.filter(p => p.done.length === 5 && !p.survey && !p.out).map(p => ({...p, last: lastOf.get(p.id)})).sort((a, b) => (b.last?.t || 0) - (a.last?.t || 0));
+  const chase = finishers.filter(p => !p.survey && !p.out).map(p => ({...p, last: lastOf.get(p.id)})).sort((a, b) => (b.last?.t || 0) - (a.last?.t || 0));
   $('chase').innerHTML = chase.length ? chase.map(p => `<li><span><b style="color:var(--paper)">${esc(names.get(p.id) || p.id)}</b> · ${esc(p.id)}</span><span>last at S${p.last?.st ?? '?'} · ${p.last ? ago(now - p.last.t) : '—'}</span></li>`).join('') : '<li>Nobody waiting: every finisher has done the survey 🎉</li>';
 
-  // ---- leaderboard ----
-  $('board').innerHTML = (board.rows || []).slice(0, 8).map(r => `<li><span>${r.rank}. ${esc(r.who)}</span><b>${r.total}</b></li>`).join('') || '<li>Nobody has finished all five yet</li>';
+  // ---- full leaderboard: finishers ranked like the public board (total, then fastest), then everyone else by total ----
+  const ranked = finishers.slice().sort((a, b) => b.total - a.total || a.ms - b.ms);
+  const rest = people.filter(p => p.done.length && p.done.length < 5).sort((a, b) => b.total - a.total || b.done.length - a.done.length);
+  let prize = 0;
+  const row = (p, rank) => {
+    const eligible = p.done.length === 5 && !!p.survey, tag = rank && eligible && prize < 3 ? `<span class="st-tag">🏆 prize #${++prize}</span>` : p.done.length === 5 && !p.survey ? '<span class="st-tag no">no survey</span>' : '';
+    return `<tr class="${rank ? (rank <= 3 ? 'podium' : '') : 'unranked'}"><td>${rank || '–'}</td><td>${esc(p.name || names.get(p.id) || p.id)}</td><td>${esc(p.id)}</td><td>${p.done.length}/5</td><td>${Math.round(p.total)}</td><td>${tag}</td></tr>`;
+  };
+  $('board').innerHTML = ranked.map((p, i) => row(p, i + 1)).join('') + rest.map(p => row(p, 0)).join('') || '<tr><td colspan="6">No scores yet</td></tr>';
+  $('boardNote').textContent = `${ranked.length} ranked (all five done) · ${rest.length} still playing or left early · prize needs all five + exit survey`;
 }
 
 async function refresh() {
@@ -298,11 +306,11 @@ async function refresh() {
   $('apiDot').className = 'st-dot ' + (healthOk ? 'ok' : 'bad');
   $('apiText').textContent = healthOk ? 'Server alive' : 'Server not responding';
   try {
-    const [overview, rcsv, pcsv, board] = await Promise.all([api('/api/admin/overview'), apiCSV('/api/export/rounds.csv'), apiCSV('/api/export/participants.csv'), fetch('/api/leaderboard', {cache: 'no-store'}).then(r => r.json()).catch(() => ({rows: []}))]);
+    const [overview, rcsv, pcsv] = await Promise.all([api('/api/admin/overview'), apiCSV('/api/export/rounds.csv'), apiCSV('/api/export/participants.csv')]);
     const rounds = rcsv.map(r => ({id: +r.round_id, pid: r.participant_id, station: +r.station, start: Date.parse(r.started_at), end: r.ended_at ? Date.parse(r.ended_at) : null,
       secs: r.secs === '' ? null : +r.secs, score: r.score === '' ? null : +r.score, max: r.max_score === '' ? null : +r.max_score})).filter(r => isFinite(r.start));
-    const people = pcsv.map(p => { let survey = null; try { survey = p.survey_answers_json ? JSON.parse(p.survey_answers_json) : null; } catch {} return {id: p.participant_id, survey, status: p.status, registered: Date.parse(p.registered_at), out: !!p.checked_out_at, done: [1,2,3,4,5].filter(n => (p[`s${n}_best_pct`] ?? '') !== '')}; });
-    render({overview, rounds, people, board, now});
+    const people = pcsv.map(p => { let survey = null; try { survey = p.survey_answers_json ? JSON.parse(p.survey_answers_json) : null; } catch {} return {id: p.participant_id, name: p.name, total: +p.total_500 || 0, ms: [1,2,3,4,5].reduce((a, n) => a + (+p[`s${n}_best_secs`] || 0), 0), survey, status: p.status, registered: Date.parse(p.registered_at), out: !!p.checked_out_at, done: [1,2,3,4,5].filter(n => (p[`s${n}_best_pct`] ?? '') !== '')}; });
+    render({overview, rounds, people, now});
     $('updated').textContent = `Updated ${hhmm(now)}`;
   } catch (e) {
     if (e.status === 401 || e.status === 403) { lock(e.message); return; }
