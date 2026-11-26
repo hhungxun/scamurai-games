@@ -57,9 +57,18 @@
         const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d');ctx.fillStyle='#101215';ctx.fillRect(0,0,w,h);const fit=root.querySelector('#swb-fit')?.value||'contain',scale=fit==='cover'?Math.max(w/img.naturalWidth,h/img.naturalHeight):Math.min(w/img.naturalWidth,h/img.naturalHeight);ctx.drawImage(img,(w-img.naturalWidth*scale)/2,(h-img.naturalHeight*scale)/2,img.naturalWidth*scale,img.naturalHeight*scale);
         const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.95));if(!blob)throw Error('export');
         if(window.BROWSE_BOOTH?.canAct()===false)return;
-        const href=URL.createObjectURL(blob),a=document.createElement('a');a.href=href;a.download=`stillwall-${item.id}-${w}x${h}.jpg`;a.click();setTimeout(()=>URL.revokeObjectURL(href),10000);
-        window.BROWSE_BOOTH?.recordExport({kind:'wallpaper',id:item.id,width:w,height:h,format:blob.type,bytes:blob.size});
-        status.textContent=t('Your wallpaper is ready. Enjoy the new view.','壁纸已准备好，享受新的风景。');C.complete('Wallpaper: '+title(item)+' · '+w+'×'+h);
+        const name='stillwall-'+item.id+'-'+w+'x'+h+'.jpg';
+        const record=simulated=>{
+          window.BROWSE_BOOTH?.recordExport({kind:'wallpaper',id:item.id,width:w,height:h,format:blob.type,bytes:blob.size});
+          status.textContent=simulated
+            ? t('The wallpaper is in this round’s simulated downloads.','壁纸已加入本轮游戏的模拟下载。')
+            : t('Your wallpaper is ready. Enjoy the new view.','壁纸已准备好，享受新的风景。');
+          C.complete('Wallpaper: '+title(item)+' · '+w+'×'+h);
+        };
+        status.textContent='';
+        if(window.BROWSE_BOOTH_DOWNLOADS?.request({name,label:'JPG',details:'JPG · '+w+' × '+h},download,()=>record(true)))return;
+        const href=URL.createObjectURL(blob),a=document.createElement('a');a.href=href;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(href),10000);
+        record(false);
       }catch{status.textContent=t('We could not prepare this file. Please try again.','暂时无法生成文件，请再试一次。');}finally{download.disabled=false;}
     });
   };

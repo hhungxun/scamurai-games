@@ -6,7 +6,8 @@
     const KEY='br-run-v9:'+seed, MISSING=Symbol('missing'), AUTO_MAX=boothAds?60:30, ID_MAX=boothAds?70:40, REVEAL_MS=10000, UNCLOSED_MAX=10;
     const GAPS=boothAds?[800,1100,950,1250,1000,1150]:[2200,2800,2500,3200,2300,3000];
     const FORMATS=['bounce','robot','dodge','player-error','bonus','captcha','tiny','drawer','panel','newsletter'];
-    const formats=boothAds?['tiny','drawer','dodge','bounce','panel','newsletter']:FORMATS;
+    const videoTeaser='video-teaser';
+    const formats=boothAds?['tiny','drawer','dodge','bonus','player-error',videoTeaser,'bounce','captcha','robot','panel','newsletter']:FORMATS;
     const firstAt=boothAds?1000:3000, rampAt=4000;
     const prompts=window.BROWSE_REDIRECT_PROMPTS;
     const isPrompt=format=>prompts?.formats.includes(format)===true;
@@ -32,7 +33,7 @@
       const activeMs=Number.isFinite(obj.activeMs)?Math.max(0,Math.min(14400000,obj.activeMs)):0;
       const pending=[],ids=new Set();let hasModal=false;
       for(const p of Array.isArray(obj.pending)?obj.pending:[]){
-        if(!p||!Number.isInteger(p.id)||p.id<1||p.id>ID_MAX||ids.has(p.id)||!validSites.includes(p.site)||!FORMATS.includes(p.format))continue;
+        if(!p||!Number.isInteger(p.id)||p.id<1||p.id>ID_MAX||ids.has(p.id)||!validSites.includes(p.site)||!(FORMATS.includes(p.format)||(boothAds&&p.format===videoTeaser&&p.site==='corn')))continue;
         if(modal(p)&&hasModal)continue;
         const closeStyle=['visible','dual','ghost'].includes(p.closeStyle)?p.closeStyle:'visible';
         const decoy=p.decoy===true,closeCorner=decoy?'top-left':['top-right','top-left','bottom-right'].includes(p.closeCorner)?p.closeCorner:'top-right';
@@ -86,7 +87,12 @@
     const closeReserves=p=>({top:boothOffset()+(p.closeStyle!=='visible'&&p.closeCorner!=='bottom-right'?30:0),bottom:p.closeStyle!=='visible'&&p.closeCorner==='bottom-right'?30:0});
     const burstSlots=[[.02,.06],[.72,.08],[.28,.48],[.97,.88],[.05,.94],[.64,.56],[.4,.02],[.98,.32],[.15,.44],[.5,.91]];
     const staticSlots=[[.04,.10],[.96,.16],[.07,.94],[.9,.88]];
-    const staticOrigin=p=>boothAds&&p.id===1?[.98,.97]:staticSlots[(p.id-1)%4];
+    const staticOrigin=p=>{
+      if(boothAds&&p.format==='bonus')return [.06,.1];
+      if(boothAds&&p.format==='player-error')return [.98,.92];
+      if(p.format===videoTeaser)return [.32,.38];
+      return boothAds&&p.id===1?[.98,.97]:staticSlots[(p.id-1)%4];
+    };
     const positionEntry=entry=>{
       const v=viewport(),reserve=closeReserves(entry.p);entry.card.style.setProperty('--br-motion-view-width',v.width+'px');entry.card.style.setProperty('--br-motion-view-height',v.height+'px');
       if(modal(entry.p)){
@@ -210,16 +216,16 @@
       rememberFocus();
       const a=ads[p.site],isModal=modal(p),moving=p.format==='bounce'||p.format==='dodge',prompt=isPrompt(p.format);
       const hopURL=prompt?redirectURL(p.hopTarget):null;
-      const offer=typeof adOffer==='function'?adOffer(p.site,p.id):{brand:a[0],title:a[1],cta:a[2],eyebrow:a[3],description:adDescription(p.site)};
+      const offer=p.format!==videoTeaser&&typeof adOffer==='function'?adOffer(p.site,p.id):{brand:a[0],title:a[1],cta:a[2],eyebrow:a[3],description:adDescription(p.site)};
       const lower=p.closeCorner==='bottom-right';
       const genuine=`<button class="br-real-close${lower?' br-corner-close':''}" type="button" data-br-close ${p.closeStyle==='ghost'?'hidden':''} aria-label="${t('Dismiss advertisement','关闭广告')}">×</button>`;
       const stage=document.createElement('div');stage.className='br-interrupt '+(isModal?'br-ad-backdrop br-stack-modal-stage':'br-motion-stage br-stack-stage');
       stage.dataset.brEntry=String(p.id);stage.dataset.brBurst=String(p.burst===true);stage.style.zIndex=String(isModal?11000:9000+p.id);
-      stage.innerHTML=`<section class="br-ad br-ad-${esc(p.format)} br-ad-${esc(p.site)} br-stack-card ${moving?'br-motion-card':''} ${isModal?'br-stack-modal':''}" data-close-style="${p.closeStyle}" data-close-corner="${p.closeCorner}" data-decoy="${p.decoy}" ${isModal?'role="dialog" aria-modal="true"':'role="region"'} aria-label="${esc(t('Sponsored message','赞助信息'))}" tabindex="-1">
+      stage.innerHTML=`<section class="br-ad br-ad-${esc(p.format)} br-ad-${esc(p.site)} br-stack-card ${moving?'br-motion-card':''} ${isModal?'br-stack-modal':''}" data-close-style="${p.closeStyle}" data-close-corner="${p.closeCorner}" data-decoy="${p.decoy}" role="${isModal?'dialog':'region'}"${isModal&&!boothAds?' aria-modal="true"':''} aria-label="${esc(t('Sponsored message','赞助信息'))}" tabindex="-1">
         ${p.closeStyle!=='visible'?`<button class="br-ghost-close" type="button" data-br-close aria-label="${t('Dismiss advertisement','关闭广告')}">×</button>`:''}${lower?genuine:''}<div class="br-ad-scroll">
         <div class="br-ad-top"><span>${t('Sponsored','赞助内容')} · ${esc(offer.brand)}</span>${!lower?genuine:''}${p.decoy?`<a class="br-false-close br-decoy-close" data-br-ad="${p.site}" data-br-decoy aria-label="${t('Open sponsor offer','打开赞助推广')}">×</a>`:p.format==='panel'&&p.closeStyle!=='ghost'?`<a class="br-false-close" data-br-ad="${p.site}" aria-label="${t('Open sponsor offer','打开赞助推广')}">×</a>`:''}</div>
         ${moving?`<div class="br-motion-label">${p.format==='bounce'?t('↗ ONE MORE OFFER','↗ 再来一条优惠'):t('✦ CATCH ME FIRST','✦ 先追上我再说')}</div>`:''}
-        ${adVisual(p.site,p.id)}<div class="br-ad-body"><span class="br-ad-eyebrow">${esc(offer.eyebrow)}</span><h2>${esc(offer.title)}</h2><p>${esc(offer.description)}</p>
+        ${adVisual(p.site,p.id,p.format)}<div class="br-ad-body"><span class="br-ad-eyebrow">${esc(offer.eyebrow)}</span><h2>${esc(offer.title)}</h2><p>${esc(offer.description)}</p>
         ${moving?`<p class="br-motion-taunt">${moving&&p.format==='dodge'?t('Looking for the ×?','在找那个 × 吗？'):t('Just passing through. Again.','只是路过，又路过。')}</p>`:''}
         <a class="br-ad-cta" data-br-ad="${p.site}">${esc(offer.cta)} →</a>${p.format==='newsletter'&&p.closeStyle!=='ghost'?`<button class="br-ad-decline" data-br-close>${t('Maybe another time','下次再说')}</button>`:''}</div>
         <div class="br-ad-bottom">${p.format==='tiny'&&p.closeStyle!=='ghost'?`<button data-br-close class="br-small-dismiss">${t('close ad','关闭广告')}</button>`:t('Advertisement','广告')}<span class="br-stack-hint">${t('Esc clears all offers','Esc 关闭全部广告')}</span></div>
@@ -279,10 +285,12 @@
       for(const entry of entries.values()){updateClose(entry);positionEntry(entry);}
       applyModal();
     }
-    overlayRoot.addEventListener('keydown',event=>{
+    (boothAds?document:overlayRoot).addEventListener('keydown',event=>{
       if(event.key!=='Tab'||modalId===null||externalModal)return;
       const dialog=entries.get(modalId)?.card;if(!dialog)return;
       const controls=[...dialog.querySelectorAll('a[href]:not([aria-disabled=true]),button:not([disabled])')].filter(el=>el.getClientRects().length);
+      // A booth ad blocks the site, but the player's toolbar remains in the tab order.
+      if(boothAds)controls.push(...document.querySelectorAll('#br-booth-bar .br-booth-actions:not([inert]) button:not([disabled])'));
       const first=controls[0],end=controls.at(-1);if(!first)return;
       if(event.shiftKey&&document.activeElement===first){event.preventDefault();end.focus();}
       else if(!event.shiftKey&&document.activeElement===end){event.preventDefault();first.focus();}
@@ -300,18 +308,24 @@
         if(before<REVEAL_MS&&p.closeElapsedMs>=REVEAL_MS)justRevealed=true;
       }
       if(justRevealed){for(const entry of entries.values())updateClose(entry);applyModal();save();}
-      const due=!burstActive()&&state.autoShown<AUTO_MAX&&state.shown<ID_MAX&&budget()>0&&state.activeMs>=state.nextAt&&state.activeMs>=state.quietUntil;
+      let format=formats[state.autoShown%formats.length];
+      if(!boothAds&&state.autoShown===0&&isPrompt(previewFormat))format=previewFormat;
+      // Let the next verification prompt wait for the current dialog to close.
+      const waitingForDialog=boothAds&&modalId!==null&&isPrompt(format)&&modal({format});
+      const due=!waitingForDialog&&!burstActive()&&state.autoShown<AUTO_MAX&&state.shown<ID_MAX&&budget()>0&&state.activeMs>=state.nextAt&&state.activeMs>=state.quietUntil;
       if(due&&(state.pending.length<limit()||(boothAds&&state.activeMs>=rampAt&&retireOldest()))){
         const openingCard=boothAds&&state.autoShown===0;
-        let format=formats[state.autoShown%formats.length];
-        if(!boothAds&&state.autoShown===0&&isPrompt(previewFormat))format=previewFormat;
         if(modal({format})&&state.pending.some(modal))format=state.autoShown%2?'dodge':'bounce';
         state.shown++;state.autoShown++;
-        const closeStyle=openingCard?'visible':closeStyles[(state.shown-1)%closeStyles.length];
-        const layout=openingCard?'top-right':boothAds&&state.autoShown===3?'decoy':closeLayouts[(state.shown-1)%closeLayouts.length];
+        let visibleCorner;
+        if(boothAds&&format==='captcha')visibleCorner='top-left';
+        else if(format===videoTeaser||(boothAds&&format==='robot'))visibleCorner='bottom-right';
+        else if(openingCard||(boothAds&&isPrompt(format)))visibleCorner='top-right';
+        const closeStyle=visibleCorner?'visible':closeStyles[(state.shown-1)%closeStyles.length];
+        const layout=visibleCorner||(boothAds&&state.autoShown===3?'decoy':closeLayouts[(state.shown-1)%closeLayouts.length]);
         const recurring=validSites.includes(campaignSite)&&(state.autoShown-1)%6===0;
         const normalIndex=state.autoShown-1-(validSites.includes(campaignSite)?Math.ceil((state.autoShown-1)/6):0);
-        const site=boothAds?.site(state.shown)||chosen||(recurring?campaignSite:deck[normalIndex%deck.length]);
+        const site=format===videoTeaser?'corn':boothAds?.site(state.shown)||chosen||(recurring?campaignSite:deck[normalIndex%deck.length]);
         const p={id:state.shown,site,format,closeStyle,closeCorner:layout==='decoy'?'top-left':layout,decoy:layout==='decoy',...(closeStyle==='ghost'?{closeElapsedMs:0}:{}),...(format==='dodge'?{dodgeLimit:dodgeLimit(state.shown),dodgeCount:0}:{})};
         if(isPrompt(format)){p.hopTarget=state.autoShown===1&&TARGETS.includes(previewTarget)?previewTarget:hopTarget(p.id);p.decoy=false;}
         state.pending.push(p);

@@ -15,9 +15,10 @@ def run():
   try:
    api.wait_server()
    with sync_playwright() as pw:
-    browser=pw.chromium.launch();page=browser.new_page(viewport={'width':1366,'height':900},reduced_motion='reduce');writes=[];errors=[]
+    browser=pw.chromium.launch();page=browser.new_page(viewport={'width':1366,'height':900},reduced_motion='reduce');writes=[];errors=[];downloads=[]
     page.on('request',lambda r:writes.append(r.url) if r.method=='POST' and '/api/' in r.url else None)
     page.on('pageerror',lambda e:errors.append(str(e)))
+    page.on('download',lambda d:downloads.append(d.suggested_filename))
     page.goto(BASE+'/games/close-the-popups/?demo=1&lang=en')
     def game():return page.locator('#game').element_handle().content_frame()
     cards = game().locator('.booth-task-card')
@@ -36,7 +37,7 @@ def run():
      try:f.wait_for_selector('[data-booth-submit]',timeout=2000)
      except PlaywrightTimeout:raise AssertionError('Start did not launch task: '+f.locator('#booth-start-note').inner_text())
     def finish():
-     f=game();f.locator('[data-booth-submit]').click(force=True);f.wait_for_selector('.booth-score')
+     f=game();f.locator('[data-booth-submit]').click();f.wait_for_selector('.booth-score')
      ending=f.locator('dialog[aria-label="Round ending"] iframe').element_handle().content_frame()
      ending.wait_for_selector('#result.visible')
      assert ending.evaluate('getComputedStyle(document.body).backgroundColor')=='rgb(243, 239, 229)'
@@ -45,27 +46,75 @@ def run():
      f.wait_for_selector('dialog[aria-label="Round ending"]',state='detached')
     start()
     f=game(); deadline=f.evaluate('BROWSE_BOOTH.list()[0].deadline')
-    label=f.locator('.br-booth-badge').inner_text()
+    f.locator('[data-pressure-surface="rail"]').wait_for(timeout=7000)
+    badge=f.locator('.br-ad-bonus .br-prompt-bonus-badge')
+    badge.wait_for(timeout=7000)
+    assert badge.evaluate('(node) => getComputedStyle(node).animationName')=='none'
+    f.locator('.br-ad-player-error').get_by_text('XX13-V',exact=False).wait_for(timeout=7000)
+    teaser=f.locator('.br-ad-video-teaser.br-ad-corn')
+    teaser.get_by_role('heading',name='Popular videos this week').wait_for(timeout=7000)
+    f.wait_for_function('''() => {
+     const images = [...document.querySelectorAll('.br-ad-video-teaser .br-corn-photo-strip img')];
+     return images.length === 3 && images.every(img => img.complete && img.naturalWidth > 0);
+    }''',timeout=2000)
+    assert 'site=corn' in teaser.get_by_role('link',name='Watch now').get_attribute('href')
+    assert teaser.locator('.br-corner-close').is_visible()
+    print('PASS: official ad mix shows the sidebar, bonus, player error and Cornhub teaser')
+    ad=f.locator('.br-stack-modal-stage:has([data-br-prompt="captcha"])')
+    ad.wait_for(timeout=15000)
+    assert ad.locator('.br-ad-captcha').get_attribute('data-close-corner')=='top-left'
+    ad_id=ad.get_attribute('data-br-entry')
+    assert f.locator('#site-root').evaluate('(node) => node.inert')
+    last_ad_control=ad.locator('a[href]:visible, button:enabled:visible').last
+    last_ad_control.focus()
+    page.keyboard.press('Tab')
+    assert f.locator('[data-booth-sound]').evaluate('(node) => node === document.activeElement')
+    ad.get_by_role('checkbox').click()
+    ad.locator('[data-br-prompt-state="checked"]').wait_for()
     f.locator('#br-booth-bar [data-booth-task]').click()
-    options=f.locator('[data-booth-warmup]')
-    assert options.count()==3
-    f.locator('[data-booth-warmup]').filter(has_not_text=label).first.click()
-    assert 'try again' in f.locator('.br-booth-warmup-status').inner_text()
-    f.get_by_role('button',name=label,exact=True).click()
-    assert f.evaluate('BROWSE_BOOTH.list()[0].guaranteed') is True
+    task_dialog=f.locator('#br-booth-task-dialog[open]')
+    assert task_dialog.locator('.br-booth-conditions li').count()>0
+    assert task_dialog.locator('details, [data-booth-second-hint], [data-booth-warmup]').count()==0
     assert f.evaluate('BROWSE_BOOTH.list()[0].deadline')==deadline
     f.locator('[data-booth-dialog-close]').click()
+    assert ad.get_attribute('data-br-entry')==ad_id
+    assert ad.get_by_role('checkbox').get_attribute('aria-checked')=='true'
+    assert f.locator('[data-br-prompt="robot"]').count()==0
     finish()
     score=game().evaluate('BROWSE_BOOTH_SCORE_LAST')
-    assert score['guaranteed']=={'done':True,'floor':20,'applied':False}
+    assert score['guaranteed']=={'done':False,'floor':20,'applied':False}
     assert score['total']==50,score
-    print('PASS: first demo round records the warm-up without resetting the clock or adding 20 points')
+    assert game().locator('.booth-score-split dt').all_text_contents()==['Task','Speed','Safe interaction']
+    assert game().locator('#booth-review, #booth-staff, #booth-verdict').count()==0
+    print('PASS: keyboard reaches the toolbar during an ad; View task and Submit work without closing it')
     assert page.evaluate("JSON.parse(sessionStorage.getItem('close-popups:demo:v1:practice')).status")=='ended'
     # A returning visitor can use the game brand to choose another task.
     game().locator('.booth-brand').click();game().wait_for_selector('#booth-random')
-    start();finish();print('PASS: another task starts after returning through the game header')
+    start()
+    teaser=game().locator('.br-ad-video-teaser')
+    teaser.get_by_role('button',name='Dismiss advertisement').click(timeout=9000)
+    teaser.wait_for(state='detached')
+    f=game()
+    f.locator('.br-ad-captcha').get_by_role('button',name='Dismiss advertisement').click(timeout=10000)
+    robot=f.locator('.br-ad-robot')
+    robot.wait_for(timeout=5000)
+    f.locator('#br-booth-bar [data-booth-task]').click()
+    assert f.locator('#br-booth-task-dialog[open]').is_visible()
+    f.locator('[data-booth-dialog-close]').click()
+    robot.locator('.br-corner-close').click()
+    robot.wait_for(state='detached')
+    finish();print('PASS: the robot prompt follows the checkbox prompt and leaves View task accessible')
     page.reload();game().wait_for_selector('.booth-score');game().locator('.booth-brand').click()
-    start('minute3-search-official');finish();print('PASS: another demo starts after refreshing a completed result')
+    start('minute3-search-official')
+    f=game();f.locator('[data-official-result]').click()
+    download=f.locator('[data-official-download]');download.press('Escape');download.click()
+    listing=f.locator('#br-download-panel:popover-open li')
+    listing.wait_for()
+    assert 'phototools-getting-started.txt' in listing.inner_text()
+    assert f.evaluate('BROWSE_BOOTH.assess(BROWSE_BOOTH.list()[0]).allMet')
+    assert not downloads,downloads
+    print('PASS: official TXT completes the task through the simulated download list')
+    finish();print('PASS: another demo starts after refreshing a completed result')
     game().locator('.booth-brand').click();start()
     original=game().evaluate('BROWSE_BOOTH.list()[0]')
     page.reload();game().wait_for_selector('[data-booth-submit]')

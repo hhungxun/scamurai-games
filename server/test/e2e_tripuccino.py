@@ -40,7 +40,7 @@ def run():
             api.wait_server()
             api.ok('POST', '/api/participants', {'id':'TRIP001', 'name':'Flight Test', 'ageGroup':'19–21', 'pbbAccount':False, 'scamExposure':'no', 'consent':True}, pin='1111')
             with sync_playwright() as pw:
-                browser = pw.chromium.launch(channel='chrome', headless=True)
+                browser = pw.chromium.launch()
                 context = browser.new_context(viewport={'width':1440,'height':1000}, accept_downloads=True)
                 errors, missing = [], []
                 context.on('page', lambda p: p.on('pageerror', lambda e: errors.append(str(e))))

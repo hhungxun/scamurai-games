@@ -11,4 +11,19 @@
 @media(max-width:350px){.br-ad.br-stack-card .br-prompt .br-prompt-title{font-size:18px}.br-prompt-checkbox{font-size:16px!important}.br-prompt-check-panel{padding:8px;gap:5px}.br-prompt-check-brand small{font-size:8px}.br-prompt-bonus-body{grid-template-columns:63px 1fr;gap:9px}.br-prompt-gift{width:63px;height:63px}.br-prompt-bonus-body p{font-size:17px}.br-ad.br-stack-card .br-prompt .br-prompt-bonus-title{font-size:18px}.br-prompt-bonus-actions{gap:14px}.br-prompt-transfer,.br-prompt-withdraw{font-size:14px!important}}
 @media(max-height:500px){.br-prompt-robot-body{padding:14px 12px 6px}.br-prompt-robot-art{width:98px;height:107px;margin-top:6px}.br-prompt-arrows{width:30px;height:28px;margin-top:0}.br-prompt-instruction{font-size:16px;margin-top:7px!important}.br-prompt-robot-cta{min-height:46px;font-size:18px!important}.br-prompt-captcha-body{padding:18px 14px 0}.br-prompt-check-panel{margin:22px 0;min-height:78px}.br-prompt-captcha-footer{padding:0 14px 13px}.br-prompt-continue{min-height:42px;font-size:18px!important}}
 @media(max-height:320px){.br-ad.br-stack-card .br-prompt .br-prompt-title{font-size:14px;letter-spacing:-.2px}.br-prompt-robot-body{padding:8px 9px 3px}.br-prompt-instruction{font-size:12px;margin-top:4px!important}.br-prompt-robot-art{width:48px;height:52px;margin-top:2px}.br-prompt-arrows{display:none}.br-prompt-robot-cta{min-height:33px;font-size:14px!important}.br-prompt-captcha-body{padding:9px 12px 0}.br-prompt-check-panel{margin:10px 0;min-height:54px;padding:3px 10px}.br-prompt-checkbox{font-size:16px!important;min-height:34px}.br-prompt-check-icon{transform:scale(.76);height:34px;width:30px;flex-basis:30px}.br-prompt-check-brand svg{width:30px;height:30px}.br-prompt-check-brand small{font-size:7px}.br-prompt-captcha-footer{padding:0 12px 8px}.br-prompt-continue{min-height:30px;font-size:14px!important}.br-prompt-player-error{padding:12px 15px}.br-prompt-error-body{grid-template-columns:42px 1fr;gap:10px}.br-prompt-flash{width:42px;height:42px}.br-ad.br-stack-card .br-prompt .br-prompt-error-title{font-size:15px;margin-bottom:5px}.br-prompt-error-body p{font-size:13px;line-height:1.2}.br-prompt-error-actions{margin-top:12px}.br-prompt-accept,.br-prompt-decline{min-height:33px;font-size:14px!important;padding:5px!important}.br-prompt-bonus{padding:14px 18px 10px}.br-prompt-bonus-body{grid-template-columns:59px 1fr;gap:10px}.br-prompt-gift{width:59px;height:59px}.br-ad.br-stack-card .br-prompt .br-prompt-bonus-title{font-size:17px;margin-bottom:5px}.br-prompt-bonus-body p{font-size:16px}.br-prompt-bonus-actions{margin-top:6px;gap:18px}.br-prompt-transfer,.br-prompt-withdraw{font-size:14px!important;min-height:26px}.br-prompt-bonus-badge{width:35px;height:35px;font-size:17px;left:-9px;top:-13px}}
+@media(prefers-reduced-motion:no-preference){
+  .br-prompt-bonus-badge{animation:br-prompt-badge-bob 1.25s ease-in-out infinite}
+  .br-prompt-bonus-badge::before,.br-prompt-bonus-badge::after{animation:br-prompt-badge-ember 1.25s ease-out infinite}
+  .br-prompt-bonus-badge::after{animation-delay:.3s}
+  .br-interrupt[inert] .br-prompt-bonus-badge,.br-interrupt[inert] .br-prompt-bonus-badge::before,.br-interrupt[inert] .br-prompt-bonus-badge::after{animation-play-state:paused}
+}
+@keyframes br-prompt-badge-bob{
+  0%,100%{transform:translateY(0) rotate(-6deg) scale(1)}
+  45%{transform:translateY(-5px) rotate(7deg) scale(1.09)}
+  72%{transform:translateY(1px) rotate(-2deg) scale(.96)}
+}
+@keyframes br-prompt-badge-ember{
+  0%{transform:translateY(2px) scale(.9);opacity:1}
+  80%,100%{transform:translateY(-8px) scale(.45);opacity:0}
+}
 @media(prefers-reduced-motion:reduce){.br-prompt-spinner{animation:none;border-color:#e7edf5;border-top-color:#448ef3}}

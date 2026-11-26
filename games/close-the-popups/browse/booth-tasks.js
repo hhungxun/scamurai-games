@@ -6,24 +6,24 @@
   ];
   const keywords = {
     'minute2-wall-earthrise': [
-      ['Earthrise', '1972', '3840 × 2160', 'JPG', 'two versions', 'both'],
-      ['Earthrise', '1972 年', '3840 × 2160', 'JPG', '两张']
+      ['Earthrise', '1968', '1972', '3840 × 2160', 'JPG', 'Favorites', 'Download wallpaper'],
+      ['Earthrise', '1968 年', '1972 年', '3840 × 2160', 'JPG', '爱心', '下载壁纸']
     ],
     'minute2-recipe-budget': [
-      ['Red lentil and tomato soup', 'RM5 per serving', 'six servings', 'red lentils', 'shopping list'],
-      ['红扁豆番茄汤', 'RM5', '6 人份', '红扁豆', '采购清单']
+      ['Red lentil & tomato soup', 'RM5 per serving', 'Servings to 6', 'Red lentils', 'Ingredients', 'Jump to recipe', 'Save recipe'],
+      ['红扁豆番茄汤', 'RM5', '6 人份', '红扁豆', '直接看食谱', '份量', '食材', '收藏食谱']
     ],
     'minute2-tool-webp': [
-      ['La Trobe Reading Room', 'WebP', 'width 800 px', '800 px', 'width 800', '70%', 'export settings'],
-      ['拉筹伯阅览室', '选 WebP', 'WebP', '宽 800 px', '800 px', '宽 800', '70%', '导出设置']
+      ['La Trobe reading room', 'Open example', 'WebP', '800 px', '70%', 'Download image'],
+      ['拉筹伯阅览室', '打开示例', 'WebP', '800 px', '70%', '下载图片']
     ],
     'minute2-movie-animation': [
       ['Sintel', 'Elephants Dream', 'watchlist', 'only those two'],
       ['辛特尔', '大象之梦', '想看片单', '只留这两部']
     ],
     'minute2-outing-craft': [
-      ['Central Market', 'RM20', 'return journey', 'trip home', 'weather', 'departure list', 'departure checklist', 'indoors'],
-      ['中央艺术坊', 'RM20', '返程', '天气', '出发清单', '室内']
+      ['Central Market', 'RM20', 'departure checklist', 'Save this outing', 'return journey', 'indoor alternative'],
+      ['中央艺术坊', 'RM20', '出发检查清单', '收藏这条路线', '安排返程', '室内备选去处']
     ],
     'minute2-book-verne': [
       ['Around the World in Eighty Days', 'English', 'French', 'both editions', 'TXT', 'opening excerpt'],
@@ -34,16 +34,16 @@
       ['Manet', '划船', '莫奈一家在阿让特伊的花园里', '宽度不到 100 cm', '100 cm', '我的展览', '较窄']
     ],
     'minute2-nature-woodpeckers': [
-      ['woodpecker', 'Downy', 'Red-bellied Woodpecker', 'shorter', 'observation list', 'Length'],
-      ['woodpecker', '绒啄木鸟', '红腹啄木鸟', '体长较短', '较短者', '观察清单', '体长']
+      ['Downy', 'Red-bellied Woodpecker', 'Compare woodpeckers', 'Length', 'shorter', 'Add to list'],
+      ['绒啄木鸟', '红腹啄木鸟', '比较两种啄木鸟', '身长', '较短', '加入清单']
     ],
     'minute2-travel-interchange': [
       ['KLCC', 'KJ', 'Bukit Bintang', '17:20', 'Less walking', 'KG'],
       ['KLCC', 'KJ', '武吉免登', '17:20', '较少步行', 'KG']
     ],
     'minute2-market-lens': [
-      ['RM700', 'EOS 550D', 'Good', 'Excellent', 'camera and lens', 'lens included', 'body and lens', 'Included'],
-      ['RM700', 'EOS 550D', '良好', '极佳', '机身和镜头', '含机身和镜头', '附带配件']
+      ['RM700', 'EOS 550D', 'Good', 'Excellent', 'Compare +', 'Compare gear', 'body and lens', 'Included', 'Save'],
+      ['RM700', 'EOS 550D', '良好', '极佳', '对比 +', '相机对比', '机身和镜头', '附带配件', '收藏']
     ],
     'minute3-courier-redelivery': [
       ['TM24081301', 'tomorrow afternoon', 'Tomorrow', '14:00–18:00', 'campus parcel desk address', 'free redelivery'],
@@ -251,124 +251,126 @@ window.BROWSE_BOOTH_TASKS = [
     id: "minute2-wall-earthrise",
     scene: "wallpapers",
     file: "wallpaper.html",
-    title: ["Compare two Earthrise photos and download the 1972 one","对比两张「地出」，下载 1972 年版"],
-    brief: ["Look up Earthrise and put both photos in Compare. Download the 1972 shot as a 3840 × 2160 JPG.", "搜 Earthrise，把两张照片都加进对比。下载 1972 年拍的那张，选 3840 × 2160 的 JPG。"],
-    hint: ["The year is in each photo’s description.", "照片说明里有拍摄年份。"],
-    goals: [["Search for Earthrise and add both photos to Compare.","搜索 Earthrise，把两张照片都加入对比。"],["Open the 1972 photo, select 3840 × 2160, and click Download wallpaper to get the JPG.","打开 1972 年那张，选择 3840 × 2160，点击「下载壁纸」获取 JPG。"]],
-    route: [["Search Earthrise and add both results to Compare.","搜「地出」或 Earthrise，把两张结果都加入对比。"],["Check the mission in the photograph description. Open the Apollo 16 result.","在照片说明里核对任务，打开阿波罗 16 号的结果。"],["Select 3840 × 2160 and download the wallpaper.","选择 3840 × 2160，下载壁纸。"]],
-    answer: ["earthrise-1968 (Apollo 8) and earthrise-1972 (Apollo 16). Export only earthrise-1972 at 3840 × 2160.","对比 earthrise-1968（阿波罗 8 号）和 earthrise-1972（阿波罗 16 号）。只导出后者的 3840 × 2160 JPG。"],
+    title: ["Save two Earthrise photos and download the 1972 one","收藏两张「地出」照片，下载 1972 年那张"],
+    brief: ["Find both Earthrise photos in Photo Library and save them to Favorites. Download the 1972 photo as a 3840 × 2160 JPG.", "在 Photo Library 照片网站找到两张「地出」照片并收藏。把 1972 年那张下载为 3840 × 2160 的 JPG。"],
+    goals: [["In Photo Library, search for Earthrise. Click the heart (♡) on the 1968 and 1972 photos to save both to Favorites.","在照片库搜索 Earthrise。点击 1968 年和 1972 年两张照片各自的爱心，把它们加入收藏。"],["Open the 1972 photo, select 3840 × 2160, and click Download wallpaper. The JPG appears in the game’s downloads at the top right.","打开 1972 年那张，选择 3840 × 2160，再点「下载壁纸」。JPG 会出现在游戏右上角的下载列表里。"]],
+    route: [["Search for Earthrise and click the heart on both photos.","搜索 Earthrise，点击两张照片上的爱心。"],["Open Earthrise · 1972 and download the 3840 × 2160 wallpaper.","打开「地出 · 1972」，下载 3840 × 2160 的壁纸。"]],
+    answer: ["Both Earthrise photos should be in Favorites. The downloaded JPG should be the 1972 photo at 3840 × 2160.","收藏应包含 1968 年和 1972 年两张「地出」照片。下载的 JPG 应为 1972 年那张，尺寸为 3840 × 2160。"],
     cover: "assets/nasa-as08-14-2383-thumb.webp",
+    briefImages: [
+      {src: "assets/nasa-as08-14-2383-thumb.webp", caption: ["Earthrise · 1968", "地出 · 1968"]},
+      {src: "assets/nasa-as16-120-19187-thumb.webp", caption: ["Earthrise · 1972", "地出 · 1972"]}
+    ],
     advanced: false,
     badge: ["Earthrise·1972","Earthrise·1972"],
-    steps: [["Compare both Earthrise photos", "对比两张「地出」"], ["Find the 1972 photo", "找到 1972 年的照片"], ["Download the 3840 × 2160 JPG", "下载 3840 × 2160 JPG"]],
-    hint2: ["The 1972 photo is from Apollo 16. Open it and pick 3840 × 2160 in the size menu.", "1972 年那张是阿波罗 16 号拍的。打开照片，在尺寸菜单里选 3840 × 2160。"]
+    steps: [["Add both Earthrise photos", "加入两张「地出」照片"], ["Download the 1972 photo as a 3840 × 2160 JPG", "下载 1972 年照片的 3840 × 2160 JPG"]]
   },
   {
     id: "minute2-recipe-budget",
     scene: "recipes",
     file: "recipe.html",
-    title: ["Save a six-serving lentil soup recipe","把红扁豆番茄汤改成六人份并收藏"],
-    brief: ["Find the red lentil and tomato soup at RM5 per serving. Make it six servings, tick red lentils on the shopping list and save the recipe.", "找到每份 RM5 的红扁豆番茄汤。把份量改成 6 人份，在采购清单勾上红扁豆，再收藏菜谱。"],
-    hint: ["The serving size and shopping list are on the recipe page.", "份量和采购清单都在菜谱详情里。"],
-    goals: [["Find the red lentil and tomato soup at RM5 per serving.","找到每份 RM5 的红扁豆番茄汤。"],["Set it to 6 servings and tick red lentils on the shopping list.","把份量改成 6 人份，在采购清单勾上红扁豆。"],["Click Save recipe.","点击「收藏食谱」。"]],
-    route: [["Start with the one-pot or vegan category. Narrow by budget and check the total time.","从「一锅料理」或纯素筛选入手，核对预算和总用时。"],["Open the red lentil and tomato soup, jump to its recipe and set six servings.","打开红扁豆番茄汤，跳到食谱并设为六人份。"],["Tick red lentils and save the recipe.","勾选红扁豆并收藏食谱。"]],
+    title: ["Save a lentil soup recipe for six","收藏六人份的红扁豆番茄汤"],
+    brief: ["In Recipe Book, find the RM5-per-serving red lentil and tomato soup. Set it to six servings, tick off the red lentils, then save the recipe.","在食谱大全找到每份 RM5 的红扁豆番茄汤。设为 6 人份，勾选红扁豆，再收藏食谱。"],
+    hint: ["Jump to recipe takes you to the serving selector and the ingredient list.","点「直接看食谱」就能找到份量选项和食材清单。"],
+    goals: [["In Recipe Book, search for lentil and open Red lentil & tomato soup (RM5 per serving).","在食谱大全搜索「扁豆」，打开每份 RM5 的红扁豆番茄汤。"],["Click Jump to recipe, set Servings to 6, and tick Red lentils under Ingredients.","点「直接看食谱」，把「份量」设为 6，在「食材」里勾选红扁豆。"],["Click Save recipe.","点「收藏食谱」。"]],
+    route: [["Search for lentil and open the red lentil and tomato soup.","搜索「扁豆」，打开红扁豆番茄汤。"],["Jump to recipe, set six servings, tick the red lentils, and save the recipe.","点「直接看食谱」，选 6 人份，勾选红扁豆并收藏食谱。"]],
     answer: ["red-lentil-soup · RM5 per serving, 35 minutes, vegan, one pot. At six servings the checklist shows 420 g of red lentils.","red-lentil-soup · 每份 RM5，35 分钟，纯素，一口锅。六人份的食材清单显示 420 g 红扁豆。"],
     cover: "assets/real-food-red-lentil-soup-thumb.webp",
     advanced: false,
     badge: ["6 servings·RM5","红扁豆汤·6人·RM5/份"],
-    steps: [["Red lentil and tomato soup, RM5 a serving", "找每份 RM5 的红扁豆番茄汤"], ["Set it to six servings", "改成 6 人份"], ["Tick red lentils", "勾上红扁豆"], ["Save the recipe", "收藏菜谱"]],
+    steps: [["Open the RM5-per-serving red lentil and tomato soup","打开每份 RM5 的红扁豆番茄汤"],["Set it to six servings","改成 6 人份"],["Tick Red lentils in Ingredients","在食材清单勾上红扁豆"],["Save the recipe","收藏食谱"]],
     hint2: ["Search “lentil” and use Jump to recipe on the soup page.", "搜「扁豆」。打开汤的详情后，点「直接看食谱」。"]
   },
   {
     id: "minute2-tool-webp",
     scene: "tools",
     file: "tools.html",
-    title: ["Resize a sample photo to 800 px and download it","把示例照片缩到 800 px 并下载"],
-    brief: ["Use the La Trobe Reading Room sample. Make it a WebP, 800 px wide at 70% quality, then download it.", "用「拉筹伯阅览室」这张示例图。格式选 WebP，宽度选 800 px，画质调到 70%，然后下载。"],
+    title: ["Download an 800 px WebP from Photo Tools","用图片工具下载宽 800 px 的 WebP"],
+    brief: ["Open the La Trobe reading room example in Photo Tools. Download it as a WebP, 800 px wide at 70% quality.","在图片工具打开「拉筹伯阅览室」示例图，下载为宽 800 px、画质 70% 的 WebP。"],
     hint: ["Pick the photo from the example image library. The preview updates as you change the settings.", "从「示例图片库」选图。改完设置，预览会自动更新。"],
-    goals: [["Open the La Trobe Reading Room sample.","打开「拉筹伯阅览室」示例图。"],["Set the format to WebP, width to 800 px, and quality to 70%.","格式选 WebP，宽度设为 800 px，画质设为 70%。"],["Click Download image.","点击「下载图片」。"]],
+    goals: [["In Photo Tools, scroll to Example image library. Find La Trobe reading room and click Open example.","在图片工具下滑到「示例图片库」，找到「拉筹伯阅览室」，点「打开示例」。"],["In Compression settings, choose WebP. Set Maximum width to 800 px and Image quality to 70%.","在「压缩设置」里选 WebP，把「最大宽度」设为 800 px，把「画质」设为 70%。"],["Click Download image. The WebP appears in the game’s downloads at the top right.","点「下载图片」。WebP 会出现在游戏右上角的下载列表里。"]],
     route: [["Look through the example photos and load the La Trobe Reading Room.","浏览示例照片，载入拉筹伯阅览室。"],["Select WebP, width 800 and quality 70%. The settings update the preview automatically.","设为 WebP、宽 800、画质 70%，预览会自动更新。"],["Check the result and download it.","核对结果后下载。"]],
     answer: ["sunroom (sunroom-study). The 1558 × 2048 source scales to 800 × 1052. Use custom settings.","sunroom（拉筹伯阅览室）。原图 1558 × 2048，按比例生成 800 × 1052。使用自定义设置。"],
     cover: "assets/real-wall-sunroom-study-thumb.webp",
     advanced: false,
     badge: ["WebP·800px·70%","WebP·800px·70%"],
-    steps: [["Open the La Trobe Reading Room sample", "打开「拉筹伯阅览室」示例"], ["Set WebP, 800 px wide, 70% quality", "选 WebP、宽 800 px、画质 70%"], ["Download the image", "下载图片"]],
+    steps: [["Download the La Trobe reading room example","下载「拉筹伯阅览室」示例图"],["Download it as an 800 px WebP at 70% quality","下载宽 800 px、画质 70% 的 WebP"]],
     hint2: ["Find the photo below the upload box and click Open example.", "在上传区下方找到那张照片，点「打开示例」。"]
   },
   {
     id: "minute2-outing-craft",
     scene: "events",
     file: "events.html",
-    title: ["Save the Central Market craft outing","保存中央艺术坊的手作路线"],
-    brief: ["Save the RM20 Central Market craft outing to your weekend plan. On its departure checklist, tick the trip home and the weather.", "把中央艺术坊那条 RM20 的手作路线加进周末计划，再在出发清单里勾上「返程」和「天气」。"],
+    title: ["Save a Central Market outing and finish its checklist","收藏中央艺术坊手作路线并勾选出发清单"],
+    brief: ["In Trip Guide, save the RM20 Central Market craft outing. On its departure checklist, tick the items for getting home and planning for rain.","在出游指南收藏中央艺术坊那条 RM20 的手作路线，再勾选出发清单里关于返程和雨天备选的两项。"],
     hint: ["Look for the indoor craft guide. You can skip the outdoor stretch if it rains.", "找可以在室内逛手作摊的那条。下雨的话，室外那段可以跳过。"],
-    goals: [["Find the RM20 indoor craft outing at Central Market and save it to your plan.","找到中央艺术坊预算 RM20 的室内手作路线，加入出游计划。"],["In its departure checklist, tick the return journey and the weather.","在这条路线的出发清单里，勾好返程和天气两项。"]],
-    route: [["Choose Malaysia → Kuala Lumpur, then filter for indoor outings and rail access. Check the budget and craft theme.","先选马来西亚 → 吉隆坡，再筛选室内和轨道交通，核对预算及手作主题。"],["Open the Central Market craft outing and check the optional outdoor strip in its rain plan.","打开中央艺术坊的手作路线，从雨天方案核对可跳过的室外路段。"],["Save it and tick the return journey and weather entries in the departure checklist.","收藏，并在出发清单勾选返程和天气。"]],
+    goals: [["In Trip Guide, open Search & more options and search for Central Market with Find guides. Open the RM20 craft guide, then click Save this outing.","在出游指南展开「搜索与更多条件」，输入「中央艺术坊」，点「找指南」。打开 RM20 的手作路线，点「收藏这条路线」。"],["Open Departure checklist. Tick Save a meeting point and plan your return journey, and Check the forecast and choose an indoor alternative.","点「出发检查清单」，勾选「保存集合点并安排返程」和「查看天气并选好室内备选去处」。"]],
+    route: [["Open Search & more options, search for Central Market, and open the RM20 craft guide.","展开「搜索与更多条件」，搜索「中央艺术坊」，打开 RM20 的手作路线。"],["Save the outing and tick the return journey and weather entries in Departure checklist.","收藏路线，并在「出发检查清单」勾好返程和天气两项。"]],
     answer: ["market-craft · Central Market & Kasturi Walk, RM20, 2.5 hours. The outdoor strip is optional. Record the two specified checklist entries.","market-craft · 中央艺术坊与 Kasturi Walk，RM20，2.5 小时。室外步行街可跳过，核对指定两项出发检查。"],
     cover: "assets/real-outing-market-craft-thumb.webp",
     advanced: false,
     badge: ["RM20·indoor","中央艺术坊·室内·RM20"],
-    steps: [["Find the RM20 indoor craft outing", "找到 RM20 的室内手作路线"], ["Add it to your weekend plan", "加入周末计划"], ["Tick the return journey and weather", "勾上返程和天气"]],
+    steps: [["Open the RM20 Central Market craft guide","打开中央艺术坊 RM20 手作路线"],["Save the outing to your plan","把路线加入计划"],["Tick the return journey and weather items","勾选返程和天气两项"]],
     hint2: ["Search Central Market and open “Batik, baskets & a sheltered craft browse”.", "搜「中央艺术坊」，打开「蜡染、编篮与室内手作慢逛」。"]
   },
   {
     id: "minute2-nature-woodpeckers",
     scene: "nature",
     file: "nature.html",
-    title: ["Find the shorter woodpecker and add it to your list","找出体长较短的啄木鸟并记录"],
-    brief: ["Compare the Downy Woodpecker and Red-bellied Woodpecker. Add the shorter bird to your observation list.", "对比绒啄木鸟和红腹啄木鸟，把体长较短的那种加进观察清单。"],
-    hint: ["The guide lists each bird’s length.", "图鉴里能查到两种鸟的体长。"],
-    goals: [["Add the Downy Woodpecker and Red-bellied Woodpecker to Compare.","把绒啄木鸟和红腹啄木鸟加入「对比」。"],["Check their body lengths and add the shorter species to your observation list.","查看两者的体长，把较短的那种加入观察清单。"]],
-    route: [["Search woodpecker or 啄木鸟. Check each candidate’s field marks.","搜「啄木鸟」或 woodpecker，核对候选的外观特征。"],["Compare Downy and Red-bellied Woodpecker and check their lengths.","对比绒啄木鸟和红腹啄木鸟，核对体长。"],["Add the shorter species to the observation list.","把较短的一种加入观察清单。"]],
+    title: ["Find and record the shorter woodpecker","找出身长较短的啄木鸟并记录"],
+    brief: ["In Bird Guide, put the Downy and Red-bellied Woodpeckers side by side. Check their lengths and add the shorter bird to your list.","在鸟类图鉴并排查看绒啄木鸟和红腹啄木鸟的身长，把较短的那种加入观察清单。"],
+    hint: ["Length is shown in centimetres next to each bird’s name and photo.","每种鸟的资料里都列了身长，单位是厘米。"],
+    goals: [["In Bird Guide, open Compare and click Compare woodpeckers to see the Downy and Red-bellied Woodpeckers side by side.","在鸟类图鉴打开「对比」，点「比较两种啄木鸟」，就能并排看绒啄木鸟和红腹啄木鸟的资料。"],["Look at Length under each bird. Click Add to list on the shorter one.","看每种鸟下面的「身长」，在较短的那种下面点「加入清单」。"]],
+    route: [["Open Compare and click Compare woodpeckers to display both birds.","打开「对比」，点「比较两种啄木鸟」，并排查看两种鸟。"],["Check Length and click Add to list for the shorter bird.","查看「身长」，把较短的一种加入清单。"]],
     answer: ["downy (14–17 cm, broad white stripe) and red-bellied (23–27 cm, barred back). Observe downy.","downy 绒啄木鸟（14–17 cm，宽白纵纹）与 red-bellied 红腹啄木鸟（23–27 cm，背部横纹）。记录绒啄木鸟。"],
     cover: "assets/journey-red-bellied-0-thumb.webp",
     briefCover: "assets/journey-red-bellied-0.webp",
     advanced: false,
     badge: ["woodpecker","woodpecker·较短者"],
-    steps: [["Compare the Downy and Red-bellied Woodpeckers", "对比绒啄木鸟和红腹啄木鸟"], ["Check the birds’ lengths", "看两种鸟各有多长"], ["Add the shorter bird to your list", "把较短的那种加进观察清单"]],
-    hint2: ["Search “woodpecker”, then look for Length in the comparison.", "搜「啄木鸟」，打开对比后看「体长」那一项。"]
+    steps: [["Put both woodpeckers in the side-by-side view","把两种啄木鸟加入对比"],["Add the shorter woodpecker to your list","把身长较短的啄木鸟加入清单"]],
+    hint2: ["On the Compare tab, the Compare woodpeckers button brings up both birds at once.","在「对比」页点「比较两种啄木鸟」，就能一次看两种鸟。"]
   },
   {
     id: "minute2-travel-interchange",
     scene: "travel",
     file: "travel.html",
-    title: ["Plan and save a trip to Bukit Bintang","规划并保存去武吉免登的路线"],
-    brief: ["Plan a trip from KLCC (KJ) to Bukit Bintang, leaving at 17:20. Pick Less walking and save the trip.", "从 KLCC（KJ 线）去武吉免登，把出发时间设为 17:20。选「较少步行」，再保存行程。"],
+    title: ["Save a 17:20 train trip to Bukit Bintang","保存 17:20 去武吉免登的列车路线"],
+    brief: ["In Rail Planner, plan a 17:20 trip from KLCC (KJ) to Bukit Bintang (KG). Choose Less walking and save the trip.","在列车路线网站规划 17:20 从 KLCC（KJ 线）到武吉免登（KG 线）的行程。选「较少步行」，再保存。"],
     hint: ["In the planner, check the line code next to each station name.", "在路线规划里选站时，留意站名旁的线路代号。"],
-    goals: [["Set From to KLCC (KJ), To to Bukit Bintang (KG), and Depart after to 17:20.","起点选 KLCC（KJ），终点选武吉免登（KG），「不早于」设为 17:20。"],["Choose Less walking, find the route, and open it.","偏好选「较少步行」，查找并打开路线。"],["Click Save trip and check that it says Saved.","点「保存行程」，确认按钮显示「已保存」。"]],
-    route: [["Choose KLCC (KJ) and Bukit Bintang (KG). Keep the date and set 17:20.","选 KLCC（KJ）和武吉免登（KG），保留日期并设为 17:20。"],["Select Less walking and plan. Inspect the highlighted connection on the network map.","选择「较少步行」并规划，在网络图查看高亮换乘段。"],["Check the interchange and line codes, then save the journey.","核对换乘站与线路代号，再保存行程。"]],
+    goals: [["In Rail Planner, set From to KLCC (KJ), To to Bukit Bintang (KG), and Depart after to 17:20.","在列车路线网站，「出发」选 KLCC（KJ），「到达」选武吉免登（KG），「不早于」设为 17:20。"],["Set Preference to Less walking and click Find a route. On the Less walking result, click View every leg.","「规划偏好」选「较少步行」，点「查找路线」。在标有「较少步行」的结果里点「查看每段详情」。"],["Click Save trip and check that it says Saved.","点「保存行程」，确认按钮显示「已保存」。"]],
+    route: [["Choose KLCC (KJ) and Bukit Bintang (KG). Keep the date and set 17:20.","选 KLCC（KJ）和武吉免登（KG），保留日期并设为 17:20。"],["Select Less walking, click Find a route, and open the Less walking result.","选「较少步行」，点「查找路线」，再打开对应结果。"],["Click Save trip.","点「保存行程」。"]],
     answer: ["klcc → bukit-kg, 17:20, Less walking. The practice route switches from KJ to KG at Pasar Seni and shows 9 minutes total walking.","klcc → bukit-kg，17:20，较少步行。练习路线在中央艺术坊站由 KJ 换乘 KG，全程步行 9 分钟。"],
     cover: "assets/journey-rail-train-0-thumb.webp",
     advanced: true,
     badge: ["17:20","17:20·较少步行·保存行程"],
-    steps: [["KLCC (KJ) to Bukit Bintang", "KLCC（KJ）到武吉免登"], ["Set departure to 17:20", "出发时间设为 17:20"], ["Choose Less walking", "选「较少步行」"], ["Save the trip", "保存行程"]],
+    steps: [["Plan from KLCC (KJ) to Bukit Bintang (KG)","选择 KLCC（KJ）到武吉免登（KG）"],["Set departure to 17:20","出发时间设为 17:20"],["Choose Less walking","选「较少步行」"],["Save the trip","保存行程"]],
     hint2: ["There are two Bukit Bintang stops in the planner. Pick the one marked KG.", "规划器里有两个武吉免登站，选标着 KG 的那个。"]
   },
   {
     id: "minute2-market-lens",
     scene: "market",
     file: "market.html",
-    title: ["Save a camera kit with a lens for RM700 or less","收藏一套 RM700 以内、带镜头的相机"],
-    brief: ["Compare the Good and Excellent EOS 550D listings. Save the one with a body and lens for RM700 or less.", "对比成色「良好」和「极佳」的两条 EOS 550D。收藏含机身和镜头、总价不超过 RM700 的那套。"],
+    title: ["Save an EOS 550D with a lens for up to RM700","收藏 RM700 以内带镜头的 EOS 550D"],
+    brief: ["In Used Cameras, check the two EOS 550D listings. Save the one that includes both a camera body and a lens for RM700 or less.","在二手相机网站看两条 EOS 550D 商品，收藏含机身和镜头、总价不超过 RM700 的那套。"],
     hint: ["Look under Included to see what comes with each camera.", "想知道有没有镜头，看详情里的「附带配件」。"],
-    goals: [["Search for Canon EOS 550D and add the Good and Excellent listings to Compare.","搜索 Canon EOS 550D，把成色「良好」和「极佳」的两条商品加入对比。"],["Check the price and what’s included. Save the kit with a body and lens for RM700 or less.","核对价格和附带配件，收藏含机身和镜头、总价不超过 RM700 的那套。"]],
-    route: [["Filter Canon + DSLR and set the maximum price to RM700.","筛选 Canon＋单反，最高价设 RM700。"],["Compare the Good and Excellent copies of the EOS 550D.","对比 EOS 550D 的良好和极佳两条刊登。"],["Read the included-items row and save the kit listing.","核对「附带物品」，收藏包含镜头的一条。"]],
+    goals: [["In Used Cameras, search for EOS 550D. Click Compare + on the Good and Excellent listings to put both on one page.","在二手相机网站搜索 EOS 550D。分别点成色「良好」和「极佳」商品上的「对比 +」，把两条商品放在一起看。"],["Open Compare gear. Look at the price and the Included row to find the body and lens kit for RM700 or less.","打开「相机对比」。看价格和「附带配件」，找出含机身和镜头、总价不超过 RM700 的那套。"],["Click that kit’s name, then click ♡ Save on its detail page.","点那套相机的商品名称，再在详情页点「♡ 收藏」。"]],
+    route: [["Search for EOS 550D and click Compare + on the Good and Excellent listings.","搜索 EOS 550D，在成色「良好」和「极佳」商品上分别点「对比 +」。"],["Open Compare gear. Find the kit by price and the Included row, open its listing, and click Save.","打开「相机对比」。看价格和「附带配件」，打开符合条件的商品并点「收藏」。"]],
     answer: ["canon-good: RM420, body only. canon-excellent: RM680, with EF-S 18–55mm, battery and charger. Save canon-excellent.","canon-good：RM420，仅机身。canon-excellent：RM680，附 EF-S 18–55mm 镜头、电池和充电器。收藏 canon-excellent。"],
     cover: "assets/market-canon-eos-550d.webp",
     advanced: true,
     badge: ["EOS 550D·RM700","EOS 550D·RM700"],
-    steps: [["Compare the two EOS 550D listings", "对比两条 EOS 550D"], ["Check the price and whether a lens is included", "核对价格和有没有镜头"], ["Save the kit for RM700 or less", "收藏 RM700 以内的套装"]],
+    steps: [["Put both EOS 550D listings in the side-by-side view","把两条 EOS 550D 商品加入对比"],["Save the kit with a lens for RM700 or less","收藏 RM700 以内带镜头的那套"]],
     hint2: ["Search EOS 550D. One listing is body only.", "搜 EOS 550D，其中一条只卖机身。"]
   },
   {
     id: "minute3-courier-redelivery",
     scene: "courier",
     file: "courier.html",
-    title: ["Reschedule your parcel for tomorrow afternoon for free","把包裹免费改约到明天下午"],
-    brief: ["Track parcel TM24081301. Book a free redelivery for tomorrow, 14:00–18:00, and keep the campus parcel desk address.", "查一下包裹 TM24081301，把派送改到明天下午 14:00–18:00。保留校园收件处的地址，改约费用为 RM0。"],
+    title: ["Move your parcel delivery to tomorrow afternoon","把包裹改约到明天下午"],
+    brief: ["In Parcel Tracker, reschedule TM24081301 for tomorrow, 14:00–18:00. Keep the campus parcel desk address and save the free redelivery.","在包裹查询网站把 TM24081301 改到明天 14:00–18:00 派送，保留校园收件处地址并免费保存改约。"],
     hint: ["The redelivery form is on the parcel’s tracking page.", "查到包裹后，详情里有重新派送的入口。"],
-    goals: [["Track TM24081301 and open the redelivery option.","查询运单 TM24081301，打开重新派送选项。"],["Choose tomorrow, 14:00–18:00. Keep the campus parcel desk address and save the free (RM0) redelivery.","选明天 14:00–18:00，保留校园收件处的原地址，确认费用为 RM0 后保存。"]],
-    route: [["Track TM24081301, then open Reschedule delivery.","查询 TM24081301，再打开改约派送。"],["Choose tomorrow, 14:00–18:00. Keep the address and save.","选择明天、14:00–18:00，保留地址并保存。"]],
+    goals: [["In Parcel Tracker, enter TM24081301 and click Track parcel. On the tracking page, click Arrange free redelivery.","在包裹查询网站输入 TM24081301，点「查询包裹」。在物流详情页点「免费改约」。"],["Set Delivery date to tomorrow and Delivery window to 14:00–18:00.","把「派送日期」设为明天，「派送时段」选 14:00–18:00。"],["Keep Campus parcel desk, Sepang in the address field. Check that the fee is RM0, then click Save redelivery.","地址保留 Campus parcel desk, Sepang。确认费用为 RM0 后，点「保存改约」。"]],
+    route: [["Track TM24081301 and open Arrange free redelivery.","查询 TM24081301，打开「免费改约」。"],["Choose tomorrow, 14:00–18:00. Keep the address and click Save redelivery.","选择明天、14:00–18:00，保留地址并点「保存改约」。"]],
     answer: ["TM24081301, tomorrow, afternoon, Campus parcel desk, Sepang. Confirm the saved Parcel Tracker status. NorthPost RM3 / identity popups are a separate simulated advertiser and do not reschedule this parcel.","TM24081301，明天、下午、Campus parcel desk, Sepang。核对 Parcel Tracker 保存状态。NorthPost 的 RM3／身份验证弹窗是独立模拟广告，不会改约本包裹。"],
     cover: "assets/courier-route.svg",
     advanced: false,
@@ -380,12 +382,12 @@ window.BROWSE_BOOTH_TASKS = [
     id: "minute3-search-official",
     scene: "search",
     file: "search.html",
-    title: ["Find and download the official Photo Tools guide","从官方网站下载图片工具的入门说明"],
-    brief: ["Search for Photo Tools and get its free getting-started TXT from the official result. Skip the sponsored links.", "搜 Photo Tools，从官方结果下载免费的入门说明 TXT。别点标着「赞助」的结果。"],
-    hint: ["Look at the web address under each result.", "点进去之前，先看结果下方的网址。"],
-    goals: [["Search for Photo Tools. Check the web address under each result and skip links marked Sponsored.","搜索 Photo Tools。看结果下方的网址，跳过标有「赞助」的链接。"],["Open the official result and download the free getting-started guide as a TXT file.","打开官方结果，免费下载入门说明 TXT。"]],
+    title: ["Download the official Photo Tools guide","下载图片工具的官方入门说明"],
+    brief: ["Use Web Search to find the official Photo Tools page. Skip sponsored results and download the free TXT guide from the official page.","用网页搜索找到图片工具的官方页面。跳过赞助结果，从官方页面下载免费的 TXT 入门说明。"],
+    hint: ["The site address appears above the result title.","每条结果标题上方会显示网址。"],
+    goals: [["In Web Search, enter Photo Tools. Skip results marked Sponsored and open the Photo Tools result with phototools.example as its web address.","在网页搜索输入 Photo Tools。跳过标有「赞助」的结果，打开网址是 phototools.example 的图片工具结果。"],["On the official page, click Download free TXT guide. The TXT appears in the game’s downloads at the top right.","在官方页面点「免费下载 TXT 入门说明」。TXT 会出现在游戏右上角的下载列表里。"]],
     route: [["Search Photo Tools; inspect domains and sponsored labels.","搜索 Photo Tools，核对域名与赞助标记。"],["Open phototools.example and download the TXT guide.","打开 phototools.example，下载 TXT 入门说明。"]],
-    answer: ["Organic Photo Tools result: phototools.example. The normal local page downloads a harmless TXT, not executable software. AppHarbor / SecureLane sponsored links lead to separate demonstration pages and never count as completing this task. A download event proves dispatch, not a file saved on disk.","自然结果 Photo Tools，参考域名 phototools.example。正常本地页面下载无害 TXT，不是可执行软件。AppHarbor／SecureLane 赞助链接进入独立演示页，不计完成。下载事件只证明发起下载，需工作人员核对磁盘文件。"],
+    answer: ["Organic Photo Tools result: phototools.example. The game’s download list shows phototools-getting-started.txt after the official download action. AppHarbor and SecureLane are separate sponsored results.","自然结果 Photo Tools 的参考域名是 phototools.example。在官方页面点击下载后，游戏内的列表会显示 phototools-getting-started.txt。AppHarbor 和 SecureLane 是另外两条赞助结果。"],
     cover: "assets/search-software.svg",
     advanced: false,
     badge: ["Photo Tools·TXT","Photo Tools·TXT"],
@@ -396,16 +398,16 @@ window.BROWSE_BOOTH_TASKS = [
     id: "minute4-penang-indoor",
     scene: "events",
     file: "events.html",
-    title: ["Save an indoor Penang attraction for RM30 or less","找一个 RM30 以内的槟城室内景点"],
-    brief: ["Find an indoor attraction in Penang, Malaysia, that takes three hours or less and has a listed budget of RM30 or less. Save it to your plan.", "在马来西亚槟城找一个室内景点。用时最多 3 小时，参考预算不超过 RM30。找到后加进计划。"],
+    title: ["Save an indoor Penang attraction within RM30","保存预算不超过 RM30 的槟城室内景点"],
+    brief: ["In Trip Guide, find an indoor attraction in Penang that fits RM30 or less and takes no more than three hours. Add it to your plan.","在出游指南找一个槟城室内景点，参考预算不超过 RM30、用时不超过 3 小时，再加入计划。"],
     hint: ["Set the destination to Malaysia, then Penang. Use the indoor, time and budget filters to narrow it down.", "目的地先选马来西亚，再选槟城。可以用室内、用时和预算筛选。"],
-    goals: [["Go to Malaysia → Penang and look for an indoor attraction.","到马来西亚 → 槟城找室内景点。"],["Save one with a listed budget of RM30 or less and a visit time of 3 hours or less.","选一个参考预算不超过 RM30、用时不超过 3 小时的景点，加入出游计划。"]],
-    route: [["Choose Malaysia → Penang, attraction, indoors, budget ≤RM30 and time ≤3h.","选择马来西亚 → 槟城、景点、室内、预算≤RM30、用时≤3小时。"],["Open the sole result and save it.","打开唯一结果，并加入收藏。"]],
+    goals: [["In Trip Guide, set Destination to Penang, Malaysia. Set Setting to Indoors, Time to ≤ 3 h, and Budget to ≤ RM30.","在出游指南的「目的地」选马来西亚的槟城。「场地」选「室内」，「用时」选 ≤ 3 h，「预算」选 ≤ RM30。"],["Under Search & more options, set Guide type to Attractions and click Find guides. Open a matching guide and click Save this outing.","展开「搜索与更多条件」，把「指南类型」设为「景点」，点「找指南」。打开符合条件的一条，点「收藏这条路线」。"]],
+    route: [["Set Destination to Penang, Malaysia. Set Attractions, Indoors, Time ≤ 3 h and Budget ≤ RM30.","目的地选马来西亚槟城，选择景点、室内、用时 ≤ 3 小时、预算 ≤ RM30。"],["Open a matching guide and click Save this outing.","打开符合条件的指南，点击「收藏这条路线」。"]],
     answer: ["penang-state-gallery: Malaysia / Penang / attraction / indoor / RM20 / 2h. The glass museum exceeds the budget, the garden is outdoors, and the long gallery guide takes 4h. These are editorial budgets, not ticket quotes. Assessment checks the actual saved selection and its planning fields.","penang-state-gallery：马来西亚／槟城／景点／室内／RM20／2小时。玻璃博物馆超预算，植物园在户外，半日美术馆需4小时。金额为编辑参考预算，并非门票报价。判定核对实际收藏和保存的规划字段。"],
     cover: "assets/guide-gallery.svg",
     advanced: false,
     badge: ["Penang·≤3h·≤RM30","槟城·室内·≤3h≤RM30"],
-    steps: [["Find an indoor attraction in Penang", "找槟城的室内景点"], ["Allow up to 3 hours and RM30", "最多 3 小时，预算不超过 RM30"], ["Save it to your plan", "加入计划"]],
+    steps: [["Save an indoor Penang attraction within RM30 and 3 hours","收藏预算不超过 RM30、用时不超过 3 小时的槟城室内景点"]],
     hint2: ["Choose Attractions as well as Indoors, then check the time and budget on the guide.", "「景点」和「室内」都选上，再看指南里的用时和预算。"]
   }
 ];

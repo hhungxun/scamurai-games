@@ -27,11 +27,7 @@ Each real close counts, including one made after the game reveals the close butt
 | All checks, submitted within 30 seconds, five real closes | 40 | 40 | 20 | 100 |
 | All checks at timeout, five real closes | 40 | 30 | 20 | 90 |
 
-## Warm-up / 热身保底
-
-After entering the task site, open **View task** and pick the label from the top bar. You can retry before the round ends. Completing the warm-up keeps the total at or above 20 on submission or timeout. If the regular total is already 20 or higher, that total stands.
-
-进入任务网站后，点顶部栏的「查看任务」，在「热身 · 保底20分」里选出顶部栏显示的标签。倒计时结束前可以重试。完成后，提交或超时时，本轮总分至少是 20 分。原本已达 20 分的轮次按实际总分结算。
+## Timer / 倒计时
 
 The 60-second clock starts when the scene is ready and keeps running through the task dialog, navigation, reloads and tab switches. Speed is based on when the player submits or times out. The shared leaderboard uses server round duration as its tie-break, from participant confirmation through the saved finish.
 

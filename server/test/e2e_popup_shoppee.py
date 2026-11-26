@@ -25,8 +25,12 @@ class ShopPeeTests(unittest.TestCase):
             stdout=subprocess.DEVNULL)
         api.wait_server()
         cls.pw = sync_playwright().start()
-        cls.browser = cls.pw.chromium.launch(channel='chrome',
-            ignore_default_args=['--disable-back-forward-cache'])
+        try:
+            cls.browser = cls.pw.chromium.launch(channel='chrome',
+                ignore_default_args=['--disable-back-forward-cache'])
+        except Exception:
+            cls.browser = cls.pw.chromium.launch(channel='chromium',
+                ignore_default_args=['--disable-back-forward-cache'])
 
     @classmethod
     def tearDownClass(cls):
