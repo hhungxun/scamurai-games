@@ -611,18 +611,16 @@
         const pInfo = booth?.participantInfo?.();
         if (pInfo && $('qr-player-banner')) {
           $('qr-player-banner').textContent = t(
-            `Ready for ${pInfo.name} (${pInfo.id})`,
-            `已识别参与者：${pInfo.name}（${pInfo.id}）`
+            `Ready for ${pInfo.name} (${pInfo.id}) — choose Normal or VR Mode to start`,
+            `已识别参与者：${pInfo.name}（${pInfo.id}）— 请选择普通模式或 VR 模式开始`
           );
           $('qr-player-banner').hidden = false;
         }
-        if (qp.get('vrmode') === '1' && pInfo) {
+        if (pInfo) {
           setStatus(
-            `${pInfo.name} checked in — put on Meta Quest 3 and click Enter VR Mode!`,
-            `${pInfo.name} 已签到——请戴上 Meta Quest 3 并点击进入 VR 模式！`
+            `${pInfo.name} checked in — choose Normal Mode or VR Mode to start!`,
+            `${pInfo.name} 已签到 — 请选择普通模式或 VR 模式开始！`
           );
-        } else if (qp.get('autostart') === '1' && booth && !demo) {
-          startGame();
         } else if (!booth && !demo) {
           setStatus(
             'Practice mode · Open Station 1 from the booth page to save an event score.',

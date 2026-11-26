@@ -221,9 +221,15 @@ def run():
                 phone2.wait_for_selector('#box.ok', timeout=10000)
                 assert 'Kenji Tan' in phone2.text_content('.join-who')
 
-                # Tab 2 (Normal) AUTO-STARTS straight into active gameplay (Note 1 / 10) with Kenji Tan identified!
+                # Tab 2 (Normal) loads the mode-choice screen (Normal Mode vs VR Mode) with Kenji Tan identified — NOT auto-starting!
                 tab_norm.wait_for_function("document.getElementById('booth-identity').textContent.includes('Kenji Tan')", timeout=10000)
                 norm_frame = tab_norm.locator('#booth-frame').element_handle().content_frame()
+                norm_frame.wait_for_selector('#qr-player-banner:visible', timeout=15000)
+                assert 'Kenji Tan' in norm_frame.inner_text('#qr-player-banner')
+                norm_frame.wait_for_selector('#start-game-btn:not([disabled])', timeout=15000)
+                norm_frame.wait_for_selector('#enter-vr-btn:not([disabled])', timeout=15000)
+                assert norm_frame.locator('#action-bar').is_hidden(), 'Normal tab must ask Normal vs VR before starting!'
+                norm_frame.click('#start-game-btn')
                 norm_frame.wait_for_selector('#action-bar:visible', timeout=15000)
                 norm_frame.wait_for_selector('#pass-btn:not([disabled])', timeout=15000)
                 assert norm_frame.evaluate('window.FAKECASH_DEMO_ANSWERS === undefined')

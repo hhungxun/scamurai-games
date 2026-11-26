@@ -14,7 +14,7 @@
   <script defer src="./js/game-core.js"></script>
   <script defer src="./js/scene-stage.js"></script>
   <script defer src="./js/vr-rig.js"></script>
-  <script defer src="./js/game.js"></script>
+  <script defer src="./js/game.js?v=modepick1"></script>
 </head>
 <body>
   <div id="canvas-container"></div>
@@ -147,11 +147,14 @@
 
       <p id="asset-status" class="asset-status" hidden></p>
 
+      <p id="mode-prompt" style="margin:10px 0 8px;font-size:.95rem;font-weight:700;color:#f2eee6"
+        data-i18n-en="Choose Normal Mode or VR Mode to start:"
+        data-i18n-zh="请选择普通模式或 VR 模式开始：">Choose Normal Mode or VR Mode to start:</p>
       <div class="panel-actions">
         <button class="btn btn-primary btn-lg" id="start-game-btn" type="button" disabled
-          data-i18n-en="Start Inspection" data-i18n-zh="开始鉴钞挑战">Start Inspection</button>
+          data-i18n-en="Normal Mode · Start" data-i18n-zh="普通模式 · 开始">Normal Mode · Start</button>
         <button class="btn btn-vr btn-lg" id="enter-vr-btn" type="button" disabled
-          data-i18n-en="Enter VR Mode (Quest 3)" data-i18n-zh="进入 Quest 3 VR 模式">Enter VR Mode (Quest 3)</button>
+          data-i18n-en="VR Mode (Quest 3)" data-i18n-zh="VR 模式 (Quest 3)">VR Mode (Quest 3)</button>
       </div>
       <p id="vr-status" class="vr-status-note" role="status" hidden></p>
     </section>

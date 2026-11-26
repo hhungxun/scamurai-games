@@ -129,11 +129,11 @@ async function run() {
       cls: 'ok',
       eyebrow: 'YOU ARE IN · STATION 01',
       pill: j.label || 'Station 1',
-      title: isVR ? 'Put on Meta Quest 3!' : 'Game starting on screen!',
+      title: isVR ? 'Put on Meta Quest 3!' : 'Choose Normal or VR Mode on screen!',
       who: `${j.participant.name} · ${j.participant.id}`,
       message: isVR
-        ? 'Your name is locked in on the <strong>VR Headset</strong> screen. Click <strong>Enter VR Mode</strong> on the screen to begin your 2-minute inspection!'
-        : 'Look at the <strong>Station 1 screen</strong> — your 2-minute banknote inspection is starting automatically!',
+        ? 'Your name is locked in on the <strong>Station 1 screen</strong>. Choose <strong>VR Mode</strong> (or <strong>Normal Mode</strong>) on screen to begin your 2-minute inspection!'
+        : 'Your name is locked in on the <strong>Station 1 screen</strong>. Choose <strong>Normal Mode</strong> or <strong>VR Mode</strong> on screen to begin your 2-minute inspection!',
       buttons: '<a class="btn" href="/participant.html">My participant page ↗</a>'
     });
   } catch {
