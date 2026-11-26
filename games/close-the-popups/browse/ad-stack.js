@@ -6,9 +6,10 @@
     const KEY='br-run-v9:'+seed, MISSING=Symbol('missing'), AUTO_MAX=boothAds?60:30, ID_MAX=boothAds?70:40, REVEAL_MS=10000, UNCLOSED_MAX=10;
     const GAPS=boothAds?[800,1100,950,1250,1000,1150]:[2200,2800,2500,3200,2300,3000];
     // Moving formats ('bounce', 'dodge') were removed on 26 Nov 2026; saved ones are dropped on restore.
-    const FORMATS=['robot','player-error','bonus','captcha','tiny','drawer','panel','newsletter'];
+    // Full-screen formats ('robot', 'captcha', 'panel', 'newsletter') were removed on 26 Nov 2026 too.
+    const FORMATS=['player-error','bonus','tiny','drawer'];
     const videoTeaser='video-teaser';
-    const formats=boothAds?['tiny','drawer','bonus','player-error',videoTeaser,'captcha','robot','panel','newsletter']:FORMATS;
+    const formats=boothAds?['tiny','drawer','bonus','player-error',videoTeaser]:FORMATS;
     const firstAt=boothAds?1000:3000, rampAt=4000;
     const prompts=window.BROWSE_REDIRECT_PROMPTS;
     const isPrompt=format=>prompts?.formats.includes(format)===true;
@@ -310,7 +311,7 @@
       }
       if(justRevealed){for(const entry of entries.values())updateClose(entry);applyModal();save();}
       let format=formats[state.autoShown%formats.length];
-      if(!boothAds&&state.autoShown===0&&isPrompt(previewFormat))format=previewFormat;
+      if(!boothAds&&state.autoShown===0&&isPrompt(previewFormat)&&FORMATS.includes(previewFormat))format=previewFormat;
       // Let the next verification prompt wait for the current dialog to close.
       const waitingForDialog=boothAds&&modalId!==null&&isPrompt(format)&&modal({format});
       const due=!waitingForDialog&&!burstActive()&&state.autoShown<AUTO_MAX&&state.shown<ID_MAX&&budget()>0&&state.activeMs>=state.nextAt&&state.activeMs>=state.quietUntil;
