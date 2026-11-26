@@ -698,7 +698,7 @@ route('GET', '/api/leaderboard', () => {
   return {
     stations: STATION_COUNT,
     registered: rows.length,
-    rows: ranked.slice(0, 30),
+    rows: ranked,   // every finisher (was capped at 30)
   };
 });
 
