@@ -5,9 +5,10 @@
     const {root,seed,t,esc,read,write,ads,adVisual,adDescription,adURL,redirectURL,wireAds,deck,chosen,adOffer,campaignSite,boothAds}=C;
     const KEY='br-run-v9:'+seed, MISSING=Symbol('missing'), AUTO_MAX=boothAds?60:30, ID_MAX=boothAds?70:40, REVEAL_MS=10000, UNCLOSED_MAX=10;
     const GAPS=boothAds?[800,1100,950,1250,1000,1150]:[2200,2800,2500,3200,2300,3000];
-    const FORMATS=['bounce','robot','dodge','player-error','bonus','captcha','tiny','drawer','panel','newsletter'];
+    // Moving formats ('bounce', 'dodge') were removed on 26 Nov 2026; saved ones are dropped on restore.
+    const FORMATS=['robot','player-error','bonus','captcha','tiny','drawer','panel','newsletter'];
     const videoTeaser='video-teaser';
-    const formats=boothAds?['tiny','drawer','dodge','bonus','player-error',videoTeaser,'bounce','captcha','robot','panel','newsletter']:FORMATS;
+    const formats=boothAds?['tiny','drawer','bonus','player-error',videoTeaser,'captcha','robot','panel','newsletter']:FORMATS;
     const firstAt=boothAds?1000:3000, rampAt=4000;
     const prompts=window.BROWSE_REDIRECT_PROMPTS;
     const isPrompt=format=>prompts?.formats.includes(format)===true;
@@ -169,7 +170,7 @@
     const burst=()=>{
       if(suspended||restoring||externalModal||modalId!==null||state.burstUsed||state.activeMs<state.quietUntil)return false;
       state.burstUsed=true;
-      const target=phone()?5:10,formats=['bounce','dodge','tiny','drawer'];
+      const target=phone()?5:10,formats=['tiny','drawer'];
       for(let index=0;state.pending.length<target&&state.shown<ID_MAX&&budget()>0;index++){
         const id=++state.shown,format=formats[index%formats.length],layout=closeLayouts[(id-1)%closeLayouts.length];
         const closeStyle=hash('burst-close:'+id)%3===0?'dual':'visible';
@@ -214,7 +215,7 @@
     };
     const createEntry=p=>{
       rememberFocus();
-      const a=ads[p.site],isModal=modal(p),moving=p.format==='bounce'||p.format==='dodge',prompt=isPrompt(p.format);
+      const a=ads[p.site],isModal=modal(p),moving=false,prompt=isPrompt(p.format);
       const hopURL=prompt?redirectURL(p.hopTarget):null;
       const offer=p.format!==videoTeaser&&typeof adOffer==='function'?adOffer(p.site,p.id):{brand:a[0],title:a[1],cta:a[2],eyebrow:a[3],description:adDescription(p.site)};
       const lower=p.closeCorner==='bottom-right';
@@ -315,7 +316,7 @@
       const due=!waitingForDialog&&!burstActive()&&state.autoShown<AUTO_MAX&&state.shown<ID_MAX&&budget()>0&&state.activeMs>=state.nextAt&&state.activeMs>=state.quietUntil;
       if(due&&(state.pending.length<limit()||(boothAds&&state.activeMs>=rampAt&&retireOldest()))){
         const openingCard=boothAds&&state.autoShown===0;
-        if(modal({format})&&state.pending.some(modal))format=state.autoShown%2?'dodge':'bounce';
+        if(modal({format})&&state.pending.some(modal))format=state.autoShown%2?'tiny':'drawer';
         state.shown++;state.autoShown++;
         let visibleCorner;
         if(boothAds&&format==='captcha')visibleCorner='top-left';
